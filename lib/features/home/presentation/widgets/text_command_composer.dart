@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class TextCommandComposer extends StatefulWidget {
-  const TextCommandComposer({super.key});
+  const TextCommandComposer({
+    super.key,
+    required this.onSubmit,
+    required this.isBusy,
+  });
+
+  final ValueChanged<String> onSubmit;
+  final bool isBusy;
 
   @override
   State<TextCommandComposer> createState() => _TextCommandComposerState();
@@ -18,11 +25,9 @@ class _TextCommandComposerState extends State<TextCommandComposer> {
 
   void _submit() {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('입력한 명령: $text')),
-    );
+    if (text.isEmpty || widget.isBusy) return;
+    widget.onSubmit(text);
+    _controller.clear();
   }
 
   @override
@@ -34,6 +39,7 @@ class _TextCommandComposerState extends State<TextCommandComposer> {
           controller: _controller,
           minLines: 2,
           maxLines: 3,
+          onSubmitted: (_) => _submit(),
           decoration: const InputDecoration(
             hintText: '메시지 입력을 통해서도 명령을 내릴 수 있습니다',
             border: OutlineInputBorder(),
@@ -41,8 +47,8 @@ class _TextCommandComposerState extends State<TextCommandComposer> {
         ),
         const SizedBox(height: 12),
         ElevatedButton(
-          onPressed: _submit,
-          child: const Text('텍스트 명령 실행'),
+          onPressed: widget.isBusy ? null : _submit,
+          child: Text(widget.isBusy ? '처리 중...' : '텍스트 명령 실행'),
         ),
       ],
     );
