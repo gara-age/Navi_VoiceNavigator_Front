@@ -3,15 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../listening/application/listening_controller.dart';
 import '../../session/application/session_controller.dart';
+import '../../settings/application/settings_controller.dart';
+import '../../settings/presentation/settings_modal.dart';
 import 'widgets/action_panel.dart';
 import 'widgets/ready_state.dart';
 import 'widgets/status_card.dart';
 import 'widgets/title_bar.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
-  Future<void> _handleListen(WidgetRef ref) async {
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  bool _showSettings = false;
+
+  Future<void> _handleListen() async {
     final session = ref.read(sessionControllerProvider);
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
     final listeningNotifier = ref.read(listeningControllerProvider.notifier);
@@ -27,7 +36,7 @@ class HomePage extends ConsumerWidget {
     listeningNotifier.reset();
   }
 
-  Future<void> _handleScreenRead(WidgetRef ref) async {
+  Future<void> _handleScreenRead() async {
     final listeningNotifier = ref.read(listeningControllerProvider.notifier);
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
 
@@ -36,7 +45,7 @@ class HomePage extends ConsumerWidget {
     listeningNotifier.reset();
   }
 
-  Future<void> _handleSubmitText(WidgetRef ref, String text) async {
+  Future<void> _handleSubmitText(String text) async {
     final listeningNotifier = ref.read(listeningControllerProvider.notifier);
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
 
@@ -57,65 +66,91 @@ class HomePage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final listeningState = ref.watch(listeningControllerProvider);
     final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const AppTitleBar(),
-            Container(
-              height: 88,
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 88,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: '마이크 상태',
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      const VerticalDivider(width: 1, thickness: 1),
+                      Expanded(
+                        child: StatusCard(
+                          label: '현재 모드',
+                          value: settings.security.secureInputMode ? '보안 입력 모드' : '일반 모드',
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 260,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() => _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => setState(() => _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: StatusCard(
-                      label: '마이크 상태',
-                      value: _micLabel(listeningState),
-                      icon: Icons.mic_none_rounded,
-                    ),
-                  ),
-                  const VerticalDivider(width: 1, thickness: 1),
-                  const Expanded(
-                    child: StatusCard(
-                      label: '현재 모드',
-                      value: '일반 모드',
-                      icon: Icons.volume_up_outlined,
-                    ),
-                  ),
-                ],
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() => _showSettings = false);
+                  },
+                ),
               ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 260,
-                    child: ActionPanel(
-                      isRecording: sessionState.isRecording,
-                      onListenPressed: () => _handleListen(ref),
-                      onScreenReadPressed: () => _handleScreenRead(ref),
-                      onSettingsPressed: () {},
-                    ),
-                  ),
-                  Expanded(
-                    child: ReadyState(
-                      summary: sessionState.lastSummary,
-                      followUp: sessionState.lastFollowUp,
-                      isBusy: sessionState.isBusy,
-                      onSubmitText: (text) => _handleSubmitText(ref, text),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ],
         ),
       ),
