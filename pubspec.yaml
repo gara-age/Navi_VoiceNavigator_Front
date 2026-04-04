@@ -1,0 +1,45 @@
+# 프로젝트 이름
+name: navi_voice_navigator
+
+# 프로젝트 설명
+description: Voice Navigator accessibility desktop assistant
+
+# pub.dev에 공개 배포하지 않음
+publish_to: none
+
+# 앱 버전명 + 빌드번호
+version: 0.1.0+1
+
+# 사용할 Dart SDK 버전 범위
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+# 실제 앱 실행에 필요한 패키지
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+
+# 개발/테스트용 패키지
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # Material Design 리소스 사용
+  uses-material-design: true
+
+  # 커스텀 폰트 등록
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
