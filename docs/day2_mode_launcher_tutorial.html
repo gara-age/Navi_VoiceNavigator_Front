@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2일차 모드 선택 화면 튜토리얼</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --warning: #f59e0b;
+        --warning-soft: #fef3c7;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      .card {
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin-top: 14px;
+      }
+
+      h2 {
+        font-size: 28px;
+        margin-top: 44px;
+      }
+
+      h3 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .step strong {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.95em;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid .card {
+        margin-top: 0;
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Day 2 Tutorial</span>
+        <h1>Flutter 2일차: 모드 선택 화면 만들기</h1>
+        <p class="lead">
+          이 문서는 2일차에 진행한
+          <code>mode_launcher_page.dart</code>와
+          <code>demo_home_page.dart</code> 작업을 클론코딩/튜토리얼 방식으로
+          다시 읽을 수 있게 정리한 문서입니다.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <strong>1단계</strong>
+            <p>단순 버튼 화면을 카드형 모드 선택 화면으로 바꿉니다.</p>
+          </div>
+          <div class="step">
+            <strong>2단계</strong>
+            <p>카드 공통 UI를 <code>_ModeLaunchCard</code>로 분리합니다.</p>
+          </div>
+          <div class="step">
+            <strong>3단계</strong>
+            <p><code>실제 모드</code> 카드를 <code>HomePage</code>에 연결합니다.</p>
+          </div>
+          <div class="step">
+            <strong>4단계</strong>
+            <p><code>DemoHomePage</code>를 만들어 <code>데모 모드</code> 진입점을 만듭니다.</p>
+          </div>
+          <div class="step">
+            <strong>5단계</strong>
+            <p>실행해서 두 모드가 모두 정상 이동하는지 확인합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>오늘의 목표</h2>
+        <div class="card">
+          <ul>
+            <li>앱 첫 화면이 더 이상 버튼 1개짜리 임시 화면이 아니어야 합니다.</li>
+            <li><code>실제 모드</code>와 <code>데모 모드</code> 카드가 보여야 합니다.</li>
+            <li>카드를 누르면 각각 다른 화면으로 이동해야 합니다.</li>
+            <li>1일차에서 만든 테마/색상 시스템이 실제 UI에 반영되어야 합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>먼저 이해할 개념</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>Scaffold</h3>
+            <p>한 화면의 기본 틀입니다. 앱의 페이지 단위 바탕이라고 생각하면 됩니다.</p>
+          </div>
+          <div class="card">
+            <h3>SafeArea</h3>
+            <p>상단 상태바나 노치에 UI가 겹치지 않게 안전 영역 안에 배치합니다.</p>
+          </div>
+          <div class="card">
+            <h3>ConstrainedBox</h3>
+            <p>데스크탑에서 UI가 너무 넓게 벌어지지 않도록 최대 폭을 제한합니다.</p>
+          </div>
+          <div class="card">
+            <h3>Row + Expanded</h3>
+            <p>카드 2개를 가로로 나란히 두고 균등하게 너비를 나누는 데 사용합니다.</p>
+          </div>
+          <div class="card">
+            <h3>Navigator.push</h3>
+            <p>현재 화면 위에 새로운 화면을 올려 이동하는 Flutter 기본 방식입니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>1. mode_launcher_page.dart 구조 바꾸기</h2>
+        <div class="file-path">lib/app/mode_launcher_page.dart</div>
+        <p>
+          기존 파일은 제목과 버튼 하나만 있는 단순한 구조였습니다. 2일차에는
+          이 화면을 카드형 모드 선택 화면으로 업그레이드합니다.
+        </p>
+        <div class="callout">
+          <strong>핵심 생각:</strong> 화면 전체 레이아웃은 하나의 큰
+          <code>Column</code>이고, 그 안에 카드 두 개를 <code>Row</code>로
+          배치합니다.
+        </div>
+        <h3>목표 구조</h3>
+        <pre><code>Scaffold
+  SafeArea
+    Padding
+      Center
+        ConstrainedBox
+          Container
+            Column
+              앱 아이콘
+              앱 제목
+              설명 문구
+              Row
+                실제 모드 카드
+                데모 모드 카드
+              하단 안내 문구</code></pre>
+        <h3>왜 카드 공통 위젯으로 빼는가</h3>
+        <ul>
+          <li>카드 2개는 거의 같은 모양입니다.</li>
+          <li>제목, 설명, 아이콘, 색상, 이동 화면만 다릅니다.</li>
+          <li>그래서 <code>_ModeLaunchCard</code>로 빼면 중복이 줄고 유지보수가 쉬워집니다.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. Navigator로 화면 이동 연결하기</h2>
+        <div class="card">
+          <p>
+            <code>실제 모드</code> 카드는
+            <code>HomePage</code>로 이동하고,
+            <code>데모 모드</code> 카드는
+            <code>DemoHomePage</code>로 이동합니다.
+          </p>
+          <pre><code>void _openRealMode(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute&lt;void&gt;(
+      builder: (_) =&gt; const HomePage(),
+    ),
+  );
+}
+
+void _openDemoMode(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute&lt;void&gt;(
+      builder: (_) =&gt; const DemoHomePage(),
+    ),
+  );
+}</code></pre>
+          <p>
+            흐름은 단순합니다. 카드가 눌리면 해당 함수가 실행되고,
+            <code>Navigator.push</code>가 새 화면을 현재 화면 위에 쌓습니다.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. _ModeLaunchCard 공통 카드 만들기</h2>
+        <div class="card">
+          <p>
+            카드 두 개를 각각 직접 쓰는 대신, 공통 카드 위젯을 하나 만들고
+            다른 값만 파라미터로 넣습니다.
+          </p>
+          <h3>카드마다 바뀌는 값</h3>
+          <ul>
+            <li><code>title</code></li>
+            <li><code>subtitle</code></li>
+            <li><code>badge</code></li>
+            <li><code>hint</code></li>
+            <li><code>icon</code></li>
+            <li><code>accentColor</code></li>
+            <li><code>background</code></li>
+            <li><code>onTap</code></li>
+          </ul>
+          <h3>왜 좋은가</h3>
+          <ul>
+            <li>UI가 통일됩니다.</li>
+            <li>색상이나 여백을 바꾸고 싶을 때 한 번만 수정하면 됩니다.</li>
+            <li>Flutter의 컴포넌트 분리 감각을 익히게 됩니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. demo_home_page.dart 만들기</h2>
+        <div class="file-path">lib/demo/demo_home_page.dart</div>
+        <p>
+          오늘은 데모 로직 자체를 완성하는 날이 아닙니다. 중요한 것은
+          <code>데모 모드 진입점</code>을 먼저 만드는 것입니다.
+        </p>
+        <p>
+          그래서 2일차의 <code>DemoHomePage</code>는 아주 단순한 플레이스홀더로
+          두는 게 맞습니다.
+        </p>
+        <div class="callout">
+          <strong>핵심 생각:</strong> 오늘은 데모 화면을 완성하는 게 아니라,
+          “데모 모드로 들어가는 구조”를 먼저 만드는 날입니다.
+        </div>
+      </section>
+
+      <section>
+        <h2>최종 코드 1: mode_launcher_page.dart</h2>
+        <div class="file-path">lib/app/mode_launcher_page.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../demo/demo_home_page.dart';
+import '../features/home/presentation/home_page.dart';
+import 'theme/colors.dart';
+
+class ModeLauncherPage extends StatelessWidget {
+  const ModeLauncherPage({super.key});
+
+  void _openRealMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const HomePage(),
+      ),
+    );
+  }
+
+  void _openDemoMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const DemoHomePage(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Navi: Voice Navigator',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '실행할 모드를 선택하세요.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: '실제 모드',
+                            subtitle: '실제 홈 화면과 연결되는 기본 앱 흐름입니다.',
+                            badge: '서비스',
+                            hint: 'UI 연결',
+                            icon: Icons.link_rounded,
+                            accentColor: AppColors.accent,
+                            background: AppColors.accentSoft,
+                            onTap: () =&gt; _openRealMode(context),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: '데모 모드',
+                            subtitle: '백엔드 없이 시나리오 화면 흐름을 확인하는 모드입니다.',
+                            badge: '오프라인',
+                            hint: '데모',
+                            icon: Icons.play_circle_outline_rounded,
+                            accentColor: AppColors.warning,
+                            background: AppColors.warningSoft,
+                            onTap: () =&gt; _openDemoMode(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '2일차 목표는 실제 모드와 데모 모드 진입점을 만드는 것입니다.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeLaunchCard extends StatelessWidget {
+  const _ModeLaunchCard({
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    required this.hint,
+    required this.icon,
+    required this.accentColor,
+    required this.background,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badge;
+  final String hint;
+  final IconData icon;
+  final Color accentColor;
+  final Color background;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badge,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: accentColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textMuted,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Text(
+                  hint,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: accentColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: accentColor,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 2: demo_home_page.dart</h2>
+        <div class="file-path">lib/demo/demo_home_page.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+class DemoHomePage extends StatelessWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('데모 모드'),
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            '데모 모드 화면입니다.\n3일차부터 이 화면에 데모 시나리오 UI를 붙입니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>2일차 완료 기준</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>화면 기준</h3>
+            <ul>
+              <li>앱 첫 화면에 카드 2개가 보입니다.</li>
+              <li><code>실제 모드</code>와 <code>데모 모드</code>가 구분됩니다.</li>
+              <li>더 이상 버튼 하나짜리 임시 화면이 아닙니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>동작 기준</h3>
+            <ul>
+              <li><code>실제 모드</code> 클릭 시 <code>HomePage</code>로 이동합니다.</li>
+              <li><code>데모 모드</code> 클릭 시 <code>DemoHomePage</code>로 이동합니다.</li>
+              <li>뒤로 가기 시 다시 모드 선택 화면으로 돌아옵니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>학습 기준</h3>
+            <ul>
+              <li><code>Navigator.push</code>를 설명할 수 있습니다.</li>
+              <li><code>Row + Expanded</code> 배치를 이해합니다.</li>
+              <li>공통 UI를 별도 위젯으로 빼는 이유를 설명할 수 있습니다.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 20px;">
+          문서 파일 위치:
+          <code>docs/day2_mode_launcher_tutorial.html</code>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
