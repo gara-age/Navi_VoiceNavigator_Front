@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1일차 Flutter 테마 튜토리얼</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.08);
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin-top: 14px;
+      }
+
+      h2 {
+        font-size: 28px;
+        margin-top: 44px;
+      }
+
+      h3 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .step strong {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.95em;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid .card {
+        margin-top: 0;
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Day 1 Tutorial</span>
+        <h1>Flutter 1일차: 테마 기초 만들기</h1>
+        <p class="lead">
+          이 문서는 1일차에 진행한
+          <code>settings_models.dart</code>,
+          <code>colors.dart</code>,
+          <code>typography.dart</code>,
+          <code>app_theme.dart</code>,
+          <code>app_shell.dart</code>
+          작업을 튜토리얼처럼 천천히 다시 읽을 수 있게 정리한 문서입니다.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <strong>1단계</strong>
+            <p>설정 모델을 확장해서 테마를 받을 준비를 합니다.</p>
+          </div>
+          <div class="step">
+            <strong>2단계</strong>
+            <p>공통 색상을 한곳에 모아 재사용 가능한 구조를 만듭니다.</p>
+          </div>
+          <div class="step">
+            <strong>3단계</strong>
+            <p>공통 텍스트 스타일을 정리해 글자 체계를 맞춥니다.</p>
+          </div>
+          <div class="step">
+            <strong>4단계</strong>
+            <p>설정값을 읽어 실제 앱 테마를 만들어냅니다.</p>
+          </div>
+          <div class="step">
+            <strong>5단계</strong>
+            <p>앱 시작점에서 테마를 전체 앱에 연결합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>1. settings_models.dart</h2>
+        <div class="file-path">lib/shared/models/settings_models.dart</div>
+        <p>
+          가장 먼저 한 이유는 나중에 만들 <code>app_theme.dart</code>가
+          <code>DisplaySettings</code>를 읽어야 하기 때문입니다. 즉, 테마보다
+          설정 구조가 먼저 있어야 합니다.
+        </p>
+        <p>
+          이 파일은 앱 설정의 모양을 정의합니다. 크게
+          <code>general</code>, <code>shortcuts</code>,
+          <code>security</code>, <code>display</code> 4묶음으로 나눕니다.
+        </p>
+        <div class="callout">
+          <strong>중요 개념:</strong> <code>copyWith()</code>는 기존 객체를
+          직접 바꾸는 대신, 일부 값만 바뀐 새 객체를 만드는 패턴입니다.
+        </div>
+        <h3>왜 나눠서 관리하나</h3>
+        <ul>
+          <li><code>general</code>: 일반 설정</li>
+          <li><code>shortcuts</code>: 단축키 설정</li>
+          <li><code>security</code>: 보안 관련 설정</li>
+          <li><code>display</code>: 다크 테마, 큰 글씨, 고대비 같은 화면 설정</li>
+        </ul>
+        <h3>최종 코드</h3>
+        <pre><code>class AppSettings {
+  const AppSettings({
+    required this.general,
+    required this.shortcuts,
+    required this.security,
+    required this.display,
+  });
+
+  final GeneralSettings general;
+  final ShortcutSettings shortcuts;
+  final SecuritySettings security;
+  final DisplaySettings display;
+
+  factory AppSettings.defaults() {
+    return const AppSettings(
+      general: GeneralSettings(
+        autoLanguageDetection: true,
+        microphoneSensitivity: 0.72,
+        ttsSpeed: 1.0,
+        voiceType: 'ko-KR-Neural2-A',
+        autoErrorLogUpload: false,
+      ),
+      shortcuts: ShortcutSettings(
+        enabled: true,
+        listenToggle: 'F2',
+        screenRead: 'F3',
+        openSettings: 'F4',
+      ),
+      security: SecuritySettings(
+        secureInputMode: false,
+        sensitiveDomainAlert: true,
+      ),
+      display: DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      ),
+    );
+  }
+
+  AppSettings copyWith({
+    GeneralSettings? general,
+    ShortcutSettings? shortcuts,
+    SecuritySettings? security,
+    DisplaySettings? display,
+  }) {
+    return AppSettings(
+      general: general ?? this.general,
+      shortcuts: shortcuts ?? this.shortcuts,
+      security: security ?? this.security,
+      display: display ?? this.display,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'general': general.toJson(),
+      'shortcuts': shortcuts.toJson(),
+      'security': security.toJson(),
+      'display': display.toJson(),
+    };
+  }
+
+  factory AppSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return AppSettings(
+      general: GeneralSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['general'] ?? const {}),
+      ),
+      shortcuts: ShortcutSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['shortcuts'] ?? const {}),
+      ),
+      security: SecuritySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['security'] ?? const {}),
+      ),
+      display: DisplaySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['display'] ?? const {}),
+      ),
+    );
+  }
+}
+
+class GeneralSettings {
+  const GeneralSettings({
+    required this.autoLanguageDetection,
+    required this.microphoneSensitivity,
+    required this.ttsSpeed,
+    required this.voiceType,
+    required this.autoErrorLogUpload,
+  });
+
+  final bool autoLanguageDetection;
+  final double microphoneSensitivity;
+  final double ttsSpeed;
+  final String voiceType;
+  final bool autoErrorLogUpload;
+
+  GeneralSettings copyWith({
+    bool? autoLanguageDetection,
+    double? microphoneSensitivity,
+    double? ttsSpeed,
+    String? voiceType,
+    bool? autoErrorLogUpload,
+  }) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          autoLanguageDetection ?? this.autoLanguageDetection,
+      microphoneSensitivity:
+          microphoneSensitivity ?? this.microphoneSensitivity,
+      ttsSpeed: ttsSpeed ?? this.ttsSpeed,
+      voiceType: voiceType ?? this.voiceType,
+      autoErrorLogUpload: autoErrorLogUpload ?? this.autoErrorLogUpload,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'auto_language_detection': autoLanguageDetection,
+      'microphone_sensitivity': microphoneSensitivity,
+      'tts_speed': ttsSpeed,
+      'voice_type': voiceType,
+      'auto_error_log_upload': autoErrorLogUpload,
+    };
+  }
+
+  factory GeneralSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          json['auto_language_detection'] as bool? ?? true,
+      microphoneSensitivity:
+          (json['microphone_sensitivity'] as num?)?.toDouble() ?? 0.72,
+      ttsSpeed: (json['tts_speed'] as num?)?.toDouble() ?? 1.0,
+      voiceType: json['voice_type'] as String? ?? 'ko-KR-Neural2-A',
+      autoErrorLogUpload: json['auto_error_log_upload'] as bool? ?? false,
+    );
+  }
+}
+
+class ShortcutSettings {
+  const ShortcutSettings({
+    required this.enabled,
+    required this.listenToggle,
+    required this.screenRead,
+    required this.openSettings,
+  });
+
+  final bool enabled;
+  final String listenToggle;
+  final String screenRead;
+  final String openSettings;
+
+  ShortcutSettings copyWith({
+    bool? enabled,
+    String? listenToggle,
+    String? screenRead,
+    String? openSettings,
+  }) {
+    return ShortcutSettings(
+      enabled: enabled ?? this.enabled,
+      listenToggle: listenToggle ?? this.listenToggle,
+      screenRead: screenRead ?? this.screenRead,
+      openSettings: openSettings ?? this.openSettings,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'enabled': enabled,
+      'listen_toggle': listenToggle,
+      'screen_read': screenRead,
+      'open_settings': openSettings,
+    };
+  }
+
+  factory ShortcutSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return ShortcutSettings(
+      enabled: json['enabled'] as bool? ?? true,
+      listenToggle: json['listen_toggle'] as String? ?? 'F2',
+      screenRead: json['screen_read'] as String? ?? 'F3',
+      openSettings: json['open_settings'] as String? ?? 'F4',
+    );
+  }
+}
+
+class SecuritySettings {
+  const SecuritySettings({
+    required this.secureInputMode,
+    required this.sensitiveDomainAlert,
+  });
+
+  final bool secureInputMode;
+  final bool sensitiveDomainAlert;
+
+  SecuritySettings copyWith({
+    bool? secureInputMode,
+    bool? sensitiveDomainAlert,
+  }) {
+    return SecuritySettings(
+      secureInputMode: secureInputMode ?? this.secureInputMode,
+      sensitiveDomainAlert:
+          sensitiveDomainAlert ?? this.sensitiveDomainAlert,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'secure_input_mode': secureInputMode,
+      'sensitive_domain_alert': sensitiveDomainAlert,
+    };
+  }
+
+  factory SecuritySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return SecuritySettings(
+      secureInputMode: json['secure_input_mode'] as bool? ?? false,
+      sensitiveDomainAlert:
+          json['sensitive_domain_alert'] as bool? ?? true,
+    );
+  }
+}
+
+class DisplaySettings {
+  const DisplaySettings({
+    required this.darkTheme,
+    required this.highContrast,
+    required this.largeText,
+  });
+
+  final bool darkTheme;
+  final bool highContrast;
+  final bool largeText;
+
+  DisplaySettings copyWith({
+    bool? darkTheme,
+    bool? highContrast,
+    bool? largeText,
+  }) {
+    return DisplaySettings(
+      darkTheme: darkTheme ?? this.darkTheme,
+      highContrast: highContrast ?? this.highContrast,
+      largeText: largeText ?? this.largeText,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'dark_theme': darkTheme,
+      'high_contrast': highContrast,
+      'large_text': largeText,
+    };
+  }
+
+  factory DisplaySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return DisplaySettings(
+      darkTheme: json['dark_theme'] as bool? ?? false,
+      highContrast: json['high_contrast'] as bool? ?? false,
+      largeText: json['large_text'] as bool? ?? false,
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>2. colors.dart</h2>
+        <div class="file-path">lib/app/theme/colors.dart</div>
+        <p>
+          이 파일은 앱에서 공통으로 쓸 색을 한곳에 모아두는 파일입니다.
+          숫자 색상값을 각 화면에 직접 쓰지 않고, 의미 있는 이름으로 관리하려는
+          목적입니다.
+        </p>
+        <h3>왜 필요한가</h3>
+        <ul>
+          <li>색을 바꾸고 싶을 때 한 곳만 수정하면 됩니다.</li>
+          <li>코드가 <code>Color(0x...)</code>보다 읽기 쉬워집니다.</li>
+          <li>화면 전반의 톤이 통일됩니다.</li>
+        </ul>
+        <h3>최종 코드</h3>
+        <pre><code>import 'package:flutter/material.dart';
+
+class AppColors {
+  AppColors._();
+
+  static const Color accent = Color(0xFF2563EB);
+  static const Color accentSoft = Color(0xFFEFF6FF);
+
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color shellBackground = Color(0xFFF1F5F9);
+  static const Color surface = Colors.white;
+
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+
+  static const Color border = Color(0xFFE2E8F0);
+
+  static const Color success = Color(0xFF16A34A);
+  static const Color successSoft = Color(0xFFDCFCE7);
+
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
+
+  static const Color error = Color(0xFFDC2626);
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>3. typography.dart</h2>
+        <div class="file-path">lib/app/theme/typography.dart</div>
+        <p>
+          이 파일은 앱 전체 텍스트 스타일의 기본 규칙을 정리합니다. 제목,
+          본문, 버튼 라벨이 제각각 놀지 않게 만드는 역할입니다.
+        </p>
+        <div class="callout">
+          <strong>중요 개념:</strong> <code>TextTheme</code>는 앱 전체 글자
+          스타일 묶음이고, <code>copyWith()</code>로 일부만 수정해서
+          사용합니다.
+        </div>
+        <h3>최종 코드</h3>
+        <pre><code>import 'package:flutter/material.dart';
+
+TextTheme buildTextTheme(TextTheme base) {
+  return base.copyWith(
+    headlineLarge: base.headlineLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w800,
+      fontSize: 32,
+      height: 1.2,
+    ),
+    headlineMedium: base.headlineMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 28,
+      height: 1.25,
+    ),
+    titleLarge: base.titleLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 20,
+      height: 1.3,
+    ),
+    titleMedium: base.titleMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w600,
+      fontSize: 16,
+      height: 1.35,
+    ),
+    bodyLarge: base.bodyLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w500,
+      fontSize: 15,
+      height: 1.5,
+    ),
+    bodyMedium: base.bodyMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w400,
+      fontSize: 14,
+      height: 1.45,
+    ),
+    bodySmall: base.bodySmall?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w400,
+      fontSize: 12,
+      height: 1.4,
+    ),
+    labelLarge: base.labelLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 14,
+      height: 1.2,
+    ),
+  );
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>4. app_theme.dart</h2>
+        <div class="file-path">lib/app/theme/app_theme.dart</div>
+        <p>
+          이 파일은 오늘 만든 재료들을 하나로 조합해서 실제 앱 테마를
+          만들어냅니다. <code>DisplaySettings</code>를 읽고 라이트 모드,
+          다크 모드, 고대비, 큰 글씨를 반영합니다.
+        </p>
+        <h3>핵심 흐름</h3>
+        <ol>
+          <li><code>display</code>를 읽습니다.</li>
+          <li>현재 모드에 맞는 색상을 계산합니다.</li>
+          <li><code>buildTextTheme()</code>를 호출합니다.</li>
+          <li><code>ThemeData</code>를 만들어 버튼, 입력창, 카드 스타일을 정합니다.</li>
+          <li><code>ThemeExtension</code>으로 앱 전용 색상 묶음을 추가합니다.</li>
+        </ol>
+        <h3>최종 코드</h3>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../../shared/models/settings_models.dart';
+import 'colors.dart';
+import 'typography.dart';
+
+ThemeData buildAppTheme({DisplaySettings? display}) {
+  final activeDisplay = display ??
+      const DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      );
+
+  final brightness =
+      activeDisplay.darkTheme ? Brightness.dark : Brightness.light;
+
+  final base = ThemeData(
+    brightness: brightness,
+    useMaterial3: true,
+    fontFamily: 'Pretendard',
+  );
+
+  final isDark = activeDisplay.darkTheme;
+  final isHighContrast = activeDisplay.highContrast;
+
+  final background = isHighContrast
+      ? Colors.black
+      : (isDark ? const Color(0xFF101214) : AppColors.background);
+
+  final surface = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF181B20) : AppColors.surface);
+
+  final scaffold = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF0D1117) : AppColors.shellBackground);
+
+  final textPrimary = isHighContrast
+      ? Colors.white
+      : (isDark ? const Color(0xFFF3F4F6) : AppColors.textPrimary);
+
+  final textMuted = isHighContrast
+      ? const Color(0xFFE5E7EB)
+      : (isDark ? const Color(0xFFCBD5E1) : AppColors.textMuted);
+
+  final border = isHighContrast
+      ? const Color(0xFFFFFFFF)
+      : (isDark ? const Color(0xFF3A4250) : AppColors.border);
+
+  final accent = isHighContrast
+      ? const Color(0xFFFFFF00)
+      : (isDark ? const Color(0xFF60A5FA) : AppColors.accent);
+
+  final rawTextTheme = buildTextTheme(base.textTheme).apply(
+    bodyColor: textPrimary,
+    displayColor: textPrimary,
+    fontFamily: 'Pretendard',
+  );
+
+  final textTheme =
+      _scaleTextTheme(rawTextTheme, activeDisplay.largeText ? 1.14 : 1.0);
+
+  return base.copyWith(
+    scaffoldBackgroundColor: scaffold,
+    colorScheme: ColorScheme(
+      brightness: brightness,
+      primary: accent,
+      onPrimary: isHighContrast ? Colors.black : Colors.white,
+      secondary: accent,
+      onSecondary: isHighContrast ? Colors.black : Colors.white,
+      error: AppColors.error,
+      onError: Colors.white,
+      surface: surface,
+      onSurface: textPrimary,
+    ),
+    textTheme: textTheme,
+    dividerColor: border,
+    cardTheme: CardThemeData(
+      color: surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: border),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: background,
+      hintStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textMuted,
+        fontSize: 13,
+      ),
+      labelStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textMuted,
+        fontSize: 13,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: accent, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: isHighContrast ? Colors.black : Colors.white,
+        minimumSize: const Size.fromHeight(54),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(54),
+        backgroundColor: surface,
+        side: BorderSide(color: border),
+        foregroundColor: textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: surface,
+      contentTextStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textPrimary,
+        fontSize: activeDisplay.largeText ? 14 : 13,
+        fontWeight: FontWeight.w500,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    extensions: &lt;ThemeExtension&lt;dynamic&gt;&gt;[
+      AppSurfaceTheme(
+        shellBackground: scaffold,
+        contentBackground: background,
+        surface: surface,
+        textPrimary: textPrimary,
+        textMuted: textMuted,
+        border: border,
+        accent: accent,
+      ),
+    ],
+  );
+}
+
+TextTheme _scaleTextTheme(TextTheme theme, double factor) {
+  if (factor == 1.0) {
+    return theme;
+  }
+
+  TextStyle? scale(TextStyle? style) =&gt; style?.copyWith(
+        fontSize: style.fontSize == null ? null : style.fontSize! * factor,
+      );
+
+  return theme.copyWith(
+    displayLarge: scale(theme.displayLarge),
+    displayMedium: scale(theme.displayMedium),
+    displaySmall: scale(theme.displaySmall),
+    headlineLarge: scale(theme.headlineLarge),
+    headlineMedium: scale(theme.headlineMedium),
+    headlineSmall: scale(theme.headlineSmall),
+    titleLarge: scale(theme.titleLarge),
+    titleMedium: scale(theme.titleMedium),
+    titleSmall: scale(theme.titleSmall),
+    bodyLarge: scale(theme.bodyLarge),
+    bodyMedium: scale(theme.bodyMedium),
+    bodySmall: scale(theme.bodySmall),
+    labelLarge: scale(theme.labelLarge),
+    labelMedium: scale(theme.labelMedium),
+    labelSmall: scale(theme.labelSmall),
+  );
+}
+
+@immutable
+class AppSurfaceTheme extends ThemeExtension&lt;AppSurfaceTheme&gt; {
+  const AppSurfaceTheme({
+    required this.shellBackground,
+    required this.contentBackground,
+    required this.surface,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.border,
+    required this.accent,
+  });
+
+  final Color shellBackground;
+  final Color contentBackground;
+  final Color surface;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color border;
+  final Color accent;
+
+  @override
+  AppSurfaceTheme copyWith({
+    Color? shellBackground,
+    Color? contentBackground,
+    Color? surface,
+    Color? textPrimary,
+    Color? textMuted,
+    Color? border,
+    Color? accent,
+  }) {
+    return AppSurfaceTheme(
+      shellBackground: shellBackground ?? this.shellBackground,
+      contentBackground: contentBackground ?? this.contentBackground,
+      surface: surface ?? this.surface,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textMuted: textMuted ?? this.textMuted,
+      border: border ?? this.border,
+      accent: accent ?? this.accent,
+    );
+  }
+
+  @override
+  AppSurfaceTheme lerp(ThemeExtension&lt;AppSurfaceTheme&gt;? other, double t) {
+    if (other is! AppSurfaceTheme) {
+      return this;
+    }
+
+    return AppSurfaceTheme(
+      shellBackground: Color.lerp(shellBackground, other.shellBackground, t)!,
+      contentBackground:
+          Color.lerp(contentBackground, other.contentBackground, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>5. app_shell.dart</h2>
+        <div class="file-path">lib/app/app_shell.dart</div>
+        <p>
+          마지막 단계는 앞에서 만든 테마를 실제 앱에 연결하는 것입니다.
+          <code>MaterialApp</code>의 <code>theme:</code>에
+          <code>buildAppTheme()</code>를 연결하면 그 아래 모든 화면이 같은
+          테마를 공유하게 됩니다.
+        </p>
+        <h3>핵심 포인트</h3>
+        <ul>
+          <li>앱 시작 시 설정을 먼저 <code>load()</code> 합니다.</li>
+          <li><code>ref.watch(settingsControllerProvider)</code>로 현재 설정을 구독합니다.</li>
+          <li><code>buildAppTheme(display: settings.display)</code>로 실제 테마를 만듭니다.</li>
+          <li><code>MediaQuery</code>와 <code>DefaultTextStyle</code>로 전역 글자 처리도 적용합니다.</li>
+        </ul>
+        <h3>최종 코드</h3>
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../features/settings/application/settings_controller.dart';
+import 'mode_launcher_page.dart';
+import 'theme/app_theme.dart';
+
+class VoiceNavigatorApp extends ConsumerStatefulWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  ConsumerState&lt;VoiceNavigatorApp&gt; createState() =&gt; _VoiceNavigatorAppState();
+}
+
+class _VoiceNavigatorAppState extends ConsumerState&lt;VoiceNavigatorApp&gt; {
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(settingsControllerProvider.notifier).load();
+      if (mounted) {
+        setState(() =&gt; _loaded = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+
+    return MaterialApp(
+      title: 'Navi: Voice Navigator',
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(display: settings.display),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final scale = settings.display.largeText ? 1.32 : 1.0;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(fontFamily: 'Pretendard'),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
+      home: _loaded
+          ? const ModeLauncherPage()
+          : const Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.8),
+                ),
+              ),
+            ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>1일차 마무리 체크</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>완료 기준</h3>
+            <ul>
+              <li><code>lib/app/theme/</code> 폴더가 생겼다.</li>
+              <li>앱이 에러 없이 실행된다.</li>
+              <li><code>MaterialApp</code>에 전역 테마가 연결됐다.</li>
+              <li><code>DisplaySettings</code>에 다크/고대비/큰 글씨가 있다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>꼭 이해해야 하는 개념</h3>
+            <ul>
+              <li><code>copyWith()</code></li>
+              <li><code>ThemeData</code></li>
+              <li><code>TextTheme</code></li>
+              <li><code>ThemeExtension</code></li>
+              <li><code>MaterialApp(theme: ...)</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>다음 단계 준비</h3>
+            <p>
+              2일차부터는 이 테마 위에서 모드 선택 화면과 실제 모드/데모 모드
+              UI를 만들면 됩니다. 오늘 만든 코드는 이후 화면들의 공통 기반이
+              됩니다.
+            </p>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 20px;">
+          문서 파일 위치:
+          <code>docs/day1_flutter_theme_tutorial.html</code>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
