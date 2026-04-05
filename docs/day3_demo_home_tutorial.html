@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3일차 데모 모드 UI 튜토리얼</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      .card {
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin-top: 14px;
+      }
+
+      h2 {
+        font-size: 28px;
+        margin-top: 44px;
+      }
+
+      h3 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .step strong {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.95em;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid .card {
+        margin-top: 0;
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Day 3 Tutorial</span>
+        <h1>Flutter 3일차: 데모 모드 UI 만들기</h1>
+        <p class="lead">
+          이 문서는 3일차에 진행한
+          <code>demo_home_page.dart</code> 작업을 클론코딩/튜토리얼 방식으로
+          다시 읽을 수 있게 정리한 문서입니다.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <strong>1단계</strong>
+            <p><code>StatelessWidget</code>을 <code>StatefulWidget</code>으로 바꿉니다.</p>
+          </div>
+          <div class="step">
+            <strong>2단계</strong>
+            <p>데모 전용 상태값을 추가해 화면이 상태에 따라 변하게 만듭니다.</p>
+          </div>
+          <div class="step">
+            <strong>3단계</strong>
+            <p>실제 모드와 비슷한 레이아웃으로 데모 화면을 구성합니다.</p>
+          </div>
+          <div class="step">
+            <strong>4단계</strong>
+            <p><code>Future.delayed</code>로 데모용 상태 흐름을 만듭니다.</p>
+          </div>
+          <div class="step">
+            <strong>5단계</strong>
+            <p>결과 요약과 후속 질문을 화면에 표시합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>오늘의 목표</h2>
+        <div class="card">
+          <ul>
+            <li><code>DemoHomePage</code>가 더 이상 임시 안내 화면이 아니어야 합니다.</li>
+            <li>왼쪽 액션 패널, 상단 상태 카드, 중앙 결과 영역이 보여야 합니다.</li>
+            <li><code>음성 듣기</code>, <code>현재 화면 읽기</code>, 텍스트 명령 입력이 동작해야 합니다.</li>
+            <li>상태가 <code>대기 → 듣는 중 → 처리중 → 완료</code>처럼 보이게 해야 합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>먼저 이해할 개념</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>StatefulWidget</h3>
+            <p>버튼 클릭에 따라 값이 바뀌는 화면을 만들 때 필요한 기본 형태입니다.</p>
+          </div>
+          <div class="card">
+            <h3>setState()</h3>
+            <p>상태값이 바뀌었으니 화면을 다시 그려달라고 Flutter에 알리는 함수입니다.</p>
+          </div>
+          <div class="card">
+            <h3>Future.delayed</h3>
+            <p>실제 처리처럼 보이는 시간차 흐름을 만들 때 사용합니다.</p>
+          </div>
+          <div class="card">
+            <h3>상태 기반 UI</h3>
+            <p><code>_isBusy</code>, <code>_isRecording</code>, <code>_summary</code> 값에 따라 화면이 바뀝니다.</p>
+          </div>
+          <div class="card">
+            <h3>공통 위젯 재사용</h3>
+            <p><code>ActionPanel</code>, <code>ReadyState</code>, <code>StatusCard</code>, <code>AppTitleBar</code>를 재사용합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>1. StatefulWidget으로 전환하기</h2>
+        <div class="file-path">lib/demo/demo_home_page.dart</div>
+        <p>
+          데모 화면은 버튼 클릭 후 값이 계속 바뀌어야 합니다. 그래서 기존의
+          <code>StatelessWidget</code> 형태로는 부족하고,
+          <code>StatefulWidget</code>으로 전환해야 합니다.
+        </p>
+        <div class="callout">
+          <strong>핵심 생각:</strong> 데모 화면은 정적인 설명 페이지가 아니라,
+          내부 상태를 가진 시뮬레이션 화면입니다.
+        </div>
+      </section>
+
+      <section>
+        <h2>2. 데모용 상태값 추가하기</h2>
+        <div class="card">
+          <p>3일차에서 추가하는 대표 상태값은 아래와 같습니다.</p>
+          <ul>
+            <li><code>_micStatus</code>: 상단 상태 카드에 보여줄 마이크 상태</li>
+            <li><code>_isRecording</code>: 현재 듣는 중인지 여부</li>
+            <li><code>_isBusy</code>: 처리 중인지 여부</li>
+            <li><code>_summary</code>: 결과 요약</li>
+            <li><code>_followUp</code>: 후속 질문</li>
+          </ul>
+          <pre><code>String _micStatus = '대기';
+bool _isRecording = false;
+bool _isBusy = false;
+String? _summary;
+String? _followUp;</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. 실제 모드와 비슷한 레이아웃 만들기</h2>
+        <div class="card">
+          <p>
+            데모 모드도 실제 모드와 비슷한 구조를 가져야 사용자가 두 모드를 같은
+            앱 안의 흐름으로 느낄 수 있습니다.
+          </p>
+          <h3>레이아웃 구조</h3>
+          <pre><code>Scaffold
+  SafeArea
+    Column
+      AppTitleBar
+      상태 카드 Row
+      Expanded
+        Row
+          왼쪽 ActionPanel
+          가운데 ReadyState</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. 데모 흐름 만들기</h2>
+        <div class="card">
+          <p>
+            핵심은 버튼을 누르면 실제 처리처럼 보이는 흐름을 만드는 것입니다.
+          </p>
+          <h3>음성 듣기 흐름</h3>
+          <ol>
+            <li><code>듣는 중</code> 상태로 바뀜</li>
+            <li>잠시 후 <code>처리중</code> 상태로 바뀜</li>
+            <li>잠시 후 결과 요약과 후속 질문 표시</li>
+          </ol>
+          <h3>현재 화면 읽기 흐름</h3>
+          <ol>
+            <li><code>처리중</code> 상태로 바뀜</li>
+            <li>잠시 후 화면 설명 결과 표시</li>
+          </ol>
+          <h3>텍스트 명령 흐름</h3>
+          <ol>
+            <li><code>처리중</code> 상태로 바뀜</li>
+            <li>입력한 텍스트를 포함한 결과 문구 표시</li>
+          </ol>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. 왜 _isBusy와 mounted 체크가 필요한가</h2>
+        <div class="card">
+          <p>
+            <code>_isBusy</code>는 처리 중에 중복 클릭을 막기 위해 필요합니다.
+            이 값이 없으면 데모 흐름이 쉽게 꼬입니다.
+          </p>
+          <pre><code>if (_isBusy) {
+  return;
+}</code></pre>
+          <p>
+            <code>mounted</code>는 비동기 작업이 끝날 때 화면이 아직 살아 있는지
+            확인하는 안전장치입니다.
+          </p>
+          <pre><code>if (!mounted) {
+  return;
+}</code></pre>
+        </div>
+      </section>
+
+      <section>
+        <h2>최종 코드: demo_home_page.dart</h2>
+        <div class="file-path">lib/demo/demo_home_page.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../features/home/presentation/widgets/action_panel.dart';
+import '../features/home/presentation/widgets/ready_state.dart';
+import '../features/home/presentation/widgets/status_card.dart';
+import '../features/home/presentation/widgets/title_bar.dart';
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  String _micStatus = '대기';
+  bool _isRecording = false;
+  bool _isBusy = false;
+  String? _summary;
+  String? _followUp;
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = '듣는 중';
+      _summary = '음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = '처리중';
+      _isRecording = false;
+      _summary = '명령을 분석하고 실행 계획을 준비하고 있습니다.';
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '유튜브 검색 결과를 준비했습니다.';
+      _followUp = '첫 번째 결과를 재생할까요?';
+    });
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '화면을 읽어드리고 있습니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary =
+          '현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.';
+      _followUp = '다른 화면도 읽어드릴까요?';
+    });
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '텍스트 명령을 처리하고 있습니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '텍스트 명령 "$text" 처리 결과입니다.';
+      _followUp = '이어서 다음 작업도 진행할까요?';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: '마이크 상태',
+                      value: _micStatus,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: '현재 모드',
+                      value: '데모 모드',
+                      icon: Icons.play_circle_outline_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: _isRecording,
+                      onListenPressed: _simulateListen,
+                      onScreenReadPressed: _simulateScreenRead,
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: _summary,
+                      followUp: _followUp,
+                      isBusy: _isBusy,
+                      onSubmitText: _handleTextCommand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>3일차 완료 기준</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>화면 기준</h3>
+            <ul>
+              <li><code>DemoHomePage</code>가 더 이상 플레이스홀더가 아닙니다.</li>
+              <li>상단 상태 카드, 왼쪽 액션 패널, 중앙 결과 영역이 보입니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>동작 기준</h3>
+            <ul>
+              <li><code>음성 듣기</code> 버튼이 상태 흐름을 보여줍니다.</li>
+              <li><code>현재 화면 읽기</code> 버튼이 결과를 출력합니다.</li>
+              <li>텍스트 명령 입력이 결과 요약에 반영됩니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>학습 기준</h3>
+            <ul>
+              <li><code>StatefulWidget</code>을 왜 쓰는지 설명할 수 있습니다.</li>
+              <li><code>setState()</code>가 언제 필요한지 이해합니다.</li>
+              <li><code>Future.delayed</code>가 데모 흐름에 왜 적합한지 설명할 수 있습니다.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 20px;">
+          문서 파일 위치:
+          <code>docs/day3_demo_home_tutorial.html</code>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
