@@ -49,9 +49,17 @@ class SettingsController extends StateNotifier<AppSettings> {
       shortcuts: state.shortcuts.copyWith(openSettings: value),
     );
   }
+
+  void setHighContrast(bool value) {
+  state = state.copyWith(
+    display: state.display.copyWith(highContrast: value),
+  );
+}
+
 }
 
 final settingsControllerProvider =
     StateNotifierProvider<SettingsController, AppSettings>((ref) {
   return SettingsController();
 });
+

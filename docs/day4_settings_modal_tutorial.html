@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4일차 설정 모달 튜토리얼</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      .card {
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin-top: 14px;
+      }
+
+      h2 {
+        font-size: 28px;
+        margin-top: 44px;
+      }
+
+      h3 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .step strong {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.95em;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid .card {
+        margin-top: 0;
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Day 4 Tutorial</span>
+        <h1>Flutter 4일차: 설정 모달 고도화</h1>
+        <p class="lead">
+          이 문서는 4일차에 진행한
+          <code>settings_modal.dart</code>와
+          <code>settings_controller.dart</code> 변경을 튜토리얼 방식으로 다시
+          읽을 수 있게 정리한 문서입니다.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <strong>1단계</strong>
+            <p>설정 모달을 탭 구조를 가진 상태형 위젯으로 바꿉니다.</p>
+          </div>
+          <div class="step">
+            <strong>2단계</strong>
+            <p>좌측 메뉴와 우측 내용 영역으로 설정 화면을 나눕니다.</p>
+          </div>
+          <div class="step">
+            <strong>3단계</strong>
+            <p>기본 설정, 단축키, 보안, 화면 설정 탭을 구성합니다.</p>
+          </div>
+          <div class="step">
+            <strong>4단계</strong>
+            <p>저장/닫기 바를 추가해 실제 설정창처럼 마무리합니다.</p>
+          </div>
+          <div class="step">
+            <strong>5단계</strong>
+            <p>고대비 옵션을 컨트롤러와 연결해 상태 반영까지 완성합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>오늘의 목표</h2>
+        <div class="card">
+          <ul>
+            <li>설정 모달이 단순 세로 나열 화면에서 벗어나야 합니다.</li>
+            <li>좌측 탭 메뉴와 우측 내용 패널이 분리된 구조여야 합니다.</li>
+            <li>다크 테마, 큰 글씨, 고대비, 보안 입력 모드, 단축키를 분명히 조절할 수 있어야 합니다.</li>
+            <li>저장/닫기 흐름은 유지해야 합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>먼저 이해할 개념</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>ConsumerStatefulWidget</h3>
+            <p>Riverpod 상태를 읽으면서, 탭 선택 상태 같은 UI 전용 상태도 직접 관리할 수 있습니다.</p>
+          </div>
+          <div class="card">
+            <h3>_selectedTab</h3>
+            <p>현재 보고 있는 설정 카테고리를 숫자로 관리하는 간단한 방식입니다.</p>
+          </div>
+          <div class="card">
+            <h3>Row + Expanded</h3>
+            <p>좌측 메뉴와 우측 내용 패널을 가로로 나누는 핵심 레이아웃 구조입니다.</p>
+          </div>
+          <div class="card">
+            <h3>SingleChildScrollView</h3>
+            <p>설정 항목이 길어져도 오른쪽 패널 안에서 스크롤할 수 있게 만듭니다.</p>
+          </div>
+          <div class="card">
+            <h3>SwitchListTile / TextField</h3>
+            <p>토글형 설정과 입력형 설정을 빠르게 구성하는 기본 위젯입니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>1. SettingsModal을 상태형으로 바꾸기</h2>
+        <div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+        <p>
+          이제 설정 화면에는 탭 전환 상태가 생기므로
+          <code>ConsumerWidget</code>만으로는 부족합니다.
+          <code>ConsumerStatefulWidget</code>으로 바꿔야 합니다.
+        </p>
+        <div class="callout">
+          <strong>핵심 생각:</strong> 설정 값 자체는 Riverpod에 있고, 현재 어떤
+          탭을 보고 있는지는 모달 내부 상태로 관리합니다.
+        </div>
+        <pre><code>class SettingsModal extends ConsumerStatefulWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
+}
+
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
+  static const List&lt;String&gt; _tabs = [
+    '기본 설정',
+    '단축키',
+    '보안',
+    '화면 설정',
+  ];
+
+  int _selectedTab = 0;
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>2. 전체 레이아웃을 다시 잡기</h2>
+        <div class="card">
+          <p>
+            4일차의 핵심은 “헤더 / 좌측 메뉴 / 우측 내용 / 하단 버튼” 구조를
+            만드는 것입니다.
+          </p>
+          <h3>레이아웃 구조</h3>
+          <pre><code>Center
+  Container
+    Column
+      헤더
+      Divider
+      Expanded
+        Row
+          좌측 탭 메뉴
+          세로 구분선
+          우측 스크롤 내용 영역
+      하단 저장/닫기 바</code></pre>
+          <p>
+            이 구조를 쓰면 설정 화면이 훨씬 “완성형 앱”처럼 보입니다.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. 좌측 사이드바 만들기</h2>
+        <div class="card">
+          <p>
+            탭 메뉴는 <code>ListView.builder</code>로 반복 생성합니다.
+            현재 선택된 탭은 <code>_selectedTab</code>과 비교해서 스타일을
+            다르게 적용합니다.
+          </p>
+          <pre><code>final selected = _selectedTab == index;
+
+onTap: () {
+  setState(() =&gt; _selectedTab = index);
+}</code></pre>
+          <p>
+            이렇게 하면 탭을 누를 때마다 오른쪽 내용 패널이 함께 바뀝니다.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. 오른쪽 본문을 탭별로 분기하기</h2>
+        <div class="card">
+          <p>
+            오른쪽 내용 영역은 하나의 화면이 아니라,
+            <code>_selectedTab</code> 값에 따라 다른 위젯을 반환하는 구조입니다.
+          </p>
+          <pre><code>Widget _buildBody(
+  AppSettings settings,
+  SettingsController notifier,
+) {
+  switch (_selectedTab) {
+    case 0:
+      return _buildGeneralTab(settings);
+    case 1:
+      return _buildShortcutsTab(settings, notifier);
+    case 2:
+      return _buildSecurityTab(settings, notifier);
+    case 3:
+      return _buildDisplayTab(settings, notifier);
+    default:
+      return _buildGeneralTab(settings);
+  }
+}</code></pre>
+          <p>
+            이 방식은 설정 항목이 늘어나도 구조를 유지하기 쉬운 장점이 있습니다.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. 탭별 내용 구성</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>기본 설정</h3>
+            <p>
+              4일차에는 우선 현재 값을 보여주는 정보 카드 중심으로 구성합니다.
+              편집보다 구조가 더 중요하기 때문입니다.
+            </p>
+          </div>
+          <div class="card">
+            <h3>단축키</h3>
+            <p>
+              키 캡처까지는 가지 않고, 먼저 <code>TextField</code>로 입력값을
+              수정할 수 있게 합니다.
+            </p>
+          </div>
+          <div class="card">
+            <h3>보안</h3>
+            <p>
+              <code>SwitchListTile</code>로 보안 입력 모드를 명확히 조절하게
+              합니다.
+            </p>
+          </div>
+          <div class="card">
+            <h3>화면 설정</h3>
+            <p>
+              다크 테마, 큰 글씨, 고대비를 모아서 앱의 화면 옵션을 한눈에
+              보이게 합니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>6. 저장/닫기 바 만들기</h2>
+        <div class="card">
+          <p>
+            하단 버튼 영역은 기존 저장 로직은 유지하면서 UI만 더 정돈하는
+            역할입니다.
+          </p>
+          <pre><code>ElevatedButton(
+  onPressed: () async {
+    await notifier.save();
+    if (mounted) {
+      widget.onClose();
+    }
+  },
+  child: const Text('저장'),
+)</code></pre>
+          <p>
+            즉, 4일차는 구조를 고도화하는 날이지, 기존 설정 저장 흐름을
+            바꾸는 날은 아닙니다.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>7. settings_controller.dart에서 확인할 점</h2>
+        <div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+        <p>
+          화면 설정 탭에서 <code>고대비</code>를 추가했다면 컨트롤러에도 그
+          값을 반영하는 메서드가 필요합니다.
+        </p>
+        <pre><code>void setHighContrast(bool value) {
+  state = state.copyWith(
+    display: state.display.copyWith(highContrast: value),
+  );
+}</code></pre>
+        <p>
+          이렇게 해야 설정 모달의 토글이 실제 상태와 연결됩니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>최종 코드 1: settings_modal.dart</h2>
+        <div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/models/settings_models.dart';
+import '../application/settings_controller.dart';
+
+class SettingsModal extends ConsumerStatefulWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
+}
+
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
+  static const List&lt;String&gt; _tabs = [
+    '기본 설정',
+    '단축키',
+    '보안',
+    '화면 설정',
+  ];
+
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+    final notifier = ref.read(settingsControllerProvider.notifier);
+
+    return Center(
+      child: Container(
+        width: 820,
+        height: 620,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const Divider(height: 1),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSidebar(),
+                  Container(
+                    width: 1,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildBody(settings, notifier),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildFooter(notifier),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+      child: Row(
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '설정',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '앱 설정과 화면 옵션을 조정합니다.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onClose,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    return SizedBox(
+      width: 190,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _tabs.length,
+        itemBuilder: (context, index) {
+          final selected = _selectedTab == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                setState(() =&gt; _selectedTab = index);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    switch (_selectedTab) {
+      case 0:
+        return _buildGeneralTab(settings);
+      case 1:
+        return _buildShortcutsTab(settings, notifier);
+      case 2:
+        return _buildSecurityTab(settings, notifier);
+      case 3:
+        return _buildDisplayTab(settings, notifier);
+      default:
+        return _buildGeneralTab(settings);
+    }
+  }
+
+  Widget _buildGeneralTab(AppSettings settings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '기본 설정',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '앱의 기본 동작에 관련된 항목입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildInfoTile(
+          title: '자동 언어 감지',
+          description:
+              settings.general.autoLanguageDetection ? '사용 중' : '사용 안 함',
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: '마이크 감도',
+          description:
+              settings.general.microphoneSensitivity.toStringAsFixed(2),
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: '음성 속도',
+          description: settings.general.ttsSpeed.toStringAsFixed(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShortcutsTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '단축키',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '자주 사용하는 기능의 단축키를 수정합니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.listenToggle,
+          ),
+          decoration: const InputDecoration(
+            labelText: '음성 듣기 단축키',
+          ),
+          onChanged: notifier.setListenToggleShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.screenRead,
+          ),
+          decoration: const InputDecoration(
+            labelText: '화면 읽기 단축키',
+          ),
+          onChanged: notifier.setScreenReadShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.openSettings,
+          ),
+          decoration: const InputDecoration(
+            labelText: '설정 열기 단축키',
+          ),
+          onChanged: notifier.setOpenSettingsShortcut,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '보안',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '민감한 입력과 안내 관련 옵션입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text('보안 입력 모드'),
+          subtitle: const Text('민감한 입력 상황에서 읽기와 입력을 제한합니다.'),
+          value: settings.security.secureInputMode,
+          onChanged: notifier.setSecureMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '화면 설정',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '테마와 글자 크기 같은 화면 표시 옵션입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text('다크 테마'),
+          subtitle: const Text('어두운 배경 테마를 사용합니다.'),
+          value: settings.display.darkTheme,
+          onChanged: notifier.setDarkTheme,
+        ),
+        SwitchListTile(
+          title: const Text('큰 글씨'),
+          subtitle: const Text('앱 전체 텍스트를 더 크게 표시합니다.'),
+          value: settings.display.largeText,
+          onChanged: notifier.setLargeText,
+        ),
+        SwitchListTile(
+          title: const Text('고대비'),
+          subtitle: const Text('명암 대비를 높여 가독성을 향상합니다.'),
+          value: settings.display.highContrast,
+          onChanged: notifier.setHighContrast,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(SettingsController notifier) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            '변경 후 저장을 누르면 설정 파일에 반영됩니다.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: widget.onClose,
+            child: const Text('닫기'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () async {
+              await notifier.save();
+              if (mounted) {
+                widget.onClose();
+              }
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 2: settings_controller.dart 추가 포인트</h2>
+        <div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+        <pre><code>void setHighContrast(bool value) {
+  state = state.copyWith(
+    display: state.display.copyWith(highContrast: value),
+  );
+}</code></pre>
+        <p>
+          화면 설정 탭의 고대비 토글이 실제 상태에 반영되도록 하는 최소 연결
+          코드입니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>4일차 완료 기준</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>화면 기준</h3>
+            <ul>
+              <li>설정 모달이 탭형 레이아웃을 갖습니다.</li>
+              <li>좌측 메뉴와 우측 내용 패널이 분리되어 보입니다.</li>
+              <li>저장/닫기 버튼 바가 하단에 정리됩니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>동작 기준</h3>
+            <ul>
+              <li>탭을 클릭하면 오른쪽 내용이 바뀝니다.</li>
+              <li>다크 테마, 큰 글씨, 고대비, 보안 모드가 조절됩니다.</li>
+              <li>저장을 누르면 기존 저장 흐름이 유지됩니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>학습 기준</h3>
+            <ul>
+              <li><code>ConsumerStatefulWidget</code>이 왜 필요한지 설명할 수 있습니다.</li>
+              <li><code>_selectedTab</code> 상태 관리 원리를 이해합니다.</li>
+              <li>설정 화면을 카테고리별로 나누는 이유를 설명할 수 있습니다.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 20px;">
+          문서 파일 위치:
+          <code>docs/day4_settings_modal_tutorial.html</code>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
