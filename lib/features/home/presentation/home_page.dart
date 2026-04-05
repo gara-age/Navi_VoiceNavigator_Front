@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../listening/application/listening_controller.dart';
+import '../../notifications/presentation/app_toast.dart';
 import '../../session/application/session_controller.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/settings_modal.dart';
@@ -29,12 +30,36 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (!session.isRecording) {
       listeningNotifier.startListening();
       await sessionNotifier.startListening();
+      if (mounted) {
+        showAppToast(
+          context,
+          '음성을 듣고 있습니다. 말씀해주세요.',
+          title: '음성 수신 중',
+          state: AppToastState.listening,
+        );
+      }
       return;
     }
 
     listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '작업을 처리하고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
     await sessionNotifier.stopListeningAndProcess();
     listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '결과를 읽어드립니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
   }
 
   Future<void> _handleScreenRead() async {
@@ -42,8 +67,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
 
     listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '화면을 읽어드리고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
     await sessionNotifier.triggerScreenRead();
     listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '화면을 읽어드렸습니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
   }
 
   Future<void> _handleSubmitText(String text) async {
@@ -51,8 +92,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
 
     listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '텍스트 명령을 처리하고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
     await sessionNotifier.submitTextCommand(text);
     listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '텍스트 명령 처리가 완료되었습니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
   }
 
   String _micLabel(ListeningState state) {
