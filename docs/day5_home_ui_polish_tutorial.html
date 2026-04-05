@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>5일차 실제 모드 UI 다듬기 튜토리얼</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .hero,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      .card {
+        padding: 24px;
+        margin-top: 24px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h1 {
+        font-size: 40px;
+        margin-top: 14px;
+      }
+
+      h2 {
+        font-size: 28px;
+        margin-top: 44px;
+      }
+
+      h3 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .step strong {
+        color: var(--accent);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.95em;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid .card {
+        margin-top: 0;
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Day 5 Tutorial</span>
+        <h1>Flutter 5일차: 실제 모드 UI 완성도 끌어올리기</h1>
+        <p class="lead">
+          이 문서는 5일차에 진행한
+          <code>home_page.dart</code>와 관련 위젯들을 다듬는 작업을
+          튜토리얼 방식으로 다시 읽을 수 있게 정리한 문서입니다.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <strong>1단계</strong>
+            <p>상단 타이틀 바를 더 제품형 UI처럼 보이게 다듬습니다.</p>
+          </div>
+          <div class="step">
+            <strong>2단계</strong>
+            <p>상태 카드의 정보 위계를 더 선명하게 만듭니다.</p>
+          </div>
+          <div class="step">
+            <strong>3단계</strong>
+            <p>액션 패널을 실행 가능한 카드처럼 보이게 개선합니다.</p>
+          </div>
+          <div class="step">
+            <strong>4단계</strong>
+            <p>중앙 결과 영역의 준비 상태와 결과 요약을 더 읽기 좋게 정리합니다.</p>
+          </div>
+          <div class="step">
+            <strong>5단계</strong>
+            <p>마지막으로 HomePage 전체 배경과 레이아웃을 정리합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>오늘의 목표</h2>
+        <div class="card">
+          <ul>
+            <li>실제 모드 화면이 더 이상 프로토타입처럼 보이지 않아야 합니다.</li>
+            <li>상단 상태 영역, 왼쪽 액션 패널, 중앙 결과 영역이 더 제품 화면처럼 보여야 합니다.</li>
+            <li>이미 있는 기능은 그대로 유지하면서 UI 완성도를 높여야 합니다.</li>
+            <li>데모 모드와 실제 모드가 같은 디자인 시스템 위에 있다는 인상을 주어야 합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>먼저 이해할 개념</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>레이아웃 층위</h3>
+            <p>shell 배경, surface 카드, content 배경처럼 화면의 층을 나누는 방식입니다.</p>
+          </div>
+          <div class="card">
+            <h3>시각적 위계</h3>
+            <p>무엇이 제목이고 무엇이 상태값인지, 어떤 정보가 더 중요한지 눈에 보이게 만드는 방식입니다.</p>
+          </div>
+          <div class="card">
+            <h3>ThemeExtension 활용</h3>
+            <p>1일차에 만든 <code>AppSurfaceTheme</code>를 실제 UI 위젯에서 꺼내 쓰는 과정입니다.</p>
+          </div>
+          <div class="card">
+            <h3>컴포넌트 재구성</h3>
+            <p>위젯을 버리지 않고, 같은 기능을 유지한 채 모양과 정보 구조를 다듬는 작업입니다.</p>
+          </div>
+          <div class="card">
+            <h3>정보 카드 디자인</h3>
+            <p>텍스트만 나열하는 대신 아이콘, 배경, 라벨, 강조색으로 상태를 보여주는 방식입니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>1. title_bar.dart 개선</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+        <p>
+          상단 바는 실제 기능보다 제품 인상을 크게 좌우합니다. 5일차에는
+          테마의 <code>surface</code>, <code>border</code>,
+          <code>textPrimary</code>, <code>textMuted</code>를 활용해 더
+          정돈된 헤더로 개선합니다.
+        </p>
+        <div class="callout">
+          <strong>핵심 생각:</strong> 상단 바는 단순 제목 텍스트가 아니라
+          “앱 쉘”처럼 보여야 합니다.
+        </div>
+      </section>
+
+      <section>
+        <h2>2. status_card.dart 개선</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+        <p>
+          상태 카드는 단순 값 표시를 넘어서, 어떤 정보가 라벨이고 어떤 정보가
+          핵심 값인지 한눈에 구분돼야 합니다.
+        </p>
+        <ul>
+          <li>아이콘은 별도 배경 박스 안에 넣습니다.</li>
+          <li>라벨은 작고 연하게, 값은 더 굵고 또렷하게 만듭니다.</li>
+          <li>전체 카드의 밀도를 높여 상단 영역이 더 제품답게 보이게 합니다.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>3. action_panel.dart 개선</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+        <p>
+          왼쪽 액션 패널은 사용자가 가장 자주 상호작용하는 영역입니다. 그래서
+          단순 버튼보다 “실행 가능한 기능 카드”처럼 보여야 합니다.
+        </p>
+        <ul>
+          <li>패널 상단에 짧은 설명 문구를 추가합니다.</li>
+          <li>각 버튼에 아이콘, 제목, 설명을 넣어 카드형 액션으로 만듭니다.</li>
+          <li>테마에서 가져온 색을 사용해 다크/고대비 대응이 쉬운 구조로 갑니다.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. ready_state.dart 개선</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+        <p>
+          중앙 결과 영역은 실제 모드의 핵심입니다. 결과가 없을 때도 어색하지
+          않아야 하고, 결과가 생기면 더 읽기 좋게 보여야 합니다.
+        </p>
+        <ul>
+          <li>준비 상태/처리 상태 안내 문구를 분명히 나눕니다.</li>
+          <li>결과 요약 카드를 더 선명한 박스로 만듭니다.</li>
+          <li>후속 질문은 결과 카드 안쪽 보조 박스로 다시 분리해 정보 위계를 만듭니다.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. home_page.dart에서 최종 조립</h2>
+        <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+        <p>
+          마지막 단계는 다듬어진 위젯들을 실제 모드 화면 전체에 조립하는
+          것입니다.
+        </p>
+        <pre><code>Scaffold
+  backgroundColor = shellBackground
+  SafeArea
+    Stack
+      Column
+        AppTitleBar
+        상태 영역
+        Expanded
+          Row
+            ActionPanel
+            ReadyState
+      SettingsModal overlay</code></pre>
+        <p>
+          이 구조로 가면 화면 전체에 배경 층위와 패널 분리가 생겨 실제 제품
+          화면처럼 보이기 시작합니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>최종 코드 1: title_bar.dart</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: surfaceTheme.surface,
+        border: Border(
+          bottom: BorderSide(color: surfaceTheme.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: surfaceTheme.accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.mic_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Navi: Voice Navigator',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'AI Voice Assistant for Accessibility',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _TitleIconButton(
+            icon: Icons.remove_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.crop_square_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.close_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TitleIconButton extends StatelessWidget {
+  const _TitleIconButton({
+    required this.icon,
+    required this.color,
+  });
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(
+        icon,
+        size: 18,
+        color: color,
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 2: status_card.dart</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: surfaceTheme.border),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 3: action_panel.dart</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class ActionPanel extends StatelessWidget {
+  const ActionPanel({
+    super.key,
+    required this.isRecording,
+    required this.onListenPressed,
+    required this.onScreenReadPressed,
+    required this.onSettingsPressed,
+  });
+
+  final bool isRecording;
+  final VoidCallback onListenPressed;
+  final VoidCallback onScreenReadPressed;
+  final VoidCallback onSettingsPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.surface,
+      child: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          Text(
+            '주요 기능',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '실행할 기능을 선택하면 오른쪽 패널에 결과가 정리됩니다.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _ActionButton(
+            icon: Icons.mic_rounded,
+            title: isRecording ? '듣는 중' : '음성 듣기',
+            description: '음성 명령 인식을 시작하고 중지합니다.',
+            onPressed: onListenPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.visibility_rounded,
+            title: '현재 화면 읽기',
+            description: '현재 화면의 구조와 내용을 요약합니다.',
+            onPressed: onScreenReadPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.settings_rounded,
+            title: '설정',
+            description: '단축키, 보안, 화면 설정을 조정합니다.',
+            onPressed: onSettingsPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onPressed,
+    required this.accentColor,
+    required this.surfaceTheme,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onPressed;
+  final Color accentColor;
+  final AppSurfaceTheme surfaceTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(16),
+        side: BorderSide(color: surfaceTheme.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: accentColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 4: ready_state.dart</h2>
+        <div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import 'text_command_composer.dart';
+
+class ReadyState extends StatelessWidget {
+  const ReadyState({
+    super.key,
+    required this.summary,
+    required this.followUp,
+    required this.isBusy,
+    required this.onSubmitText,
+  });
+
+  final String? summary;
+  final String? followUp;
+  final bool isBusy;
+  final ValueChanged&lt;String&gt; onSubmitText;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.contentBackground,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    color: surfaceTheme.surface,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: surfaceTheme.border),
+                  ),
+                  child: Icon(
+                    isBusy ? Icons.hourglass_top_rounded : Icons.mic_none_rounded,
+                    size: 48,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Navi: Voice Navigator',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isBusy
+                      ? '명령을 처리하고 있습니다. 잠시만 기다려 주세요.'
+                      : '준비 완료. 왼쪽의 기능을 선택하거나 텍스트 명령을 입력하세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                if (summary != null) ...[
+                  const SizedBox(height: 26),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: surfaceTheme.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '결과 요약',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: surfaceTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          summary!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: surfaceTheme.textPrimary,
+                          ),
+                        ),
+                        if (followUp != null) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: surfaceTheme.contentBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: surfaceTheme.border),
+                            ),
+                            child: Text(
+                              followUp!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: surfaceTheme.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                TextCommandComposer(
+                  isBusy: isBusy,
+                  onSubmit: onSubmitText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>최종 코드 5: home_page.dart</h2>
+        <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import '../../listening/application/listening_controller.dart';
+import '../../session/application/session_controller.dart';
+import '../../settings/application/settings_controller.dart';
+import '../../settings/presentation/settings_modal.dart';
+import 'widgets/action_panel.dart';
+import 'widgets/ready_state.dart';
+import 'widgets/status_card.dart';
+import 'widgets/title_bar.dart';
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return '대기';
+      case ListeningStatus.listening:
+        return '듣는 중';
+      case ListeningStatus.processing:
+        return '처리중';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: '마이크 상태',
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: '현재 모드',
+                          value: settings.security.secureInputMode
+                              ? '보안 입력 모드'
+                              : '일반 모드',
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section>
+        <h2>5일차 완료 기준</h2>
+        <div class="summary-grid">
+          <div class="card">
+            <h3>화면 기준</h3>
+            <ul>
+              <li>실제 모드 화면이 더 이상 프로토타입처럼 보이지 않습니다.</li>
+              <li>상단 상태 카드, 왼쪽 패널, 중앙 결과 영역의 층위가 분명해집니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>동작 기준</h3>
+            <ul>
+              <li>기존 듣기/화면 읽기/텍스트 명령 기능은 그대로 유지됩니다.</li>
+              <li>설정 모달 오버레이와 상태 반영이 자연스럽게 이어집니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>학습 기준</h3>
+            <ul>
+              <li><code>ThemeExtension</code>를 실제 화면에서 어떻게 쓰는지 설명할 수 있습니다.</li>
+              <li>왜 작은 위젯부터 다듬고 마지막에 HomePage를 맞추는지 이해합니다.</li>
+              <li>결과 영역에서 정보 위계를 어떻게 만드는지 설명할 수 있습니다.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 20px;">
+          문서 파일 위치:
+          <code>docs/day5_home_ui_polish_tutorial.html</code>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

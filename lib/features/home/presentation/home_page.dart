@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/app_theme.dart';
 import '../../listening/application/listening_controller.dart';
 import '../../session/application/session_controller.dart';
 import '../../settings/application/settings_controller.dart';
@@ -70,8 +71,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final listeningState = ref.watch(listeningControllerProvider);
     final sessionState = ref.watch(sessionControllerProvider);
     final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
 
     return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
       body: SafeArea(
         child: Stack(
           children: [
@@ -79,12 +82,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               children: [
                 const AppTitleBar(),
                 Container(
-                  height: 88,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                  ),
+                  height: 92,
+                  color: surfaceTheme.surface,
                   child: Row(
                     children: [
                       Expanded(
@@ -94,11 +93,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                           icon: Icons.mic_none_rounded,
                         ),
                       ),
-                      const VerticalDivider(width: 1, thickness: 1),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
                       Expanded(
                         child: StatusCard(
                           label: '현재 모드',
-                          value: settings.security.secureInputMode ? '보안 입력 모드' : '일반 모드',
+                          value: settings.security.secureInputMode
+                              ? '보안 입력 모드'
+                              : '일반 모드',
                           icon: settings.security.secureInputMode
                               ? Icons.lock_outline_rounded
                               : Icons.volume_up_outlined,
@@ -111,7 +116,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 260,
+                        width: 290,
                         child: ActionPanel(
                           isRecording: sessionState.isRecording,
                           onListenPressed: _handleListen,

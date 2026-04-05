@@ -335,17 +335,17 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
           value: settings.display.darkTheme,
           onChanged: notifier.setDarkTheme,
         ),
+                SwitchListTile(
+          title: const Text('고대비'),
+          subtitle: const Text('명암 대비를 높여 가독성을 향상합니다.'),
+          value: settings.display.highContrast,
+          onChanged: notifier.setHighContrast,
+        ),
         SwitchListTile(
           title: const Text('큰 글씨'),
           subtitle: const Text('앱 전체 텍스트를 더 크게 표시합니다.'),
           value: settings.display.largeText,
           onChanged: notifier.setLargeText,
-        ),
-        SwitchListTile(
-          title: const Text('고대비'),
-          subtitle: const Text('명암 대비를 높여 가독성을 향상합니다.'),
-          value: settings.display.highContrast,
-          onChanged: notifier.setHighContrast,
         ),
       ],
     );
