@@ -238,16 +238,6 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      _capturingField == null
-                          ? '저장 전에는 임시 draft 설정만 변경됩니다.'
-                          : '원하는 키를 누르세요. Delete는 해제, Esc는 취소입니다.',
-                      style: TextStyle(
-                        fontFamily: 'Pretendard',
-                        fontSize: 12,
-                        color: surfaceTheme.textMuted,
-                      ),
-                    ),
                     const Spacer(),
                     OutlinedButton(
                       onPressed: widget.onClose,

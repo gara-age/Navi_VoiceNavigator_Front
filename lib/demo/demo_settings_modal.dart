@@ -234,16 +234,16 @@ class _DemoSettingsModalState extends State<DemoSettingsModal> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      _capturingField == null
-                          ? '변경 내용은 저장 전에도 바로 데모 화면에 반영됩니다.'
-                          : '원하는 키를 누르세요. Delete는 해제, Esc는 취소입니다.',
-                      style: TextStyle(
-                        fontFamily: 'Pretendard',
-                        fontSize: 12,
-                        color: surfaceTheme.textMuted,
-                      ),
-                    ),
+                    // Text(
+                    //   _capturingField == null
+                    //       ? '변경 내용은 저장 전에도 바로 데모 화면에 반영됩니다.'
+                    //       : '원하는 키를 누르세요. Delete는 해제, Esc는 취소입니다.',
+                    //   style: TextStyle(
+                    //     fontFamily: 'Pretendard',
+                    //     fontSize: 12,
+                    //     color: surfaceTheme.textMuted,
+                    //   ),
+                    // ),
                     const Spacer(),
                     _ModalButton(
                       label: '취소',
