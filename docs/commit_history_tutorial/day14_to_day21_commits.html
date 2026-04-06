@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navi Voice Navigator Day 14-21 Commit Tutorial</title>
+    <style>
+      :root {
+        --bg: #f3f7fc;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        padding: 24px 18px 48px;
+        background: rgba(255,255,255,0.92);
+        border-right: 1px solid var(--border);
+        backdrop-filter: blur(16px);
+      }
+      .content { padding: 32px 28px 80px; }
+      .badge {
+        display:inline-block;
+        padding:6px 12px;
+        border-radius:999px;
+        background:var(--accent-soft);
+        color:var(--accent);
+        font-size:12px;
+        font-weight:800;
+      }
+      .brand h1 { margin:10px 0 8px; font-size:26px; line-height:1.2; }
+      .brand p { margin:0; color:var(--muted); font-size:14px; }
+      .nav-title {
+        margin:24px 0 10px;
+        color:var(--muted);
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+      }
+      .nav { display:grid; gap:8px; }
+      .nav button {
+        width:100%;
+        text-align:left;
+        border:1px solid var(--border);
+        background:var(--surface);
+        color:var(--text);
+        padding:12px 14px;
+        border-radius:14px;
+        cursor:pointer;
+        font:inherit;
+      }
+      .nav button.active {
+        border-color:#bfdbfe;
+        background:var(--accent-soft);
+        color:var(--accent);
+        font-weight:700;
+      }
+      .panel { display:none; max-width:1160px; }
+      .panel.active { display:block; }
+      .hero, .card {
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:24px;
+        box-shadow:0 18px 40px rgba(15,23,42,.06);
+      }
+      .hero { padding:32px; margin-bottom:24px; }
+      .card { padding:24px; margin-bottom:20px; }
+      h2, h3 { line-height:1.25; margin:0 0 16px; }
+      h2 { font-size:34px; }
+      h3 { font-size:24px; margin-top:8px; }
+      p { margin:0 0 14px; }
+      ul, ol { margin:0 0 14px 22px; }
+      li { margin-bottom:8px; }
+      .lead { font-size:18px; color:var(--muted); }
+      .file-path {
+        display:inline-block;
+        margin:8px 0 14px;
+        padding:8px 12px;
+        border-radius:10px;
+        background:var(--surface-2);
+        border:1px solid var(--border);
+        color:var(--muted);
+        font-size:14px;
+      }
+      .callout {
+        padding:16px 18px;
+        border-radius:16px;
+        background:#fff8e8;
+        border:1px solid #f7d78c;
+        margin:18px 0;
+      }
+      .success {
+        background:#ecfdf5;
+        border-color:#bbf7d0;
+      }
+      pre {
+        margin:0 0 16px;
+        padding:18px;
+        border-radius:16px;
+        overflow:auto;
+        background:var(--code-bg);
+        color:var(--code-text);
+        font-size:13px;
+        line-height:1.6;
+      }
+      code { font-family:"SFMono-Regular", Consolas, Monaco, monospace; }
+      @media (max-width:980px) {
+        .layout { grid-template-columns:1fr; }
+        .sidebar { position:relative; height:auto; }
+        .content { padding:24px 16px 48px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="badge">Commit Tutorial</span>
+          <h1>Day 14 ~ Day 21 커밋 튜토리얼</h1>
+          <p>이 문서는 Day 14부터 Day 21까지의 실제 커밋을 시간순으로 다시 따라가는 후속편입니다. 파일 경로, 역할, 어디를 수정하는지, 핵심 최종 코드를 함께 정리했습니다.</p>
+        </div>
+        <div class="nav-title">탭 이동</div>
+        <div class="nav">
+          <button class="active" data-target="overview">개요</button>
+          <button data-target="day14">Day 14 1b676a7</button>
+          <button data-target="day15">Day 15 1629aec</button>
+          <button data-target="day16">Day 16 bafd667</button>
+          <button data-target="day17">Day 17 6c09e9b</button>
+          <button data-target="day18">Day 18 9f5ed10</button>
+          <button data-target="day19">Day 19 637bd75</button>
+          <button data-target="day20">Day 20 98b35ad</button>
+          <button data-target="day21">Day 21 473091f</button>
+          <button data-target="appendix">Appendix 62ea51a</button>
+        </div>
+      </aside>
+      <main class="content">
+        <section class="panel active" id="overview">
+          <div class="hero">
+            <span class="badge">Overview</span>
+            <h2>Day 14 ~ Day 21</h2>
+            <p class="lead">이 구간에서는 background event, 토스트 시스템, 실제 모드 입력 안정화, Agent 응답 상태, 위젯 exact sync, 고대비 팝업과 title bar 접근성 보정까지 이어집니다.</p>
+            <div class="callout"><strong>읽는 방법:</strong> 각 탭은 그 커밋에서 주로 손댄 파일을 중심으로 설명합니다. 코드 블록은 실제 현재 프로젝트 구조와 맞는 핵심 최종 코드 위주로 정리했습니다.</div>
+          </div>
+          <div class="card">
+            <h3>포함 범위</h3>
+            <ul>
+              <li>Day 14: 로컬 이벤트 파일 polling</li>
+              <li>Day 15: 공통 토스트 시스템</li>
+              <li>Day 16: background event 중복 방지와 구조화</li>
+              <li>Day 17: follow-up 입력 흐름 안정화</li>
+              <li>Day 18: Agent 응답 status / pending 정리</li>
+              <li>Day 19: 데모/실제 UX 카피 정렬</li>
+              <li>Day 20: 홈 위젯 exact sync + macOS title bar</li>
+              <li>Day 21: 접근성 팝업, 고대비 팔레트, title bar 고대비 보정</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day14">
+          <div class="hero">
+            <span class="badge">Day 14</span>
+            <h2>1b676a7 Local Background Event Polling</h2>
+            <p class="lead">앱 바깥에서 기록된 이벤트 파일을 읽고 실제/데모 모드가 반응하도록 연결한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/shared/services/local_background_event_service.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. 이벤트 파일을 읽는 서비스 추가</h3>
+            <div class="file-path">lib/shared/services/local_background_event_service.dart</div>
+            <p>Day 14의 출발점은 이 서비스입니다. 외부에서 <code>runtime/background_event.json</code>에 이벤트를 기록하면, 앱이 그 파일을 읽어 소비합니다.</p>
+            <pre><code>class BackgroundEvent {
+  const BackgroundEvent({
+    required this.type,
+    required this.id,
+    required this.createdAtMs,
+  });
+
+  final String type;
+  final String id;
+  final int createdAtMs;
+
+  factory BackgroundEvent.fromJson(Map&lt;String, dynamic&gt; json) {
+    final type = json['type']?.toString().trim() ?? '';
+    final id = json['id']?.toString().trim() ?? '';
+    final createdAtMs = json['created_at_ms'] is num
+        ? (json['created_at_ms'] as num).toInt()
+        : DateTime.now().millisecondsSinceEpoch;
+
+    return BackgroundEvent(
+      type: type,
+      id: id.isEmpty ? '$type-$createdAtMs' : id,
+      createdAtMs: createdAtMs,
+    );
+  }
+}</code></pre>
+            <pre><code>class LocalBackgroundEventService {
+  LocalBackgroundEventService._();
+
+  static final LocalBackgroundEventService instance =
+      LocalBackgroundEventService._();
+
+  Future&lt;BackgroundEvent?&gt; pollEvent() async {
+    final file = await _resolveEventFile();
+    if (file == null || !await file.exists()) {
+      return null;
+    }
+
+    try {
+      final raw = await file.readAsString();
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+
+      final decoded = jsonDecode(trimmed);
+      if (decoded is! Map&lt;String, dynamic&gt;) {
+        await clearEvent();
+        return null;
+      }
+
+      final event = BackgroundEvent.fromJson(decoded);
+      if (event.type.isEmpty) {
+        await clearEvent();
+        return null;
+      }
+
+      await clearEvent();
+      return event;
+    } catch (_) {
+      await clearEvent();
+      return null;
+    }
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. 실제 모드 연결</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <pre><code>Timer? _backgroundEventTimer;
+bool _handlingBackgroundEvent = false;
+
+@override
+void initState() {
+  super.initState();
+  _backgroundEventTimer = Timer.periodic(
+    const Duration(milliseconds: 500),
+    (_) =&gt; _pollBackgroundEvent(),
+  );
+}</code></pre>
+            <pre><code>Future&lt;void&gt; _pollBackgroundEvent() async {
+  if (!mounted || _handlingBackgroundEvent) {
+    return;
+  }
+
+  _handlingBackgroundEvent = true;
+  try {
+    final event = await LocalBackgroundEventService.instance.pollEvent();
+    if (!mounted || event == null) {
+      return;
+    }
+
+    switch (event.type) {
+      case 'START_LISTENING':
+        await _handleListen();
+        break;
+      case 'START_SCREEN_READ':
+        await _handleScreenRead();
+        break;
+      case 'OPEN_SETTINGS':
+        setState(() =&gt; _showSettings = true);
+        break;
+    }
+  } finally {
+    _handlingBackgroundEvent = false;
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. 데모 모드 연결</h3>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <pre><code>switch (event.type) {
+  case 'START_LISTENING':
+    await _simulateListen();
+    break;
+  case 'START_SCREEN_READ':
+    await _simulateScreenRead();
+    break;
+  case 'OPEN_SETTINGS':
+    _openSettings();
+    break;
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day15">
+          <div class="hero">
+            <span class="badge">Day 15</span>
+            <h2>1629aec Shared Toast System Upgrade</h2>
+            <p class="lead">앱 내부 토스트를 하나의 공통 시스템으로 정리한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. 상태 enum과 공개 함수</h3>
+            <div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+            <pre><code>enum AppToastState {
+  info,
+  listening,
+  processing,
+  success,
+  error,
+  warning,
+}
+
+void showAppToast(
+  BuildContext context,
+  String message, {
+  String title = 'Navi: Voice Navigator',
+  AppToastState? state,
+  DisplaySettings? displaySettings,
+  int durationMs = 2400,
+}) {
+  final resolvedState = state ?? _inferToastState(title, message);
+
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: resolvedState,
+    displaySettings: displaySettings,
+    durationMs: durationMs,
+  );
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. 문구 기반 상태 추론</h3>
+            <pre><code>AppToastState _inferToastState(String title, String message) {
+  final source = '$title $message'.toLowerCase();
+
+  if (source.contains('실패') ||
+      source.contains('오류') ||
+      source.contains('연결하지 못했습니다')) {
+    return AppToastState.error;
+  }
+
+  if (source.contains('경고') ||
+      source.contains('재시도') ||
+      source.contains('지연')) {
+    return AppToastState.warning;
+  }
+
+  if (source.contains('듣고 있습니다') ||
+      source.contains('음성 수신') ||
+      source.contains('listening')) {
+    return AppToastState.listening;
+  }
+
+  if (source.contains('처리 중') ||
+      source.contains('처리하고 있습니다') ||
+      source.contains('processing')) {
+    return AppToastState.processing;
+  }
+
+  if (source.contains('완료') ||
+      source.contains('성공') ||
+      source.contains('읽어드립니다')) {
+    return AppToastState.success;
+  }
+
+  return AppToastState.info;
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. Day 15 기준 토스트 오버레이 구조</h3>
+            <pre><code>class _ToastOverlay {
+  _ToastOverlay._();
+
+  static final _ToastOverlay instance = _ToastOverlay._();
+
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required DisplaySettings? displaySettings,
+    required int durationMs,
+  }) {
+    _dismissTimer?.cancel();
+    _entry?.remove();
+
+    final overlay = Overlay.of(context);
+    _entry = OverlayEntry(
+      builder: (context) {
+        return _ToastView(
+          title: title,
+          message: message,
+          state: state,
+          displaySettings: displaySettings,
+        );
+      },
+    );
+
+    overlay.insert(_entry!);
+
+    _dismissTimer = Timer(Duration(milliseconds: durationMs), () {
+      _entry?.remove();
+      _entry = null;
+    });
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day16">
+          <div class="hero">
+            <span class="badge">Day 16</span>
+            <h2>bafd667 Background Event Hardening</h2>
+            <p class="lead">background event를 구조화하고, 중복 이벤트를 막는 안전장치를 넣은 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/shared/services/local_background_event_service.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. 구조화 이벤트 추가</h3>
+            <div class="file-path">lib/shared/services/local_background_event_service.dart</div>
+            <pre><code>class BackgroundEvent {
+  const BackgroundEvent({
+    required this.type,
+    required this.id,
+    required this.createdAtMs,
+  });
+  ...
+}</code></pre>
+            <p>이제 파일에는 <code>type</code>만 넣는 게 아니라 <code>id</code>, <code>created_at_ms</code>도 함께 둘 수 있습니다.</p>
+          </div>
+          <div class="card">
+            <h3>2. 실제 모드에서 중복 방지</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <pre><code>String? _lastHandledEventId;
+int _lastHandledEventAtMs = 0;
+
+bool _canHandleBackgroundEvent(BackgroundEvent event) {
+  final now = DateTime.now().millisecondsSinceEpoch;
+
+  if (_lastHandledEventId == event.id) {
+    return false;
+  }
+
+  if (now - _lastHandledEventAtMs &lt; 350) {
+    return false;
+  }
+
+  final sessionState = ref.read(sessionControllerProvider);
+
+  switch (event.type) {
+    case 'START_LISTENING':
+      return !sessionState.isBusy && !_showSettings;
+    case 'START_SCREEN_READ':
+      return !sessionState.isBusy && !_showSettings;
+    case 'OPEN_SETTINGS':
+      return !_showSettings;
+    default:
+      return false;
+  }
+}</code></pre>
+            <pre><code>void _markBackgroundEventHandled(BackgroundEvent event) {
+  _lastHandledEventId = event.id;
+  _lastHandledEventAtMs = DateTime.now().millisecondsSinceEpoch;
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. 최종 polling 코드</h3>
+            <pre><code>Future&lt;void&gt; _pollBackgroundEvent() async {
+  if (!mounted || _handlingBackgroundEvent) {
+    return;
+  }
+
+  _handlingBackgroundEvent = true;
+  try {
+    final event = await LocalBackgroundEventService.instance.pollEvent();
+    if (!mounted || event == null) {
+      return;
+    }
+
+    if (!_canHandleBackgroundEvent(event)) {
+      return;
+    }
+
+    switch (event.type) {
+      case 'START_LISTENING':
+        _markBackgroundEventHandled(event);
+        await _handleListen();
+        break;
+      case 'START_SCREEN_READ':
+        _markBackgroundEventHandled(event);
+        await _handleScreenRead();
+        break;
+      case 'OPEN_SETTINGS':
+        _markBackgroundEventHandled(event);
+        setState(() =&gt; _showSettings = true);
+        break;
+    }
+  } finally {
+    _handlingBackgroundEvent = false;
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day17">
+          <div class="hero">
+            <span class="badge">Day 17</span>
+            <h2>6c09e9b Connected Input Stabilization</h2>
+            <p class="lead">실제 모드의 follow-up 처리, 입력 정규화, 포커스 복귀를 안정화한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/shared/utils/shortcut_utils.dart</code></li>
+              <li><code>lib/features/session/application/session_controller.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. 짧은 응답 정규화 유틸</h3>
+            <div class="file-path">lib/shared/utils/shortcut_utils.dart</div>
+            <pre><code>static String normalizeCommandText(String value) {
+  return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+}
+
+static bool isAffirmativeResponse(String value) {
+  final normalized = normalizeCommandText(value);
+
+  return normalized == '응' ||
+      normalized == '네' ||
+      normalized == '예' ||
+      normalized == '좋아' ||
+      normalized == '그래' ||
+      normalized == '재생해줘' ||
+      normalized == '진행해줘' ||
+      normalized == '실행해줘';
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. SessionController follow-up 메서드</h3>
+            <div class="file-path">lib/features/session/application/session_controller.dart</div>
+            <pre><code>bool hasPendingFollowUp() {
+  return _cleanText(state.lastFollowUp) != null &&
+      _cleanText(state.pendingAction) != null;
+}
+
+Future&lt;CommandResponseModel&gt; submitFollowUpResponse(String text) async {
+  state = state.copyWith(isBusy: true);
+
+  final payload = await _requestAgentResponse(
+    command: text,
+    source: 'text',
+  );
+
+  final response = _mapAgentPayloadToCommandResponse(
+    payload,
+    fallbackTranscript: text,
+    fallbackSummary: '후속 응답을 처리했습니다.',
+  );
+
+  _applyResponse(response);
+  return response;
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. HomePage 입력 분기와 포커스 복귀</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <pre><code>final FocusNode _focusNode = FocusNode(debugLabel: 'home_page_focus');
+
+bool _shouldTreatAsFollowUp(String text) {
+  final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+  if (!sessionNotifier.hasPendingFollowUp()) {
+    return false;
+  }
+
+  return ShortcutUtils.isAffirmativeResponse(text);
+}</code></pre>
+            <pre><code>final response = _shouldTreatAsFollowUp(normalizedText)
+    ? await sessionNotifier.submitFollowUpResponse(normalizedText)
+    : await sessionNotifier.submitTextCommand(normalizedText);</code></pre>
+            <pre><code>void _closeSettingsModal() {
+  if (!_showSettings) {
+    return;
+  }
+
+  setState(() =&gt; _showSettings = false);
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      _focusNode.requestFocus();
+    }
+  });
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day18">
+          <div class="hero">
+            <span class="badge">Day 18</span>
+            <h2>9f5ed10 Connected Agent Response Feedback</h2>
+            <p class="lead">실제 모드 Agent 응답을 상태 모델로 더 명확하게 다루고, 후속질문 완료 시 pending 상태를 정리한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/shared/models/response_models.dart</code></li>
+              <li><code>lib/features/session/application/session_controller.dart</code></li>
+              <li><code>docs/day18_agent_response_ux_tutorial.html</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. 응답 모델 확장</h3>
+            <div class="file-path">lib/shared/models/response_models.dart</div>
+            <pre><code>enum CommandResponseStatus {
+  success,
+  warning,
+  error,
+}
+
+class CommandResponseModel {
+  const CommandResponseModel({
+    required this.transcript,
+    required this.summary,
+    this.followUp,
+    this.isError = false,
+    this.pendingAction,
+    this.pendingTarget,
+    this.status = CommandResponseStatus.success,
+    this.completesFollowUp = false,
+  });
+
+  final String transcript;
+  final String summary;
+  final String? followUp;
+  final bool isError;
+  final String? pendingAction;
+  final String? pendingTarget;
+  final CommandResponseStatus status;
+  final bool completesFollowUp;
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. 상태 매핑과 pending 정리</h3>
+            <div class="file-path">lib/features/session/application/session_controller.dart</div>
+            <pre><code>CommandResponseStatus _resolveStatus(AgentCommandPayload payload) {
+  final rawStatus = _cleanText(payload.status)?.toLowerCase();
+
+  switch (rawStatus) {
+    case 'warning':
+      return CommandResponseStatus.warning;
+    case 'error':
+      return CommandResponseStatus.error;
+    case 'success':
+      return CommandResponseStatus.success;
+  }
+
+  if (payload.isError == true) {
+    return CommandResponseStatus.error;
+  }
+
+  return CommandResponseStatus.success;
+}</code></pre>
+            <pre><code>void _applyResponse(CommandResponseModel response) {
+  final clearsPending = response.completesFollowUp;
+
+  state = state.copyWith(
+    isBusy: false,
+    lastSummary: response.summary,
+    lastFollowUp: response.followUp,
+    pendingAction: clearsPending ? null : response.pendingAction,
+    pendingTarget: clearsPending ? null : response.pendingTarget,
+  );
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. HTTP body와 fallback 규칙</h3>
+            <pre><code>Map&lt;String, dynamic&gt; _buildRequestBody({
+  required String command,
+  required String source,
+}) {
+  return {
+    'command': command,
+    'source': source,
+    'context': {
+      'last_summary': state.lastSummary,
+      'last_follow_up': state.lastFollowUp,
+      'pending_action': state.pendingAction,
+      'pending_target': state.pendingTarget,
+    },
+  };
+}</code></pre>
+            <pre><code>if (_agentApiBaseUrl.isEmpty) {
+  return AgentCommandPayload(
+    transcript: command,
+    summary: 'Agent 서버 주소가 아직 설정되지 않아 명령을 처리할 수 없습니다.',
+    followUp: 'API 서버 주소를 설정한 뒤 다시 시도할까요?',
+    isError: true,
+    status: 'error',
+    completesFollowUp: true,
+    rawText: 'Missing AGENT_API_BASE_URL',
+  );
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day19">
+          <div class="hero">
+            <span class="badge">Day 19</span>
+            <h2>637bd75 Common UX Alignment</h2>
+            <p class="lead">데모 모드와 실제 모드가 같은 제품처럼 느껴지도록 문구와 안내 톤을 정리한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/text_command_composer.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>핵심 조정 포인트</h3>
+            <pre><code>// ReadyState 예시
+Text('결과 요약', ...)
+...
+if (followUp != null) ...[
+  Text('다음 제안', ...),
+  ...
+]</code></pre>
+            <pre><code>// TextCommandComposer 예시
+hintText: '명령을 입력하면 결과 요약과 다음 제안을 보여드립니다.'</code></pre>
+            <pre><code>// 공통 토스트 예시
+showAppToast(
+  context,
+  '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
+  title: '작업 완료',
+  state: AppToastState.success,
+)</code></pre>
+          </div>
+        </section>
+
+        <section class="panel" id="day20">
+          <div class="hero">
+            <span class="badge">Day 20</span>
+            <h2>98b35ad Widget Exact Sync And macOS Title Bar</h2>
+            <p class="lead">공통 위젯을 목표 프로젝트 구조에 더 가깝게 맞추고, macOS용 인앱 title bar와 시스템 title bar 숨김을 추가한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/status_card.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+              <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. title bar를 플랫폼 분기</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+            <pre><code>class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (Platform.isMacOS) {
+      return const AppTitleBarMacos();
+    }
+    ...
+  }
+}</code></pre>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar_macos.dart</div>
+            <pre><code>class AppTitleBarMacos extends StatelessWidget {
+  const AppTitleBarMacos({super.key, this.onOpenHelp});
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+    ...
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. ReadyState scroll-safe 구조</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+            <pre><code>return Container(
+  color: surfaceTheme.surface,
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(...),
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+);</code></pre>
+            <pre><code>Text(
+  summary!,
+  style: TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    height: 1.6,
+    color: surfaceTheme.textPrimary,
+  ),
+)</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. ActionPanel / StatusCard / 화면 보정</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+            <pre><code>_CommandButton(
+  icon: Icons.mic_rounded,
+  title: isRecording ? '듣는 중' : '음성 듣기',
+  description: '음성 명령 인식을 시작합니다.',
+  shortcut: ShortcutUtils.displayLabel(listenShortcut),
+  isActive: isRecording,
+  onPressed: onListenPressed,
+)</code></pre>
+            <div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+            <pre><code>if (showWave)
+  _WaveBars(active: value == '듣는 중')
+else if (showDot)
+  Container(
+    width: 8,
+    height: 8,
+    decoration: BoxDecoration(
+      color: iconColor,
+      borderRadius: BorderRadius.circular(999),
+    ),
+  )</code></pre>
+            <p>이 커밋 이후 추가 보정으로 좌측 패널 stretch, 상단 상태바 하단선, 결과 요약 bold가 함께 정리됩니다.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="day21">
+          <div class="hero">
+            <span class="badge">Day 21</span>
+            <h2>473091f Accessible Themed Toast Variants</h2>
+            <p class="lead">팝업이 메인 프로그램 표시 설정을 따라가도록 만들고, 고대비 색상과 수동 닫기 버튼, title bar 고대비 아이콘까지 보정한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code></li>
+              <li><code>docs/current_popup_ui_preview.html</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>1. dismiss 공통화와 수동 닫기 버튼</h3>
+            <div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+            <pre><code>void dismiss() {
+  _dismissTimer?.cancel();
+  _dismissTimer = null;
+  _entry?.remove();
+  _entry = null;
+}</code></pre>
+            <pre><code>child: Stack(
+  clipBehavior: Clip.none,
+  children: [
+    Padding(
+      padding: const EdgeInsets.only(right: 28),
+      child: Row(...),
+    ),
+    Positioned(
+      top: -2,
+      right: -2,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onClose,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: palette.closeBackground,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: palette.closeBorder,
+                width: palette.closeBorderWidth,
+              ),
+            ),
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: palette.closeColor,
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+)</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. 다크/고대비/큰 글씨 팔레트 분기</h3>
+            <pre><code>_ToastPalette _resolvePalette(
+  AppToastState state,
+  DisplaySettings? displaySettings,
+) {
+  final darkTheme = displaySettings?.darkTheme ?? false;
+  final highContrast = displaySettings?.highContrast ?? false;
+
+  if (darkTheme) {
+    return _resolveDarkPalette(state, highContrast);
+  }
+
+  if (highContrast) {
+    return _resolveHighContrastPalette(state);
+  }
+
+  ...
+}</code></pre>
+            <pre><code>_ToastPalette _resolveHighContrastPalette(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+    case AppToastState.listening:
+      return const _ToastPalette(
+        background: Color(0xFFDBEAFE),
+        border: Color(0xFF1E3A8A),
+        iconBackground: Color(0xFFFFFFFF),
+        iconColor: Color(0xFF1E3A8A),
+        titleColor: Color(0xFF020617),
+        messageColor: Color(0xFF1E3A8A),
+        closeColor: Color(0xFF111827),
+        borderWidth: 2,
+        iconBorder: Color(0xFF1E3A8A),
+        iconBorderWidth: 2,
+        closeBackground: Color(0xFFFFFFFF),
+        closeBorder: Color(0xFF1E3A8A),
+        closeBorderWidth: 2,
+      );
+    ...
+  }
+}</code></pre>
+            <pre><code>final highContrast = displaySettings?.highContrast ?? false;
+
+Text(
+  title,
+  style: TextStyle(
+    fontSize: largeText ? 15 : 14,
+    fontWeight: highContrast ? FontWeight.w900 : FontWeight.w800,
+    color: palette.titleColor,
+  ),
+),
+Text(
+  message,
+  style: TextStyle(
+    fontSize: largeText ? 14 : 13,
+    fontWeight: highContrast ? FontWeight.w800 : FontWeight.w500,
+    color: palette.messageColor,
+  ),
+)</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. 실제/데모 모드에서 DisplaySettings 전달</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <pre><code>DisplaySettings get _toastDisplaySettings {
+  return ref.read(settingsControllerProvider).display;
+}</code></pre>
+            <pre><code>DisplaySettings get _toastDisplaySettings =&gt; _settings.display;</code></pre>
+            <pre><code>showAppToast(
+  context,
+  '요청을 분석하고 다음 작업을 준비하고 있습니다.',
+  title: '작업 처리 중',
+  state: AppToastState.processing,
+  displaySettings: _toastDisplaySettings,
+);</code></pre>
+          </div>
+          <div class="card">
+            <h3>4. title bar 고대비 마이크 아이콘</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar_macos.dart</div>
+            <pre><code>final isHighContrast = surfaceTheme.accent == const Color(0xFFFFFF00);
+
+Icon(
+  Icons.mic_rounded,
+  color: isHighContrast ? Colors.black : Colors.white,
+  size: 22,
+)</code></pre>
+          </div>
+          <div class="card">
+            <h3>5. 팝업 프리뷰 HTML</h3>
+            <div class="file-path">docs/current_popup_ui_preview.html</div>
+            <p>라이트, 다크, 고대비, 큰 글씨 팝업을 앱 실행 없이 검토할 수 있는 프리뷰 문서입니다. 이 단계에서 실제 팝업 구조에 맞춰 <code>X</code> 버튼과 색상 팔레트도 함께 반영했습니다.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="appendix">
+          <div class="hero">
+            <span class="badge">Appendix</span>
+            <h2>62ea51a Settings Modal Footer Hints Cleanup</h2>
+            <p class="lead">Day 21 직후 들어간 정리 커밋입니다. 기능 추가라기보다 설정 모달 하단 안내 문구를 정리한 커밋입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/settings/presentation/settings_modal.dart</code></li>
+              <li><code>lib/demo/demo_settings_modal.dart</code></li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      const buttons = document.querySelectorAll('.nav button');
+      const panels = document.querySelectorAll('.panel');
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const target = button.dataset.target;
+          buttons.forEach((btn) => btn.classList.remove('active'));
+          panels.forEach((panel) => panel.classList.remove('active'));
+          button.classList.add('active');
+          document.getElementById(target).classList.add('active');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -100,6 +100,7 @@
       <li>Day 12: 상태 카드 애니메이션</li>
       <li>Day 13: 데모 시나리오 + 실제 모드 HTTP Agent 세션</li>
     </ul>
+    <p><strong>다음 문서:</strong> Day 14부터 Day 21까지는 <code>docs/commit_history_tutorial/day14_to_day21_commits.html</code>로 이어집니다.</p>
   </div>
 </section><section class="panel" id="0bb91ed"><div class="hero"><span class="badge">Day 7</span><h2>0bb91ed Day 7 - Demo Settings Modal and Shortcut Capture</h2><p class="lead">데모 모드 전용 설정 모달과 단축키 직접 캡처 기능을 추가한 단계입니다. 데모 모드가 단순 플레이스홀더를 넘어서 독립적인 설정 UX를 갖게 됩니다.</p></div><div class="card"><h3>변경 파일</h3><ul><li><code>lib/shared/utils/shortcut_utils.dart</code></li><li><code>lib/demo/demo_settings_modal.dart</code></li><li><code>lib/demo/demo_home_page.dart</code></li></ul></div><div class="card"><h3>진행 순서</h3><ol><li><strong>1. shortcut_utils.dart 추가</strong><br />단축키 문자열 정규화, 키 이벤트 캡처, 비교 로직을 한 파일로 분리합니다.</li><li><strong>2. demo_settings_modal.dart 추가</strong><br />데모 모드 전용 설정 모달을 새로 만들고, 탭형 레이아웃과 단축키 캡처 UI를 구성합니다.</li><li><strong>3. demo_home_page.dart 연결</strong><br />데모 홈에서 설정 버튼으로 모달을 열고, 단축키 입력으로 듣기/화면 읽기/설정 열기가 가능하게 연결합니다.</li></ol></div><div class="card"><h3>1. shortcut_utils.dart 최종 코드</h3><div class="file-path">lib/shared/utils/shortcut_utils.dart</div><pre><code>import &#x27;package:flutter/services.dart&#x27;;
 

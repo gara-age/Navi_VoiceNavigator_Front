@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 21 Popup And Title Bar Accessibility Tutorial</title>
+  <style>
+    :root {
+      --bg: #eef4fb;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --ok-bg: #ecfdf5;
+      --ok-line: #bbf7d0;
+      --ok-text: #166534;
+      --warn-bg: #fff7ed;
+      --warn-line: #fdba74;
+      --warn-text: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 18px 72px;
+    }
+    .hero,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 30px; }
+    .card { padding: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h1, h2, h3 {
+      line-height: 1.3;
+      margin: 0 0 14px;
+    }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; margin-top: 6px; }
+    h3 { font-size: 19px; margin-top: 18px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .path {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .callout,
+    .success {
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-top: 16px;
+    }
+    .callout {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      color: var(--warn-text);
+    }
+    .success {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-line);
+      color: var(--ok-text);
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+    }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .palette-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: #fff;
+    }
+    .swatch {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 21</span>
+      <h1>Popup And Title Bar Accessibility</h1>
+      <p>이번 문서는 팝업 토스트와 title bar를 접근성 기준으로 보강한 작업을 정리합니다. 핵심은 토스트가 메인 프로그램의 표시 설정을 그대로 따라가도록 만들고, 고대비 모드에서 색상과 굵기, 닫기 버튼, title bar 아이콘까지 더 또렷하게 보이도록 맞추는 것입니다.</p>
+      <div class="callout"><strong>오늘 목표:</strong> 팝업에 수동 닫기 버튼을 추가하고, <code>DisplaySettings</code> 기준 라이트/다크/고대비/큰 글씨를 모두 지원하며, 고대비 모드에서는 상태별 색상과 굵은 글씨, title bar 마이크 아이콘까지 함께 보정합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>수정된 파일</h2>
+      <ul>
+        <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+        <li><code>lib/features/home/presentation/home_page.dart</code></li>
+        <li><code>lib/demo/demo_home_page.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code></li>
+        <li><code>docs/current_popup_ui_preview.html</code></li>
+      </ul>
+      <p>이 묶음은 실제 토스트 렌더링, 실제/데모 모드 연결, Windows/macOS title bar 고대비 처리, 그리고 프리뷰 HTML까지 포함합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>무엇이 바뀌었나</h2>
+      <ol>
+        <li>팝업 우측 상단에 수동 닫기 <code>X</code> 버튼을 추가했습니다.</li>
+        <li><code>showAppToast(...)</code>가 전달받는 <code>DisplaySettings</code>에 따라 다크 테마, 고대비, 큰 글씨를 반영합니다.</li>
+        <li>고대비 테마는 상태별로 별도 팔레트를 사용합니다.</li>
+        <li>고대비에서는 제목과 본문을 모두 굵게 보여줍니다.</li>
+        <li>macOS/Windows title bar 모두 고대비 모드에서 마이크 아이콘이 검정색으로 바뀝니다.</li>
+        <li>프리뷰 HTML에서 실제 팝업 느낌으로 라이트/다크/고대비 버전을 바로 비교할 수 있습니다.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>고대비 상태별 팔레트</h2>
+      <p>이번 작업에서 고대비 테마는 상태마다 배경색과 텍스트색, 강조색을 별도로 사용합니다. 아래 값이 실제 기준입니다.</p>
+      <div class="palette-grid">
+        <div class="palette-card">
+          <h3>Info / Listening</h3>
+          <p><span class="swatch" style="background:#DBEAFE;"></span>Background: <code>#DBEAFE</code></p>
+          <p><span class="swatch" style="background:#1E3A8A;"></span>Text: <code>#1E3A8A</code></p>
+          <p><span class="swatch" style="background:#1E3A8A;"></span>Accent: <code>#1E3A8A</code></p>
+        </div>
+        <div class="palette-card">
+          <h3>Processing</h3>
+          <p><span class="swatch" style="background:#FEF9C3;"></span>Background: <code>#FEF9C3</code></p>
+          <p><span class="swatch" style="background:#713F12;"></span>Text: <code>#713F12</code></p>
+          <p><span class="swatch" style="background:#713F12;"></span>Accent: <code>#713F12</code></p>
+        </div>
+        <div class="palette-card">
+          <h3>Warning</h3>
+          <p><span class="swatch" style="background:#FFEDD5;"></span>Background: <code>#FFEDD5</code></p>
+          <p><span class="swatch" style="background:#7C2D12;"></span>Text: <code>#7C2D12</code></p>
+          <p><span class="swatch" style="background:#7C2D12;"></span>Accent: <code>#7C2D12</code></p>
+        </div>
+        <div class="palette-card">
+          <h3>Success / Error</h3>
+          <p><span class="swatch" style="background:#DCFCE7;"></span>Success background: <code>#DCFCE7</code></p>
+          <p><span class="swatch" style="background:#14532D;"></span>Success text/accent: <code>#14532D</code></p>
+          <p><span class="swatch" style="background:#FEE2E2;"></span>Error background: <code>#FEE2E2</code></p>
+          <p><span class="swatch" style="background:#7F1D1D;"></span>Error text/accent: <code>#7F1D1D</code></p>
+        </div>
+      </div>
+      <div class="success"><strong>포인트:</strong> 고대비 팝업은 색상만 바꾸는 것이 아니라, 흰 아이콘 박스 + 굵은 테두리 + 굵은 텍스트를 함께 사용해 상태를 더 쉽게 구분할 수 있게 했습니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>Toast 구조 변경</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <p>토스트는 단순 오버레이에서 더 확장된 구조로 바뀌었습니다. 핵심은 <code>dismiss()</code> 공통화, 수동 닫기 버튼, 그리고 <code>DisplaySettings</code> 기반 팔레트 분기입니다.</p>
+      <pre><code>class _ToastOverlay {
+  _ToastOverlay._();
+
+  static final _ToastOverlay instance = _ToastOverlay._();
+
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void dismiss() {
+    _dismissTimer?.cancel();
+    _dismissTimer = null;
+    _entry?.remove();
+    _entry = null;
+  }
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required DisplaySettings? displaySettings,
+    required int durationMs,
+  }) {
+    dismiss();
+    ...
+  }
+}</code></pre>
+      <p>이제 자동 닫기와 수동 닫기가 같은 정리 함수로 묶여서 더 안전하게 동작합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>수동 닫기 X 버튼</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <p><code>X</code> 버튼은 팝업 바깥쪽에 약간 걸치도록 배치했습니다. 처음에는 테두리가 잘리는 문제가 있었기 때문에 <code>Stack(clipBehavior: Clip.none)</code>으로 수정했습니다.</p>
+      <pre><code>child: Stack(
+  clipBehavior: Clip.none,
+  children: [
+    Padding(
+      padding: const EdgeInsets.only(right: 28),
+      child: Row(...),
+    ),
+    Positioned(
+      top: -2,
+      right: -2,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onClose,
+          ...
+        ),
+      ),
+    ),
+  ],
+),</code></pre>
+      <p>이 구조 덕분에 닫기 버튼이 토스트 박스 안쪽에 갇히지 않고, 살짝 바깥으로 올라간 현재 디자인을 유지할 수 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>DisplaySettings 연동</h2>
+      <div class="path">lib/features/home/presentation/home_page.dart</div>
+      <div class="path">lib/demo/demo_home_page.dart</div>
+      <p>실제 모드와 데모 모드 모두 현재 표시 설정을 토스트로 넘깁니다. 이 연결이 있어야 다크 테마, 고대비, 큰 글씨가 팝업에 반영됩니다.</p>
+      <pre><code>DisplaySettings get _toastDisplaySettings {
+  return ref.read(settingsControllerProvider).display;
+}
+
+showAppToast(
+  context,
+  '요청을 분석하고 다음 작업을 준비하고 있습니다.',
+  title: '작업 처리 중',
+  state: AppToastState.processing,
+  displaySettings: _toastDisplaySettings,
+);</code></pre>
+      <pre><code>DisplaySettings get _toastDisplaySettings =&gt; _settings.display;
+
+showAppToast(
+  context,
+  '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
+  title: '작업 완료',
+  state: AppToastState.success,
+  displaySettings: _toastDisplaySettings,
+);</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>고대비 모드 텍스트와 구조</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <p>고대비에서는 단순히 배경색만 바꾸지 않고, 텍스트와 경계선도 함께 강화합니다.</p>
+      <ul>
+        <li>제목: <code>FontWeight.w900</code></li>
+        <li>본문: <code>FontWeight.w800</code></li>
+        <li>외곽선: <code>2px</code></li>
+        <li>아이콘 박스: 흰 배경 + 상태색 테두리</li>
+        <li>닫기 버튼: 흰 배경 + 상태색 테두리</li>
+      </ul>
+      <pre><code>final highContrast = displaySettings?.highContrast ?? false;
+
+Text(
+  title,
+  style: TextStyle(
+    fontSize: largeText ? 15 : 14,
+    fontWeight: highContrast ? FontWeight.w900 : FontWeight.w800,
+    color: palette.titleColor,
+  ),
+),
+Text(
+  message,
+  style: TextStyle(
+    fontSize: largeText ? 14 : 13,
+    fontWeight: highContrast ? FontWeight.w800 : FontWeight.w500,
+    color: palette.messageColor,
+  ),
+),</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>고대비 팔레트 구현</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <p>고대비 토스트는 별도 helper로 분리했습니다. 아래처럼 상태별 팔레트를 한곳에서 관리하면 이후 색상 조정도 쉬워집니다.</p>
+      <pre><code>_ToastPalette _resolveHighContrastPalette(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+    case AppToastState.listening:
+      return const _ToastPalette(
+        background: Color(0xFFDBEAFE),
+        border: Color(0xFF1E3A8A),
+        iconBackground: Color(0xFFFFFFFF),
+        iconColor: Color(0xFF1E3A8A),
+        titleColor: Color(0xFF020617),
+        messageColor: Color(0xFF1E3A8A),
+        closeColor: Color(0xFF111827),
+        borderWidth: 2,
+        iconBorder: Color(0xFF1E3A8A),
+        iconBorderWidth: 2,
+        closeBackground: Color(0xFFFFFFFF),
+        closeBorder: Color(0xFF1E3A8A),
+        closeBorderWidth: 2,
+      );
+    ...
+  }
+}</code></pre>
+      <div class="callout"><strong>메모:</strong> 현재 코드는 고대비 info/listening title 색을 <code>#020617</code>로 두고, 메시지와 accent 계열은 <code>#1E3A8A</code>를 사용합니다. 더 강한 통일감을 원하면 title도 같은 상태색으로 맞추는 방식으로 추가 조정할 수 있습니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>Title Bar 고대비 보정</h2>
+      <div class="path">lib/features/home/presentation/widgets/title_bar.dart</div>
+      <div class="path">lib/features/home/presentation/widgets/title_bar_macos.dart</div>
+      <p>Windows용 title bar와 macOS용 title bar 모두 고대비 모드일 때 마이크 아이콘을 검정색으로 바꾸도록 처리했습니다.</p>
+      <pre><code>final isHighContrast = surfaceTheme.accent == const Color(0xFFFFFF00);
+
+child: Icon(
+  Icons.mic_rounded,
+  color: isHighContrast ? Colors.black : Colors.white,
+  size: 22,
+),</code></pre>
+      <p>macOS용 title bar에서도 동일하게 적용해서 플랫폼이 달라도 고대비 시인성이 유지됩니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>프리뷰 HTML</h2>
+      <div class="path">docs/current_popup_ui_preview.html</div>
+      <p>실제 Flutter 팝업과 별도로, 디자인만 빠르게 확인할 수 있는 HTML 프리뷰도 함께 만들었습니다. 라이트, 다크, 고대비, 큰 글씨 버전을 모두 비교할 수 있고, <code>X</code> 버튼 위치와 아이콘 배경도 실제 구조를 따라갑니다.</p>
+      <ul>
+        <li>팝업 색상 검토</li>
+        <li>고대비 대비 확인</li>
+        <li>큰 글씨 버전 비교</li>
+        <li>디자인 리뷰용 캡처</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>완료 기준</h2>
+      <ul>
+        <li>팝업을 수동으로 닫을 수 있다.</li>
+        <li>팝업이 메인 프로그램의 표시 설정을 따른다.</li>
+        <li>고대비 모드에서 상태별 색상, 굵은 글씨, 경계선이 함께 적용된다.</li>
+        <li>title bar 마이크 아이콘이 고대비에서 검정색으로 보인다.</li>
+        <li>프리뷰 HTML로 디자인을 빠르게 확인할 수 있다.</li>
+      </ul>
+      <div class="success"><strong>정리:</strong> 이번 작업으로 팝업은 단순 알림 UI를 넘어 메인 프로그램 테마와 접근성 설정을 함께 반영하는 공통 피드백 계층이 되었고, title bar까지 같은 접근성 기준으로 맞춰졌습니다.</div>
+    </section>
+  </div>
+</body>
+</html>
