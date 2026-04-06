@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 15 Toast System Upgrade Tutorial</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 18px 72px; }
+    .hero, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); margin-bottom: 22px; }
+    .hero { padding: 30px; }
+    .card { padding: 24px; }
+    .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; }
+    h1,h2,h3 { line-height:1.3; margin:0 0 14px; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; margin-top: 6px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .callout { padding: 16px 18px; border-radius: 16px; background: #fff8e8; border: 1px solid #f6d482; color: #92400e; margin-top: 18px; }
+    .success { background: #ecfdf5; border-color: #bbf7d0; color: #166534; }
+    .path { display:inline-block; margin:8px 0 14px; padding:8px 12px; border-radius:10px; background:var(--soft); border:1px solid var(--line); color:var(--muted); font-size:14px; }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 18px; border-radius: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 15</span>
+      <h1>Toast System Upgrade</h1>
+      <p>15일차는 앱 안에서 잠깐 뜨는 알림 UI를 하나의 공통 시스템으로 정리하는 단계입니다. 오늘은 <code>app_toast.dart</code> 하나만 수정하지만, 실제 모드와 데모 모드 전체의 피드백 규칙이 더 통일되고 앞으로 Windows/macOS 공통 버전을 확장하기 쉬운 형태가 됩니다.</p>
+      <div class="callout"><strong>오늘 목표:</strong> 상태 enum 확장, 문구 기반 상태 추론, <code>DisplaySettings</code> 반영 준비, 그리고 overlay 토스트 구조를 더 체계적인 시스템으로 정리합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>오늘 수정할 파일</h2>
+      <ul>
+        <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+      </ul>
+      <p>이 파일은 앱 내부 토스트를 공통으로 관리하는 presentation 파일입니다. 각 화면은 직접 토스트 UI를 만들지 않고 <code>showAppToast(...)</code>만 호출하고, 실제 렌더링과 상태 판단은 이 파일이 맡습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>왜 지금 이 파일을 정리하나</h2>
+      <ul>
+        <li>실제 모드와 데모 모드가 같은 알림 규칙을 공유해야 합니다.</li>
+        <li>앞으로 실패, 경고, 재시도 같은 상태도 더 명확히 나눠야 합니다.</li>
+        <li>큰 글씨 같은 표시 설정을 토스트에도 반영할 준비가 필요합니다.</li>
+        <li>나중에 OS 팝업 계층이 들어와도 호출부는 유지하고 내부 구현만 갈아끼울 수 있어야 합니다.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>핵심 개념</h2>
+      <ol>
+        <li><strong>AppToastState 확장:</strong> <code>error</code>, <code>warning</code>를 추가해 실패 계열 피드백도 공통으로 다룹니다.</li>
+        <li><strong>상태 추론:</strong> 호출부가 상태를 생략해도 제목과 메시지 문구로 대략의 상태를 자동 추론합니다.</li>
+        <li><strong>DisplaySettings 반영 준비:</strong> 지금은 <code>largeText</code> 중심으로 반영하고, 나중에 다크/고대비로 확장할 수 있게 파라미터를 받아둡니다.</li>
+        <li><strong>Palette 분리:</strong> 상태별 색상 묶음을 helper로 빼서 토스트 UI가 단순해집니다.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>최종 코드</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <p>오늘은 이 파일을 사실상 전체 교체하는 편이 가장 안전합니다. 아래 코드가 현재 Day 15 최종 상태입니다.</p>
+      <pre><code>import &#x27;dart:async&#x27;;
+
+import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../../shared/models/settings_models.dart&#x27;;
+
+enum AppToastState {
+  info,
+  listening,
+  processing,
+  success,
+  error,
+  warning,
+}
+
+void showAppToast(
+  BuildContext context,
+  String message, {
+  String title = &#x27;Navi: Voice Navigator&#x27;,
+  AppToastState? state,
+  DisplaySettings? displaySettings,
+  int durationMs = 2400,
+}) {
+  final resolvedState = state ?? _inferToastState(title, message);
+
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: resolvedState,
+    displaySettings: displaySettings,
+    durationMs: durationMs,
+  );
+}
+
+AppToastState _inferToastState(String title, String message) {
+  final source = &#x27;$title $message&#x27;.toLowerCase();
+
+  if (source.contains(&#x27;실패&#x27;) ||
+      source.contains(&#x27;오류&#x27;) ||
+      source.contains(&#x27;연결하지 못했습니다&#x27;)) {
+    return AppToastState.error;
+  }
+
+  if (source.contains(&#x27;경고&#x27;) ||
+      source.contains(&#x27;재시도&#x27;) ||
+      source.contains(&#x27;지연&#x27;)) {
+    return AppToastState.warning;
+  }
+
+  if (source.contains(&#x27;듣고 있습니다&#x27;) ||
+      source.contains(&#x27;음성 수신&#x27;) ||
+      source.contains(&#x27;listening&#x27;)) {
+    return AppToastState.listening;
+  }
+
+  if (source.contains(&#x27;처리 중&#x27;) ||
+      source.contains(&#x27;처리하고 있습니다&#x27;) ||
+      source.contains(&#x27;processing&#x27;)) {
+    return AppToastState.processing;
+  }
+
+  if (source.contains(&#x27;완료&#x27;) ||
+      source.contains(&#x27;성공&#x27;) ||
+      source.contains(&#x27;읽어드립니다&#x27;)) {
+    return AppToastState.success;
+  }
+
+  return AppToastState.info;
+}
+
+class _ToastOverlay {
+  _ToastOverlay._();
+
+  static final _ToastOverlay instance = _ToastOverlay._();
+
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required DisplaySettings? displaySettings,
+    required int durationMs,
+  }) {
+    _dismissTimer?.cancel();
+    _entry?.remove();
+
+    final overlay = Overlay.of(context);
+    _entry = OverlayEntry(
+      builder: (context) {
+        return _ToastView(
+          title: title,
+          message: message,
+          state: state,
+          displaySettings: displaySettings,
+        );
+      },
+    );
+
+    overlay.insert(_entry!);
+
+    _dismissTimer = Timer(Duration(milliseconds: durationMs), () {
+      _entry?.remove();
+      _entry = null;
+    });
+  }
+}
+
+class _ToastView extends StatelessWidget {
+  const _ToastView({
+    required this.title,
+    required this.message,
+    required this.state,
+    required this.displaySettings,
+  });
+
+  final String title;
+  final String message;
+  final AppToastState state;
+  final DisplaySettings? displaySettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _resolvePalette(state);
+    final icon = _resolveIcon(state);
+    final largeText = displaySettings?.largeText ?? false;
+
+    return Positioned(
+      top: 24,
+      right: 24,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: largeText ? 360 : 320,
+          padding: EdgeInsets.all(largeText ? 18 : 16),
+          decoration: BoxDecoration(
+            color: palette.background,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: palette.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: palette.iconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: palette.iconColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: largeText ? 15 : 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: largeText ? 14 : 13,
+                        height: 1.45,
+                        color: const Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData _resolveIcon(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return Icons.info_outline_rounded;
+    case AppToastState.listening:
+      return Icons.mic_rounded;
+    case AppToastState.processing:
+      return Icons.hourglass_top_rounded;
+    case AppToastState.success:
+      return Icons.check_rounded;
+    case AppToastState.error:
+      return Icons.error_outline_rounded;
+    case AppToastState.warning:
+      return Icons.warning_amber_rounded;
+  }
+}
+
+_ToastPalette _resolvePalette(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFE2E8F0),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.listening:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFBFDBFE),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.processing:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFFDE68A),
+        iconBackground: Color(0xFFFEF3C7),
+        iconColor: Color(0xFFF59E0B),
+      );
+    case AppToastState.success:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFBBF7D0),
+        iconBackground: Color(0xFFDCFCE7),
+        iconColor: Color(0xFF16A34A),
+      );
+    case AppToastState.error:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFFECACA),
+        iconBackground: Color(0xFFFEE2E2),
+        iconColor: Color(0xFFDC2626),
+      );
+    case AppToastState.warning:
+      return const _ToastPalette(
+        background: Colors.white,
+        border: Color(0xFFFDE68A),
+        iconBackground: Color(0xFFFFF7ED),
+        iconColor: Color(0xFFEA580C),
+      );
+  }
+}
+
+class _ToastPalette {
+  const _ToastPalette({
+    required this.background,
+    required this.border,
+    required this.iconBackground,
+    required this.iconColor,
+  });
+
+  final Color background;
+  final Color border;
+  final Color iconBackground;
+  final Color iconColor;
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>바뀐 점을 쉽게 다시 정리</h2>
+      <ul>
+        <li><code>state</code>를 이제 nullable로 받아서, 호출부가 원하면 생략할 수 있습니다.</li>
+        <li>생략되면 <code>_inferToastState(...)</code>가 문구를 보고 상태를 추론합니다.</li>
+        <li><code>DisplaySettings</code>를 optional로 받아 큰 글씨일 때 폭과 폰트 크기를 키웁니다.</li>
+        <li><code>_ToastPalette</code>와 <code>_resolveIcon()</code>로 상태별 표현을 분리했습니다.</li>
+      </ul>
+    </section>
+
+    <section class="card success">
+      <h2>15일차 완료 기준</h2>
+      <ul>
+        <li><code>app_toast.dart</code>가 단순 토스트 위젯이 아니라 공통 토스트 시스템 역할을 한다.</li>
+        <li><code>info / listening / processing / success / error / warning</code> 상태를 모두 표현할 수 있다.</li>
+        <li>상태를 직접 넘기지 않아도 문구 기반 추론이 가능하다.</li>
+        <li><code>largeText</code> 반영 준비가 들어가 있다.</li>
+        <li>실제/데모 모드가 같은 토스트 규칙을 공유할 수 있다.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
