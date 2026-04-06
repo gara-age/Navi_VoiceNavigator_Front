@@ -13,6 +13,7 @@ class AppTitleBarMacos extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final isHighContrast = surfaceTheme.accent == const Color(0xFFFFFF00);
     const topInset = 0.0;
 
     return Column(
@@ -69,10 +70,10 @@ class AppTitleBarMacos extends StatelessWidget {
                   color: surfaceTheme.accent,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.mic_rounded,
                   size: 20,
-                  color: Colors.white,
+                  color: isHighContrast ? Colors.black : Colors.white,
                 ),
               ),
             ],

@@ -153,6 +153,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
   }
 
+  DisplaySettings get _toastDisplaySettings => _settings.display;
+
   _DemoResult _scenarioResult(DemoScenario scenario) {
     switch (scenario) {
       case DemoScenario.youtube:
@@ -288,6 +290,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '음성을 듣고 있습니다. 요청을 받는 중입니다.',
       title: '음성 수신 중',
       state: AppToastState.listening,
+      displaySettings: _toastDisplaySettings,
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 1200));
@@ -306,6 +309,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '요청을 분석하고 다음 작업을 준비하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
+      displaySettings: _toastDisplaySettings,
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 1500));
@@ -327,6 +331,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
+      displaySettings: _toastDisplaySettings,
     );
   }
 
@@ -346,6 +351,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '현재 화면을 읽고 핵심 내용을 정리하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
+      displaySettings: _toastDisplaySettings,
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 1300));
@@ -366,6 +372,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
+      displaySettings: _toastDisplaySettings,
     );
   }
 
@@ -385,6 +392,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '요청을 분석하고 다음 작업을 준비하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
+      displaySettings: _toastDisplaySettings,
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 1200));
@@ -406,6 +414,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
+      displaySettings: _toastDisplaySettings,
     );
   }
 

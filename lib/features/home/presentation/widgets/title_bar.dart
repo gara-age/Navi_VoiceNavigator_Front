@@ -15,6 +15,7 @@ class AppTitleBar extends StatelessWidget {
     }
 
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final isHighContrast = surfaceTheme.accent == const Color(0xFFFFFF00);
 
     return Container(
       height: 64,
@@ -34,9 +35,9 @@ class AppTitleBar extends StatelessWidget {
               color: surfaceTheme.accent,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.mic_rounded,
-              color: Colors.white,
+              color: isHighContrast ? Colors.black : Colors.white,
               size: 22,
             ),
           ),

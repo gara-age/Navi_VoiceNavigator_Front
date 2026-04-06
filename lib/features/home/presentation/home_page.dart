@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/colors.dart';
 import '../../../../shared/models/response_models.dart';
+import '../../../../shared/models/settings_models.dart';
 import '../../../../shared/services/local_background_event_service.dart';
 import '../../../../shared/utils/shortcut_utils.dart';
 import '../../listening/application/listening_controller.dart';
@@ -59,6 +60,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     notifier.setSecureMode(secureEnabled);
   }
 
+  DisplaySettings get _toastDisplaySettings {
+    return ref.read(settingsControllerProvider).display;
+  }
+
   void _showCommandResultToast(CommandResponseModel response) {
     switch (response.status) {
       case CommandResponseStatus.success:
@@ -67,6 +72,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           response.followUp ?? '결과를 준비했습니다. 이어서 다음 작업도 안내할 수 있습니다.',
           title: '작업 완료',
           state: AppToastState.success,
+          displaySettings: _toastDisplaySettings,
         );
         break;
       case CommandResponseStatus.warning:
@@ -75,6 +81,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           response.summary,
           title: '확인 필요',
           state: AppToastState.warning,
+          displaySettings: _toastDisplaySettings,
         );
         break;
       case CommandResponseStatus.error:
@@ -83,6 +90,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           response.summary,
           title: '작업 실패',
           state: AppToastState.error,
+          displaySettings: _toastDisplaySettings,
         );
         break;
     }
@@ -102,6 +110,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           '음성을 듣고 있습니다. 요청을 받는 중입니다.',
           title: '음성 수신 중',
           state: AppToastState.listening,
+          displaySettings: _toastDisplaySettings,
         );
       }
       return;
@@ -114,6 +123,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         '요청을 분석하고 다음 작업을 준비하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
+        displaySettings: _toastDisplaySettings,
       );
     }
     final response = await sessionNotifier.stopListeningAndProcess();
@@ -134,6 +144,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         '현재 화면을 읽고 핵심 내용을 정리하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
+        displaySettings: _toastDisplaySettings,
       );
     }
     final response = await sessionNotifier.triggerScreenRead();
@@ -155,6 +166,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         '요청을 분석하고 다음 작업을 준비하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
+        displaySettings: _toastDisplaySettings,
       );
     }
     final response = _shouldTreatAsFollowUp(normalizedText)
