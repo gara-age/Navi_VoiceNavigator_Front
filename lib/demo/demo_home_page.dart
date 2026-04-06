@@ -60,6 +60,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
   String? _followUp;
   Timer? _backgroundEventTimer;
   bool _handlingBackgroundEvent = false;
+  String? _lastHandledEventId;
+  int _lastHandledEventAtMs = 0;
 
   @override
   void initState() {
@@ -206,6 +208,34 @@ class _DemoHomePageState extends State<DemoHomePage> {
     return _scenarioResult(DemoScenario.general);
   }
 
+  bool _canHandleBackgroundEvent(BackgroundEvent event) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (_lastHandledEventId == event.id) {
+      return false;
+    }
+
+    if (now - _lastHandledEventAtMs < 350) {
+      return false;
+    }
+
+    switch (event.type) {
+      case 'START_LISTENING':
+        return !_isBusy;
+      case 'START_SCREEN_READ':
+        return !_isBusy;
+      case 'OPEN_SETTINGS':
+        return !_showSettingsModal;
+      default:
+        return false;
+    }
+  }
+
+  void _markBackgroundEventHandled(BackgroundEvent event) {
+    _lastHandledEventId = event.id;
+    _lastHandledEventAtMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
   Future<void> _pollBackgroundEvent() async {
     if (!mounted || _handlingBackgroundEvent) {
       return;
@@ -218,14 +248,21 @@ class _DemoHomePageState extends State<DemoHomePage> {
         return;
       }
 
-      switch (event) {
+      if (!_canHandleBackgroundEvent(event)) {
+        return;
+      }
+
+      switch (event.type) {
         case 'START_LISTENING':
+          _markBackgroundEventHandled(event);
           await _simulateListen();
           break;
         case 'START_SCREEN_READ':
+          _markBackgroundEventHandled(event);
           await _simulateScreenRead();
           break;
         case 'OPEN_SETTINGS':
+          _markBackgroundEventHandled(event);
           _openSettings();
           break;
       }

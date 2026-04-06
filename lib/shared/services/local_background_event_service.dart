@@ -1,13 +1,39 @@
 import 'dart:convert';
 import 'dart:io';
 
+class BackgroundEvent {
+  const BackgroundEvent({
+    required this.type,
+    required this.id,
+    required this.createdAtMs,
+  });
+
+  final String type;
+  final String id;
+  final int createdAtMs;
+
+  factory BackgroundEvent.fromJson(Map<String, dynamic> json) {
+    final type = json['type']?.toString().trim() ?? '';
+    final id = json['id']?.toString().trim() ?? '';
+    final createdAtMs = json['created_at_ms'] is num
+        ? (json['created_at_ms'] as num).toInt()
+        : DateTime.now().millisecondsSinceEpoch;
+
+    return BackgroundEvent(
+      type: type,
+      id: id.isEmpty ? '$type-$createdAtMs' : id,
+      createdAtMs: createdAtMs,
+    );
+  }
+}
+
 class LocalBackgroundEventService {
   LocalBackgroundEventService._();
 
   static final LocalBackgroundEventService instance =
       LocalBackgroundEventService._();
 
-  Future<String?> pollEvent() async {
+  Future<BackgroundEvent?> pollEvent() async {
     final file = await _resolveEventFile();
     if (file == null || !await file.exists()) {
       return null;
@@ -26,14 +52,14 @@ class LocalBackgroundEventService {
         return null;
       }
 
-      final type = decoded['type']?.toString().trim();
-      if (type == null || type.isEmpty) {
+      final event = BackgroundEvent.fromJson(decoded);
+      if (event.type.isEmpty) {
         await clearEvent();
         return null;
       }
 
       await clearEvent();
-      return type;
+      return event;
     } catch (_) {
       await clearEvent();
       return null;

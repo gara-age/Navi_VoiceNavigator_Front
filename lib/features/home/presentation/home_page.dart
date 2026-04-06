@@ -28,6 +28,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   bool _showSettings = false;
   Timer? _backgroundEventTimer;
   bool _handlingBackgroundEvent = false;
+  String? _lastHandledEventId;
+  int _lastHandledEventAtMs = 0;
 
   @override
   void initState() {
@@ -144,6 +146,36 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  bool _canHandleBackgroundEvent(BackgroundEvent event) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (_lastHandledEventId == event.id) {
+      return false;
+    }
+
+    if (now - _lastHandledEventAtMs < 350) {
+      return false;
+    }
+
+    final sessionState = ref.read(sessionControllerProvider);
+
+    switch (event.type) {
+      case 'START_LISTENING':
+        return !sessionState.isBusy;
+      case 'START_SCREEN_READ':
+        return !sessionState.isBusy;
+      case 'OPEN_SETTINGS':
+        return !_showSettings;
+      default:
+        return false;
+    }
+  }
+
+  void _markBackgroundEventHandled(BackgroundEvent event) {
+    _lastHandledEventId = event.id;
+    _lastHandledEventAtMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
   Future<void> _pollBackgroundEvent() async {
     if (!mounted || _handlingBackgroundEvent) {
       return;
@@ -156,14 +188,21 @@ class _HomePageState extends ConsumerState<HomePage> {
         return;
       }
 
-      switch (event) {
+      if (!_canHandleBackgroundEvent(event)) {
+        return;
+      }
+
+      switch (event.type) {
         case 'START_LISTENING':
+          _markBackgroundEventHandled(event);
           await _handleListen();
           break;
         case 'START_SCREEN_READ':
+          _markBackgroundEventHandled(event);
           await _handleScreenRead();
           break;
         case 'OPEN_SETTINGS':
+          _markBackgroundEventHandled(event);
           if (!_showSettings) {
             setState(() => _showSettings = true);
           }
