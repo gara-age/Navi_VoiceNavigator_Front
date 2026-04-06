@@ -1,4 +1,194 @@
-import 'package:flutter/material.dart';
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day 8 Tutorial - Settings Modal Upgrade</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #e2e8f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px 20px 80px;
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        color: var(--text);
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        line-height: 1.65;
+      }
+      .page { max-width: 1120px; margin: 0 auto; }
+      .hero, .section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+      .hero { padding: 32px; margin-bottom: 24px; }
+      .section { padding: 28px; margin-bottom: 20px; }
+      h1, h2, h3 { margin: 0 0 12px; line-height: 1.3; }
+      h1 { font-size: 34px; }
+      h2 {
+        font-size: 24px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 20px;
+      }
+      h3 { font-size: 18px; margin-top: 28px; }
+      p { margin: 0 0 14px; color: var(--muted); }
+      ul, ol { margin: 0 0 14px 20px; padding: 0; color: var(--muted); }
+      li + li { margin-top: 6px; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      .path {
+        display: inline-block;
+        margin: 8px 0 14px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+      .step, .callout {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+      .step strong, .callout strong { display: block; margin-bottom: 6px; }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      .card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+      }
+      .card strong { display: block; margin-bottom: 8px; }
+      pre {
+        overflow-x: auto;
+        margin: 14px 0 18px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <div class="badge">Day 8</div>
+        <h1>실제 모드 설정 모달을 데모 모드 수준으로 고도화</h1>
+        <p>
+          이 문서는 Day 7이 끝난 상태에서 시작합니다. 오늘은
+          <strong>실제 모드 설정 모달</strong>을 데모 모드와 같은 수준으로
+          끌어올립니다.
+        </p>
+        <p>
+          중요한 점은 <strong>현재 화면 읽기 버튼은 모달을 띄우지 않는다</strong>는 것입니다.
+          이 버튼은 음성 듣기처럼 읽기 신호를 보내는 액션으로 유지하고,
+          오늘은 설정 UX 개선에 집중합니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>오늘 수정할 파일</h2>
+        <div class="grid">
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/features/settings/application/settings_controller.dart</div>
+            <p>설정 draft를 한 번에 반영하는 메서드를 추가합니다.</p>
+          </div>
+          <div class="card">
+            <strong>교체 파일</strong>
+            <div class="path">lib/features/settings/presentation/settings_modal.dart</div>
+            <p>실제 모드 설정 모달을 데모 모드 수준으로 전면 교체합니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/features/home/presentation/home_page.dart</div>
+            <p>실제 모드에서 화면 읽기 모달을 열고 결과를 보여줍니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_home_page.dart</div>
+            <p>비교 기준으로 참조만 하고, 실제 핵심 변경은 설정 모달 쪽에 집중합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1. settings_controller.dart 수정</h2>
+        <div class="path">lib/features/settings/application/settings_controller.dart</div>
+        <p>
+          오늘부터 실제 모드 설정 모달도 내부에서 임시 draft 설정을 들고 있습니다.
+          그래서 저장 버튼을 눌렀을 때
+          <strong>설정 전체를 한 번에 반영</strong>할 메서드가 필요합니다.
+        </p>
+        <div class="step">
+          <strong>어디에 추가하나</strong>
+          <div><code>Future&lt;void&gt; save()</code> 메서드 바로 아래에 추가하면 가장 보기 좋습니다.</div>
+        </div>
+        <pre><code>void replaceAll(AppSettings next) {
+  state = next;
+}</code></pre>
+        <p>
+          이 메서드는 저장 시점에 draft 설정을 통째로 현재 설정으로 바꾸는 역할입니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>2. 실제 모드 설정 모달 전면 교체</h2>
+        <div class="path">lib/features/settings/presentation/settings_modal.dart</div>
+        <p>
+          이 단계가 오늘의 핵심입니다. 기존 실제 모드 설정 모달은 탭형이긴 하지만
+          아직 <code>TextField</code>로 단축키를 입력받고 있었습니다.
+          이제는 Day 7 데모 모드처럼
+          <strong>draft 상태 + 단축키 직접 캡처 + 저장 시 일괄 반영</strong>
+          구조로 바꿉니다.
+        </p>
+        <div class="callout">
+          <strong>왜 전체 교체하나요?</strong>
+          <div>
+            기존 구조 위에 조금씩 덧붙이는 것보다, 데모 모드에서 이미 검증된 구조로
+            다시 맞추는 것이 훨씬 안전합니다. 특히 포커스 처리와 단축키 캡처는
+            부분 수정보다 전체 교체가 오류를 줄입니다.
+          </div>
+        </div>
+        <div class="step">
+          <strong>진행 방법</strong>
+          <div>
+            기존 <code>settings_modal.dart</code> 파일 내용을 전부 지우고,
+            아래 전체 코드를 그대로 넣습니다.
+          </div>
+        </div>
+        <pre><code>import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,10 +206,10 @@ class SettingsModal extends ConsumerStatefulWidget {
   final VoidCallback onClose;
 
   @override
-  ConsumerState<SettingsModal> createState() => _SettingsModalState();
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
 }
 
-class _SettingsModalState extends ConsumerState<SettingsModal> {
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
   static const _tabs = ['기본 설정', '단축키', '보안', '화면 설정'];
 
   final FocusNode _focusNode = FocusNode(debugLabel: 'settings_modal_focus');
@@ -55,14 +245,14 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
 
     if (_capturingField != null) {
       if (event.logicalKey == LogicalKeyboardKey.escape) {
-        setState(() => _capturingField = null);
+        setState(() =&gt; _capturingField = null);
         return KeyEventResult.handled;
       }
 
       if (event.logicalKey == LogicalKeyboardKey.backspace ||
           event.logicalKey == LogicalKeyboardKey.delete) {
         _setShortcut(_capturingField!, '');
-        setState(() => _capturingField = null);
+        setState(() =&gt; _capturingField = null);
         return KeyEventResult.handled;
       }
 
@@ -72,7 +262,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
       }
 
       _setShortcut(_capturingField!, shortcut);
-      setState(() => _capturingField = null);
+      setState(() =&gt; _capturingField = null);
       return KeyEventResult.handled;
     }
 
@@ -80,11 +270,11 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
   }
 
   void _update(AppSettings next) {
-    setState(() => _draftSettings = next);
+    setState(() =&gt; _draftSettings = next);
   }
 
   void _selectTab(int value) {
-    setState(() => _selectedTab = value);
+    setState(() =&gt; _selectedTab = value);
     if (_bodyScrollController.hasClients) {
       _bodyScrollController.jumpTo(0);
     }
@@ -95,15 +285,15 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
     var shortcuts = _draftSettings.shortcuts;
 
     if (normalized.isNotEmpty) {
-      if (field != 'listen' &&
+      if (field != 'listen' &amp;&amp;
           ShortcutUtils.normalize(shortcuts.listenToggle) == normalized) {
         shortcuts = shortcuts.copyWith(listenToggle: '');
       }
-      if (field != 'screen' &&
+      if (field != 'screen' &amp;&amp;
           ShortcutUtils.normalize(shortcuts.screenRead) == normalized) {
         shortcuts = shortcuts.copyWith(screenRead: '');
       }
-      if (field != 'settings' &&
+      if (field != 'settings' &amp;&amp;
           ShortcutUtils.normalize(shortcuts.openSettings) == normalized) {
         shortcuts = shortcuts.copyWith(openSettings: '');
       }
@@ -124,7 +314,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
     _update(_draftSettings.copyWith(shortcuts: shortcuts));
   }
 
-  Future<void> _saveDraft() async {
+  Future&lt;void&gt; _saveDraft() async {
     final notifier = ref.read(settingsControllerProvider.notifier);
     notifier.replaceAll(_draftSettings);
     await notifier.save();
@@ -135,7 +325,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Focus(
       focusNode: _focusNode,
@@ -248,7 +438,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '자동 언어 감지',
               description: '입력 음성의 언어를 자동으로 감지합니다.',
               value: _draftSettings.general.autoLanguageDetection,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   general: _draftSettings.general.copyWith(
                     autoLanguageDetection: value,
@@ -262,7 +452,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               value: _draftSettings.general.microphoneSensitivity,
               min: 0.0,
               max: 1.0,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   general: _draftSettings.general.copyWith(
                     microphoneSensitivity: value,
@@ -276,7 +466,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               value: _draftSettings.general.ttsSpeed,
               min: 0.5,
               max: 1.5,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   general: _draftSettings.general.copyWith(
                     ttsSpeed: value,
@@ -295,7 +485,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '단축키 사용',
               description: '키 조합으로 주요 기능을 실행합니다.',
               value: _draftSettings.shortcuts.enabled,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   shortcuts: _draftSettings.shortcuts.copyWith(enabled: value),
                 ),
@@ -305,19 +495,19 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '음성 듣기',
               value: _draftSettings.shortcuts.listenToggle,
               capturing: _capturingField == 'listen',
-              onCapture: () => setState(() => _capturingField = 'listen'),
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'listen'),
             ),
             _ShortcutCard(
               title: '현재 화면 읽기',
               value: _draftSettings.shortcuts.screenRead,
               capturing: _capturingField == 'screen',
-              onCapture: () => setState(() => _capturingField = 'screen'),
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'screen'),
             ),
             _ShortcutCard(
               title: '설정 열기',
               value: _draftSettings.shortcuts.openSettings,
               capturing: _capturingField == 'settings',
-              onCapture: () => setState(() => _capturingField = 'settings'),
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'settings'),
             ),
           ],
         );
@@ -330,7 +520,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '보안 입력 모드',
               description: '민감한 입력 상황에서 읽기와 입력을 제한합니다.',
               value: _draftSettings.security.secureInputMode,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   security: _draftSettings.security.copyWith(
                     secureInputMode: value,
@@ -342,7 +532,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '민감한 도메인 경고',
               description: '민감한 페이지에서 경고를 표시합니다.',
               value: _draftSettings.security.sensitiveDomainAlert,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   security: _draftSettings.security.copyWith(
                     sensitiveDomainAlert: value,
@@ -361,7 +551,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '다크 테마',
               description: '어두운 테마를 사용합니다.',
               value: _draftSettings.display.darkTheme,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   display: _draftSettings.display.copyWith(darkTheme: value),
                 ),
@@ -371,7 +561,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '큰 글씨',
               description: '앱 전체 텍스트를 더 크게 표시합니다.',
               value: _draftSettings.display.largeText,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   display: _draftSettings.display.copyWith(largeText: value),
                 ),
@@ -381,7 +571,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '고대비',
               description: '명암 대비를 높여 가독성을 향상합니다.',
               value: _draftSettings.display.highContrast,
-              onChanged: (value) => _update(
+              onChanged: (value) =&gt; _update(
                 _draftSettings.copyWith(
                   display: _draftSettings.display.copyWith(highContrast: value),
                 ),
@@ -408,7 +598,7 @@ class _ModalHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
@@ -455,13 +645,13 @@ class _Sidebar extends StatelessWidget {
     required this.onSelect,
   });
 
-  final List<String> items;
+  final List&lt;String&gt; items;
   final int selectedTab;
-  final ValueChanged<int> onSelect;
+  final ValueChanged&lt;int&gt; onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return SizedBox(
       width: 190,
@@ -475,13 +665,11 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
-              onTap: () => onSelect(index),
+              onTap: () =&gt; onSelect(index),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color:
-                      selected ? surfaceTheme.contentBackground : Colors.transparent,
+                  color: selected ? surfaceTheme.contentBackground : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: selected ? surfaceTheme.accent : surfaceTheme.border,
@@ -513,7 +701,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -541,11 +729,11 @@ class _ToggleCard extends StatelessWidget {
   final String title;
   final String description;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged&lt;bool&gt; onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -609,11 +797,11 @@ class _SliderCard extends StatelessWidget {
   final double value;
   final double min;
   final double max;
-  final ValueChanged<double> onChanged;
+  final ValueChanged&lt;double&gt; onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -684,7 +872,7 @@ class _ShortcutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -736,4 +924,69 @@ class _ShortcutCard extends StatelessWidget {
       ),
     );
   }
-}
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>3. home_page.dart는 왜 크게 안 바꾸나</h2>
+        <div class="path">lib/features/home/presentation/home_page.dart</div>
+        <p>
+          이번 수정의 핵심은 설정 모달입니다. <strong>현재 화면 읽기 버튼은 모달을 띄우지 않습니다.</strong>
+          이 버튼은 기존처럼 읽기 신호를 보내고, 결과는 현재 화면 상태 흐름 안에서 처리합니다.
+        </p>
+        <div class="callout">
+          <strong>정리</strong>
+          <div>
+            `현재 화면 읽기`는 음성 듣기처럼 액션 신호를 보내는 버튼입니다. 따라서 8일차에서는
+            <code>home_page.dart</code>와 <code>demo_home_page.dart</code>를
+            화면 읽기 모달 기준으로 바꾸지 않습니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>4. demo_home_page.dart는 왜 그대로 두나</h2>
+        <div class="path">lib/demo/demo_home_page.dart</div>
+        <p>
+          데모 모드 역시 `현재 화면 읽기`는 읽기 신호를 보내는 액션입니다.
+          따라서 이번 Day 8에서는 데모 홈의 화면 읽기 동작을 모달 중심으로 바꾸지 않습니다.
+        </p>
+        <p>
+          즉 Day 8의 실제 변경 대상은 설정 모달과 설정 컨트롤러입니다.
+          데모 홈은 Day 7에서 만든 설정 모달/단축키 흐름을 그대로 유지합니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>5. 실행 후 확인할 것</h2>
+        <ol>
+          <li>실제 모드에서 설정 모달을 열고 단축키 캡처가 되는지 확인합니다.</li>
+          <li>설정 모달에서 값을 바꿔도 저장 전까지는 draft 상태로만 유지되는지 확인합니다.</li>
+          <li>저장 후 실제 테마나 단축키가 반영되는지 확인합니다.</li>
+          <li><strong>현재 화면 읽기</strong>를 눌렀을 때 모달이 뜨지 않고 기존 액션 흐름이 유지되는지 확인합니다.</li>
+          <li>데모 모드 설정/단축키와 실제 모드 설정/단축키의 구조가 비슷해졌는지 확인합니다.</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>6. 오늘 꼭 이해해야 하는 것</h2>
+        <ul>
+          <li>왜 실제 모드 설정 모달도 draft 상태를 가져야 하는가</li>
+          <li>왜 단축키는 <code>TextField</code>보다 <code>Focus + onKeyEvent</code>가 적합한가</li>
+          <li>왜 <code>현재 화면 읽기</code>는 결과 모달이 아니라 신호 전송 액션으로 유지해야 하는가</li>
+          <li>왜 실제 모드 설정 UX를 데모 모드와 맞추는 것이 다음 단계로 중요한가</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>7. Day 8 완료 기준</h2>
+        <ul>
+          <li>실제 모드 설정 모달이 데모 모드와 같은 구조로 동작한다.</li>
+          <li>실제 모드에서 단축키 직접 캡처가 가능하다.</li>
+          <li>현재 화면 읽기 버튼은 모달을 띄우지 않고 기존처럼 읽기 신호를 보낸다.</li>
+          <li>실제 모드 설정 UX가 데모 모드 설정 UX와 같은 계열로 정리된다.</li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>
