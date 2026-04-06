@@ -57,8 +57,8 @@ class ReadyState extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   isBusy
-                      ? '명령을 처리하고 있습니다. 잠시만 기다려 주세요.'
-                      : '준비 완료. 왼쪽의 기능을 선택하거나 텍스트 명령을 입력하세요.',
+                      ? '요청을 분석하고 다음 작업을 준비하고 있습니다. 잠시만 기다려 주세요.'
+                      : '준비 완료. 음성 듣기, 화면 읽기, 텍스트 입력 중 원하는 방식으로 작업을 시작할 수 있습니다.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -98,6 +98,15 @@ class ReadyState extends StatelessWidget {
                         ),
                         if (followUp != null) ...[
                           const SizedBox(height: 14),
+                          Text(
+                            '다음 제안',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: surfaceTheme.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),

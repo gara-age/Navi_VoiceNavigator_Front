@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 19 - Common UX Alignment Tutorial</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --ink: #18212f;
+      --muted: #5c667a;
+      --line: #d9dfeb;
+      --accent: #0f766e;
+      --accent-soft: #ecfeff;
+      --code: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    .hero, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.3; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 24px; margin-top: 10px; }
+    h3 { font-size: 18px; margin-top: 18px; }
+    p, li { color: var(--muted); }
+    ul, ol { padding-left: 22px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #eef2ff;
+      color: #312e81;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    pre {
+      margin: 14px 0;
+      padding: 16px;
+      border-radius: 16px;
+      overflow-x: auto;
+      background: var(--code);
+      color: #e5eefb;
+    }
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 14px 16px;
+      border-radius: 14px;
+      color: #134e4a;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: #fafcff;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Day 19. Common UX Alignment</h1>
+      <p>이번 단계는 새 기능을 추가하는 날이 아니라, 데모 모드와 실제 모드가 같은 제품처럼 보이도록 문구와 결과 영역 톤을 맞추는 날입니다. 왼쪽 액션 패널 설명, 중앙 결과 영역 안내, 입력창 예시 문구, 토스트 문장 리듬을 공통 UX 규칙으로 정리합니다.</p>
+      <div class="callout">
+        Day 19의 핵심은 layout 재설계가 아니라 <strong>copy polishing</strong>과 <strong>interaction tone alignment</strong>입니다.
+      </div>
+    </div>
+
+    <section>
+      <h2>1. 오늘 수정하는 파일과 역할</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><code>action_panel.dart</code></h3>
+          <p>왼쪽 주요 기능 패널입니다. 버튼 설명과 모드 전환 카드 설명을 공통 제품 톤으로 맞춥니다.</p>
+        </div>
+        <div class="card">
+          <h3><code>ready_state.dart</code></h3>
+          <p>중앙 결과 영역입니다. 준비 상태 문구, 결과 요약과 후속 제안의 라벨 구조를 더 분명하게 정리합니다.</p>
+        </div>
+        <div class="card">
+          <h3><code>text_command_composer.dart</code></h3>
+          <p>텍스트 명령 입력창입니다. placeholder와 버튼 문구를 더 친절하고 일관된 제품형 문장으로 바꿉니다.</p>
+        </div>
+        <div class="card">
+          <h3><code>home_page.dart</code>, <code>demo_home_page.dart</code></h3>
+          <p>실제 모드와 데모 모드에서 보여주는 토스트와 결과 문장 리듬을 공통 규칙으로 맞춥니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. ActionPanel 문구 정리</h2>
+      <p>기존 문구는 기능 설명 중심이었고 길이도 조금씩 달랐습니다. Day 19에서는 같은 구조의 문장으로 정리해서 버튼들이 한 세트처럼 읽히게 만듭니다.</p>
+      <pre><code>_CommandButton(
+  icon: Icons.mic_rounded,
+  title: isRecording ? '듣는 중' : '음성 듣기',
+  description: '음성 명령을 듣고 다음 작업을 준비합니다.',
+  shortcut: ShortcutUtils.displayLabel(listenShortcut),
+  isActive: isRecording,
+  onPressed: onListenPressed,
+),
+
+_CommandButton(
+  icon: Icons.visibility_rounded,
+  title: '현재 화면 읽기',
+  description: '현재 화면을 요약하고 핵심 내용을 읽어드립니다.',
+  shortcut: ShortcutUtils.displayLabel(screenReadShortcut),
+  onPressed: onScreenReadPressed,
+),
+
+_CommandButton(
+  icon: Icons.settings_rounded,
+  title: '설정',
+  description: '단축키, 보안, 화면 표시 옵션을 조정합니다.',
+  shortcut: ShortcutUtils.displayLabel(settingsShortcut),
+  onPressed: onSettingsPressed,
+),</code></pre>
+      <p>모드 전환 카드도 같은 방식으로 다듬습니다.</p>
+      <pre><code>_ModeOption(
+  label: '일반 모드',
+  description: '일반적인 탐색과 안내 작업에 적합한 기본 모드입니다.',
+  selected: !secureModeEnabled,
+  secure: false,
+  onTap: () =&gt; onToggleMode(false),
+),
+
+_ModeOption(
+  label: '보안 입력 모드',
+  description: '민감한 입력과 읽기 동작을 더 신중하게 다루는 모드입니다.',
+  selected: secureModeEnabled,
+  secure: true,
+  onTap: () =&gt; onToggleMode(true),
+),</code></pre>
+    </section>
+
+    <section>
+      <h2>3. ReadyState 결과 영역 정리</h2>
+      <p>중앙 영역은 공통 UX에서 가장 크게 보이는 부분입니다. 준비 상태 설명을 더 제품형 문장으로 바꾸고, <code>followUp</code>에는 고정 라벨 <code>다음 제안</code>을 붙여 구조를 더 쉽게 이해하게 만듭니다.</p>
+      <pre><code>Text(
+  isBusy
+      ? '요청을 분석하고 다음 작업을 준비하고 있습니다. 잠시만 기다려 주세요.'
+      : '준비 완료. 음성 듣기, 화면 읽기, 텍스트 입력 중 원하는 방식으로 작업을 시작할 수 있습니다.',
+  textAlign: TextAlign.center,
+  style: TextStyle(
+    fontSize: 14,
+    height: 1.6,
+    color: surfaceTheme.textMuted,
+  ),
+),</code></pre>
+      <pre><code>if (followUp != null) ...[
+  const SizedBox(height: 14),
+  Text(
+    '다음 제안',
+    style: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      color: surfaceTheme.textMuted,
+    ),
+  ),
+  const SizedBox(height: 8),
+  Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: surfaceTheme.contentBackground,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: surfaceTheme.border),
+    ),
+    child: Text(followUp!),
+  ),
+],</code></pre>
+    </section>
+
+    <section>
+      <h2>4. 입력창 문구 정리</h2>
+      <p>입력창은 사용자가 가장 바로 상호작용하는 곳이라 문구가 중요합니다. 모호한 설명형 placeholder 대신 바로 따라 쓸 수 있는 예시를 주는 편이 더 친절합니다.</p>
+      <pre><code>decoration: const InputDecoration(
+  hintText: '예: 유튜브에서 고양이 영상 찾아줘',
+  border: OutlineInputBorder(),
+),</code></pre>
+      <pre><code>ElevatedButton(
+  onPressed: widget.isBusy ? null : _submit,
+  child: Text(widget.isBusy ? '요청 준비 중...' : '텍스트 명령 실행'),
+),</code></pre>
+    </section>
+
+    <section>
+      <h2>5. 실제 모드와 데모 모드 토스트 톤 맞추기</h2>
+      <p>두 모드가 다른 앱처럼 보이지 않으려면 같은 상태에서 비슷한 문장 리듬을 써야 합니다. Day 19에서는 <code>listening</code>, <code>processing</code>, <code>success</code> 토스트 문구를 같은 패턴으로 정리합니다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Listening</h3>
+          <pre><code>'음성을 듣고 있습니다. 요청을 받는 중입니다.'</code></pre>
+        </div>
+        <div class="card">
+          <h3>Processing</h3>
+          <pre><code>'요청을 분석하고 다음 작업을 준비하고 있습니다.'</code></pre>
+        </div>
+        <div class="card">
+          <h3>Success</h3>
+          <pre><code>'결과를 준비했습니다. 이어서 다음 작업도 안내할 수 있습니다.'</code></pre>
+        </div>
+      </div>
+      <p>실제 모드의 성공 토스트는 <code>followUp</code>가 있으면 그 문구를 먼저 보여주고, 없을 때만 공통 성공 문장을 보여주도록 유지합니다.</p>
+      <pre><code>void _showCommandResultToast(CommandResponseModel response) {
+  switch (response.status) {
+    case CommandResponseStatus.success:
+      showAppToast(
+        context,
+        response.followUp ?? '결과를 준비했습니다. 이어서 다음 작업도 안내할 수 있습니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+      break;
+    case CommandResponseStatus.warning:
+      showAppToast(
+        context,
+        response.summary,
+        title: '확인 필요',
+        state: AppToastState.warning,
+      );
+      break;
+    case CommandResponseStatus.error:
+      showAppToast(
+        context,
+        response.summary,
+        title: '작업 실패',
+        state: AppToastState.error,
+      );
+      break;
+  }
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>6. 데모 시나리오 문구도 같은 제품 톤으로 정리</h2>
+      <p>데모 응답이 너무 “가짜 예시”처럼 보이면 실제 모드와 거리가 생깁니다. 그래서 시나리오 summary와 followUp도 조금 더 제품형 문장으로 다듬습니다.</p>
+      <pre><code>case DemoScenario.youtube:
+  return const _DemoResult(
+    summary: '유튜브 검색 결과를 정리했습니다. 요청한 키워드와 관련된 대표 영상을 바로 확인할 수 있습니다.',
+    followUp: '첫 번째 영상을 바로 재생할까요?',
+  );
+
+case DemoScenario.naverMap:
+  return const _DemoResult(
+    summary: '지도 검색 결과를 정리했습니다. 현재 위치 기준으로 가장 관련성 높은 장소를 확인했습니다.',
+    followUp: '길찾기 안내를 시작할까요?',
+  );
+
+case DemoScenario.secureInput:
+  return const _DemoResult(
+    summary: '보안 입력이 필요한 화면으로 판단했습니다. 민감한 정보 보호를 위해 일부 동작은 제한됩니다.',
+    followUp: '보안 입력 모드를 유지한 채 계속 진행할까요?',
+  );</code></pre>
+    </section>
+
+    <section>
+      <h2>7. 오늘 꼭 이해해야 하는 것</h2>
+      <ul>
+        <li>Day 19는 새 기능보다 공통 UX의 인상과 리듬을 맞추는 단계입니다.</li>
+        <li>데모와 실제 모드가 완전히 같은 문장을 쓸 필요는 없지만, 같은 규칙의 문장을 써야 같은 제품처럼 느껴집니다.</li>
+        <li><code>ReadyState</code>의 라벨 구조를 고정하면 사용자가 결과를 더 빠르게 읽습니다.</li>
+        <li>토스트 문구는 짧아도 상태 리듬이 같아야 제품 톤이 안정됩니다.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>8. Day 19 완료 기준</h2>
+      <ul>
+        <li><code>ActionPanel</code> 설명 문구가 더 통일감 있게 정리된다.</li>
+        <li><code>ReadyState</code> 준비 상태와 후속 제안 라벨이 더 명확해진다.</li>
+        <li>입력창 placeholder가 더 직접적이고 친절해진다.</li>
+        <li>실제 모드와 데모 모드 토스트 문구 구조가 거의 같은 리듬을 가진다.</li>
+        <li>두 모드가 같은 제품군으로 느껴지는 공통 UX 완성도가 높아진다.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

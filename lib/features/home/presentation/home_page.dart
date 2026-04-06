@@ -60,12 +60,32 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showCommandResultToast(CommandResponseModel response) {
-    showAppToast(
-      context,
-      response.isError ? response.summary : '결과를 읽어드립니다.',
-      title: response.isError ? '작업 실패' : '작업 완료',
-      state: response.isError ? AppToastState.info : AppToastState.success,
-    );
+    switch (response.status) {
+      case CommandResponseStatus.success:
+        showAppToast(
+          context,
+          response.followUp ?? '결과를 준비했습니다. 이어서 다음 작업도 안내할 수 있습니다.',
+          title: '작업 완료',
+          state: AppToastState.success,
+        );
+        break;
+      case CommandResponseStatus.warning:
+        showAppToast(
+          context,
+          response.summary,
+          title: '확인 필요',
+          state: AppToastState.warning,
+        );
+        break;
+      case CommandResponseStatus.error:
+        showAppToast(
+          context,
+          response.summary,
+          title: '작업 실패',
+          state: AppToastState.error,
+        );
+        break;
+    }
   }
 
   Future<void> _handleListen() async {
@@ -79,7 +99,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (mounted) {
         showAppToast(
           context,
-          '음성을 듣고 있습니다. 말씀해주세요.',
+          '음성을 듣고 있습니다. 요청을 받는 중입니다.',
           title: '음성 수신 중',
           state: AppToastState.listening,
         );
@@ -91,7 +111,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (mounted) {
       showAppToast(
         context,
-        '작업을 처리하고 있습니다.',
+        '요청을 분석하고 다음 작업을 준비하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
       );
@@ -111,7 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (mounted) {
       showAppToast(
         context,
-        '화면을 읽어드리고 있습니다.',
+        '현재 화면을 읽고 핵심 내용을 정리하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
       );
@@ -132,7 +152,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (mounted) {
       showAppToast(
         context,
-        '텍스트 명령을 처리하고 있습니다.',
+        '요청을 분석하고 다음 작업을 준비하고 있습니다.',
         title: '작업 처리 중',
         state: AppToastState.processing,
       );

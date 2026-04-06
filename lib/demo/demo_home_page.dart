@@ -158,24 +158,24 @@ class _DemoHomePageState extends State<DemoHomePage> {
       case DemoScenario.youtube:
         return const _DemoResult(
           summary:
-              '유튜브 검색 결과를 준비했습니다. 요청한 키워드와 관련된 상위 영상을 읽어드릴 수 있습니다.',
-          followUp: '첫 번째 영상을 재생할까요?',
+              '유튜브 검색 결과를 정리했습니다. 요청한 키워드와 관련된 대표 영상을 바로 확인할 수 있습니다.',
+          followUp: '첫 번째 영상을 바로 재생할까요?',
         );
       case DemoScenario.naverMap:
         return const _DemoResult(
           summary:
-              '네이버 지도 검색 결과를 준비했습니다. 현재 위치 기준으로 가장 관련성이 높은 장소를 찾았습니다.',
+              '지도 검색 결과를 정리했습니다. 현재 위치 기준으로 가장 관련성 높은 장소를 확인했습니다.',
           followUp: '길찾기 안내를 시작할까요?',
         );
       case DemoScenario.secureInput:
         return const _DemoResult(
           summary:
-              '보안 입력 화면으로 판단했습니다. 민감한 입력을 보호하기 위해 읽기와 자동 입력이 제한됩니다.',
+              '보안 입력이 필요한 화면으로 판단했습니다. 민감한 정보 보호를 위해 일부 동작은 제한됩니다.',
           followUp: '보안 입력 모드를 유지한 채 계속 진행할까요?',
         );
       case DemoScenario.general:
         return const _DemoResult(
-          summary: '명령을 처리했습니다. 현재 데모 환경에서는 요약된 결과만 표시합니다.',
+          summary: '요청을 정리했습니다. 현재 데모 환경에서는 핵심 결과와 다음 제안을 중심으로 안내합니다.',
           followUp: '이어서 다음 작업도 진행할까요?',
         );
     }
@@ -280,12 +280,12 @@ class _DemoHomePageState extends State<DemoHomePage> {
       _isBusy = true;
       _isRecording = true;
       _micStatus = '듣는 중';
-      _summary = '음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.';
+      _summary = '음성을 듣고 있습니다. 잠시 후 요청 분석과 결과 준비 단계로 넘어갑니다.';
       _followUp = null;
     });
     showAppToast(
       context,
-      '음성을 듣고 있습니다. 말씀해주세요.',
+      '음성을 듣고 있습니다. 요청을 받는 중입니다.',
       title: '음성 수신 중',
       state: AppToastState.listening,
     );
@@ -299,11 +299,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
     setState(() {
       _micStatus = '처리중';
       _isRecording = false;
-      _summary = '명령을 분석하고 실행 계획을 준비하고 있습니다.';
+      _summary = '요청을 분석하고 다음 작업을 준비하고 있습니다.';
     });
     showAppToast(
       context,
-      '작업을 처리하고 있습니다.',
+      '요청을 분석하고 다음 작업을 준비하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
     );
@@ -324,7 +324,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
     showAppToast(
       context,
-      '결과를 읽어드립니다.',
+      '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
     );
@@ -338,12 +338,12 @@ class _DemoHomePageState extends State<DemoHomePage> {
     setState(() {
       _isBusy = true;
       _micStatus = '처리중';
-      _summary = '화면을 읽어드리고 있습니다.';
+      _summary = '현재 화면을 읽고 핵심 내용을 정리하고 있습니다.';
       _followUp = null;
     });
     showAppToast(
       context,
-      '화면을 읽어드리고 있습니다.',
+      '현재 화면을 읽고 핵심 내용을 정리하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
     );
@@ -363,7 +363,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
     showAppToast(
       context,
-      '화면을 읽어드렸습니다.',
+      '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
     );
@@ -377,12 +377,12 @@ class _DemoHomePageState extends State<DemoHomePage> {
     setState(() {
       _isBusy = true;
       _micStatus = '처리중';
-      _summary = '텍스트 명령을 처리하고 있습니다.';
+      _summary = '요청을 분석하고 다음 작업을 준비하고 있습니다.';
       _followUp = null;
     });
     showAppToast(
       context,
-      '텍스트 명령을 처리하고 있습니다.',
+      '요청을 분석하고 다음 작업을 준비하고 있습니다.',
       title: '작업 처리 중',
       state: AppToastState.processing,
     );
@@ -403,7 +403,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
     showAppToast(
       context,
-      '텍스트 명령 처리가 완료되었습니다.',
+      '결과를 준비했습니다. 이어서 다음 제안도 확인할 수 있습니다.',
       title: '작업 완료',
       state: AppToastState.success,
     );

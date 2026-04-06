@@ -55,7 +55,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.mic_rounded,
               title: isRecording ? '듣는 중' : '음성 듣기',
-              description: '음성 명령 인식을 시작합니다.',
+              description: '음성 명령을 듣고 다음 작업을 준비합니다.',
               shortcut: ShortcutUtils.displayLabel(listenShortcut),
               isActive: isRecording,
               onPressed: onListenPressed,
@@ -64,7 +64,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.visibility_rounded,
               title: '현재 화면 읽기',
-              description: '현재 화면 요약과 읽기를 시작합니다.',
+              description: '현재 화면을 요약하고 핵심 내용을 읽어드립니다.',
               shortcut: ShortcutUtils.displayLabel(screenReadShortcut),
               onPressed: onScreenReadPressed,
             ),
@@ -72,7 +72,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.settings_rounded,
               title: '설정',
-              description: '기본 설정, 단축키, 보안, 화면 모드',
+              description: '단축키, 보안, 화면 표시 옵션을 조정합니다.',
               shortcut: ShortcutUtils.displayLabel(settingsShortcut),
               onPressed: onSettingsPressed,
             ),
@@ -94,7 +94,7 @@ class ActionPanel extends StatelessWidget {
             ),
             _ModeOption(
               label: '일반 모드',
-              description: '기본 자동화와 안내를 수행합니다.',
+              description: '일반적인 탐색과 안내 작업에 적합한 기본 모드입니다.',
               selected: !secureModeEnabled,
               secure: false,
               onTap: () => onToggleMode(false),
@@ -102,7 +102,7 @@ class ActionPanel extends StatelessWidget {
             const SizedBox(height: 6),
             _ModeOption(
               label: '보안 입력 모드',
-              description: '민감한 입력과 읽기를 더 엄격하게 제한합니다.',
+              description: '민감한 입력과 읽기 동작을 더 신중하게 다루는 모드입니다.',
               selected: secureModeEnabled,
               secure: true,
               onTap: () => onToggleMode(true),

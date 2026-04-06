@@ -41,14 +41,14 @@ class _TextCommandComposerState extends State<TextCommandComposer> {
           maxLines: 3,
           onSubmitted: (_) => _submit(),
           decoration: const InputDecoration(
-            hintText: '메시지 입력을 통해서도 명령을 내릴 수 있습니다',
+            hintText: '예: 유튜브에서 고양이 영상 찾아줘',
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 12),
         ElevatedButton(
           onPressed: widget.isBusy ? null : _submit,
-          child: Text(widget.isBusy ? '처리 중...' : '텍스트 명령 실행'),
+          child: Text(widget.isBusy ? '요청 준비 중...' : '텍스트 명령 실행'),
         ),
       ],
     );
