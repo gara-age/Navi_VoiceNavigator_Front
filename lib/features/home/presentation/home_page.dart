@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/colors.dart';
+import '../../../../shared/models/response_models.dart';
 import '../../listening/application/listening_controller.dart';
 import '../../notifications/presentation/app_toast.dart';
 import '../../session/application/session_controller.dart';
@@ -26,6 +27,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _handleToggleMode(bool secureEnabled) {
     final notifier = ref.read(settingsControllerProvider.notifier);
     notifier.setSecureMode(secureEnabled);
+  }
+
+  void _showCommandResultToast(CommandResponseModel response) {
+    showAppToast(
+      context,
+      response.isError ? response.summary : '결과를 읽어드립니다.',
+      title: response.isError ? '작업 실패' : '작업 완료',
+      state: response.isError ? AppToastState.info : AppToastState.success,
+    );
   }
 
   Future<void> _handleListen() async {
@@ -56,15 +66,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         state: AppToastState.processing,
       );
     }
-    await sessionNotifier.stopListeningAndProcess();
+    final response = await sessionNotifier.stopListeningAndProcess();
     listeningNotifier.reset();
     if (mounted) {
-      showAppToast(
-        context,
-        '결과를 읽어드립니다.',
-        title: '작업 완료',
-        state: AppToastState.success,
-      );
+      _showCommandResultToast(response);
     }
   }
 
@@ -81,15 +86,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         state: AppToastState.processing,
       );
     }
-    await sessionNotifier.triggerScreenRead();
+    final response = await sessionNotifier.triggerScreenRead();
     listeningNotifier.reset();
     if (mounted) {
-      showAppToast(
-        context,
-        '화면을 읽어드렸습니다.',
-        title: '작업 완료',
-        state: AppToastState.success,
-      );
+      _showCommandResultToast(response);
     }
   }
 
@@ -106,15 +106,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         state: AppToastState.processing,
       );
     }
-    await sessionNotifier.submitTextCommand(text);
+    final response = await sessionNotifier.submitTextCommand(text);
     listeningNotifier.reset();
     if (mounted) {
-      showAppToast(
-        context,
-        '텍스트 명령 처리가 완료되었습니다.',
-        title: '작업 완료',
-        state: AppToastState.success,
-      );
+      _showCommandResultToast(response);
     }
   }
 

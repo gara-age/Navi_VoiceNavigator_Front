@@ -12,6 +12,23 @@ import '../features/notifications/presentation/app_toast.dart';
 import '../shared/models/settings_models.dart';
 import '../shared/utils/shortcut_utils.dart';
 
+enum DemoScenario {
+  youtube,
+  naverMap,
+  secureInput,
+  general,
+}
+
+class _DemoResult {
+  const _DemoResult({
+    required this.summary,
+    required this.followUp,
+  });
+
+  final String summary;
+  final String followUp;
+}
+
 class DemoHomePage extends StatefulWidget {
   const DemoHomePage({
     super.key,
@@ -124,6 +141,61 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
   }
 
+  _DemoResult _scenarioResult(DemoScenario scenario) {
+    switch (scenario) {
+      case DemoScenario.youtube:
+        return const _DemoResult(
+          summary:
+              '유튜브 검색 결과를 준비했습니다. 요청한 키워드와 관련된 상위 영상을 읽어드릴 수 있습니다.',
+          followUp: '첫 번째 영상을 재생할까요?',
+        );
+      case DemoScenario.naverMap:
+        return const _DemoResult(
+          summary:
+              '네이버 지도 검색 결과를 준비했습니다. 현재 위치 기준으로 가장 관련성이 높은 장소를 찾았습니다.',
+          followUp: '길찾기 안내를 시작할까요?',
+        );
+      case DemoScenario.secureInput:
+        return const _DemoResult(
+          summary:
+              '보안 입력 화면으로 판단했습니다. 민감한 입력을 보호하기 위해 읽기와 자동 입력이 제한됩니다.',
+          followUp: '보안 입력 모드를 유지한 채 계속 진행할까요?',
+        );
+      case DemoScenario.general:
+        return const _DemoResult(
+          summary: '명령을 처리했습니다. 현재 데모 환경에서는 요약된 결과만 표시합니다.',
+          followUp: '이어서 다음 작업도 진행할까요?',
+        );
+    }
+  }
+
+  _DemoResult _buildDemoResponse(String text) {
+    final normalized = text.trim().toLowerCase();
+
+    if (normalized.contains('유튜브') ||
+        normalized.contains('youtube') ||
+        normalized.contains('영상') ||
+        normalized.contains('동영상')) {
+      return _scenarioResult(DemoScenario.youtube);
+    }
+
+    if (normalized.contains('지도') ||
+        normalized.contains('map') ||
+        normalized.contains('길찾기') ||
+        normalized.contains('네이버')) {
+      return _scenarioResult(DemoScenario.naverMap);
+    }
+
+    if (normalized.contains('비밀번호') ||
+        normalized.contains('password') ||
+        normalized.contains('로그인') ||
+        normalized.contains('보안')) {
+      return _scenarioResult(DemoScenario.secureInput);
+    }
+
+    return _scenarioResult(DemoScenario.general);
+  }
+
   Future<void> _simulateListen() async {
     if (_isBusy) {
       return;
@@ -167,11 +239,13 @@ class _DemoHomePageState extends State<DemoHomePage> {
       return;
     }
 
+    final result = _scenarioResult(DemoScenario.youtube);
+
     setState(() {
       _isBusy = false;
       _micStatus = '대기';
-      _summary = '유튜브 검색 결과를 준비했습니다.';
-      _followUp = '첫 번째 결과를 재생할까요?';
+      _summary = result.summary;
+      _followUp = result.followUp;
     });
     showAppToast(
       context,
@@ -244,11 +318,13 @@ class _DemoHomePageState extends State<DemoHomePage> {
       return;
     }
 
+    final result = _buildDemoResponse(text);
+
     setState(() {
       _isBusy = false;
       _micStatus = '대기';
-      _summary = '텍스트 명령 "$text" 처리 결과입니다.';
-      _followUp = '이어서 다음 작업도 진행할까요?';
+      _summary = result.summary;
+      _followUp = result.followUp;
     });
     showAppToast(
       context,
