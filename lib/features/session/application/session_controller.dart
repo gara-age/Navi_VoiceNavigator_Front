@@ -56,6 +56,11 @@ class SessionUiState {
 class SessionController extends StateNotifier<SessionUiState> {
   SessionController() : super(const SessionUiState());
 
+  bool hasPendingFollowUp() {
+    return _cleanText(state.lastFollowUp) != null &&
+        _cleanText(state.pendingAction) != null;
+  }
+
   Future<CommandResponseModel> submitTextCommand(String text) async {
     state = state.copyWith(isBusy: true);
 
@@ -68,6 +73,24 @@ class SessionController extends StateNotifier<SessionUiState> {
       payload,
       fallbackTranscript: text,
       fallbackSummary: '텍스트 명령을 처리했습니다.',
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future<CommandResponseModel> submitFollowUpResponse(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    final payload = await _requestAgentResponse(
+      command: text,
+      source: 'text',
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: text,
+      fallbackSummary: '후속 응답을 처리했습니다.',
     );
 
     _applyResponse(response);

@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 17 Connected Input Stabilization Tutorial</title>
+  <style>
+    :root { --bg:#f3f7fc; --panel:#fff; --soft:#f8fafc; --text:#0f172a; --muted:#64748b; --line:#dbe4f0; --accent:#2563eb; --accent-soft:#eff6ff; --code-bg:#0f172a; --code-text:#e2e8f0; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif; background:linear-gradient(180deg,#eef4ff 0%,var(--bg) 100%); color:var(--text); line-height:1.7; }
+    .wrap { max-width:1180px; margin:0 auto; padding:32px 18px 72px; }
+    .hero,.card { background:var(--panel); border:1px solid var(--line); border-radius:24px; box-shadow:0 18px 40px rgba(15,23,42,.06); margin-bottom:22px; }
+    .hero { padding:30px; } .card { padding:24px; }
+    .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; }
+    h1,h2,h3 { line-height:1.3; margin:0 0 14px; } h1 { font-size:34px; } h2 { font-size:26px; margin-top:6px; }
+    p { margin:0 0 14px; color:var(--muted); } ul,ol { margin:0 0 14px 22px; color:var(--muted); } li { margin-bottom:8px; }
+    .callout { padding:16px 18px; border-radius:16px; background:#fff8e8; border:1px solid #f6d482; color:#92400e; margin-top:18px; }
+    .success { background:#ecfdf5; border-color:#bbf7d0; color:#166534; }
+    .path { display:inline-block; margin:8px 0 14px; padding:8px 12px; border-radius:10px; background:var(--soft); border:1px solid var(--line); color:var(--muted); font-size:14px; }
+    pre { background:var(--code-bg); color:var(--code-text); padding:18px; border-radius:16px; overflow-x:auto; font-size:13px; line-height:1.6; margin:0 0 16px; }
+    code { font-family:"SFMono-Regular",Consolas,Monaco,monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 17</span>
+      <h1>Connected Input Stabilization</h1>
+      <p>17일차는 실제 모드에서 텍스트 입력, follow-up 응답, 설정 모달, background event가 서로 덜 충돌하게 정리하는 단계입니다. 목표는 새 기능 추가가 아니라 입력 흐름을 더 안정적으로 만드는 것입니다.</p>
+      <div class="callout"><strong>오늘 목표:</strong> 메인 화면 <code>FocusNode</code> 추가, 설정 모달 닫기 후 포커스 복귀, follow-up 응답 분기, 그리고 모달 열림 중 background event 입력 차단 규칙을 정리합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>오늘 수정할 파일</h2>
+      <ul>
+        <li><code>lib/shared/utils/shortcut_utils.dart</code></li>
+        <li><code>lib/features/session/application/session_controller.dart</code></li>
+        <li><code>lib/features/home/presentation/home_page.dart</code></li>
+      </ul>
+      <p>오늘은 실제 모드 중심 작업이라 데모 모드는 건드리지 않습니다. 핵심은 입력 경로를 더 명확히 갈라서 일반 명령과 follow-up 응답을 구분하는 것입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>왜 이 작업이 필요한가</h2>
+      <ul>
+        <li>설정 모달이 열려 있을 때 background event까지 실행되면 흐름이 꼬일 수 있습니다.</li>
+        <li><code>응</code>, <code>네</code>, <code>재생해줘</code> 같은 짧은 입력은 일반 명령이 아니라 직전 follow-up에 대한 승인일 수 있습니다.</li>
+        <li>모달을 닫은 뒤 포커스가 메인 화면으로 돌아오지 않으면 키 입력 UX가 어색해집니다.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1. shortcut_utils.dart 보강</h2>
+      <div class="path">lib/shared/utils/shortcut_utils.dart</div>
+      <p>이 파일에는 단축키 정리 외에 짧은 명령 정규화와 긍정 응답 판별 메서드를 추가합니다. 즉 이제는 입력 유틸 역할도 같이 하게 됩니다.</p>
+      <pre><code>import &#x27;package:flutter/services.dart&#x27;;
+
+class ShortcutUtils {
+  ShortcutUtils._();
+
+  static String normalize(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return &#x27;&#x27;;
+    }
+
+    final parts = trimmed
+        .split(&#x27;+&#x27;)
+        .map((part) =&gt; part.trim().toLowerCase())
+        .where((part) =&gt; part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) {
+      return &#x27;&#x27;;
+    }
+
+    const modifierOrder = [&#x27;meta&#x27;, &#x27;control&#x27;, &#x27;alt&#x27;, &#x27;shift&#x27;];
+    final modifiers = &lt;String&gt;[];
+    String? key;
+
+    for (final part in parts) {
+      if (modifierOrder.contains(part)) {
+        if (!modifiers.contains(part)) {
+          modifiers.add(part);
+        }
+      } else {
+        key = part;
+      }
+    }
+
+    modifiers.sort(
+      (a, b) =&gt; modifierOrder.indexOf(a).compareTo(modifierOrder.indexOf(b)),
+    );
+
+    final ordered = [...modifiers];
+    if (key != null) {
+      ordered.add(key);
+    }
+
+    return ordered.join(&#x27;+&#x27;);
+  }
+
+  static String? captureFromEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return null;
+    }
+
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    final parts = &lt;String&gt;[];
+
+    if (pressed.contains(LogicalKeyboardKey.metaLeft) ||
+        pressed.contains(LogicalKeyboardKey.metaRight)) {
+      parts.add(&#x27;meta&#x27;);
+    }
+    if (pressed.contains(LogicalKeyboardKey.controlLeft) ||
+        pressed.contains(LogicalKeyboardKey.controlRight)) {
+      parts.add(&#x27;control&#x27;);
+    }
+    if (pressed.contains(LogicalKeyboardKey.altLeft) ||
+        pressed.contains(LogicalKeyboardKey.altRight)) {
+      parts.add(&#x27;alt&#x27;);
+    }
+    if (pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+        pressed.contains(LogicalKeyboardKey.shiftRight)) {
+      parts.add(&#x27;shift&#x27;);
+    }
+
+    final key = _keyLabel(event.logicalKey);
+    if (key == null || key.isEmpty) {
+      return null;
+    }
+
+    parts.add(key.toLowerCase());
+    return normalize(parts.join(&#x27;+&#x27;));
+  }
+
+  static bool matches(KeyEvent event, String shortcut) {
+    final normalized = normalize(shortcut);
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final captured = captureFromEvent(event);
+    if (captured == null || captured.isEmpty) {
+      return false;
+    }
+
+    return captured == normalized;
+  }
+
+  static String displayLabel(String shortcut) {
+    final normalized = normalize(shortcut);
+    if (normalized.isEmpty) {
+      return &#x27;미설정&#x27;;
+    }
+
+    return normalized
+        .split(&#x27;+&#x27;)
+        .map((part) {
+          switch (part) {
+            case &#x27;meta&#x27;:
+              return &#x27;Cmd&#x27;;
+            case &#x27;control&#x27;:
+              return &#x27;Ctrl&#x27;;
+            case &#x27;alt&#x27;:
+              return &#x27;Alt&#x27;;
+            case &#x27;shift&#x27;:
+              return &#x27;Shift&#x27;;
+            default:
+              return part.toUpperCase();
+          }
+        })
+        .join(&#x27; + &#x27;);
+  }
+
+  static String normalizeCommandText(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r&#x27;\s+&#x27;), &#x27; &#x27;);
+  }
+
+  static bool isAffirmativeResponse(String value) {
+    final normalized = normalizeCommandText(value);
+
+    return normalized == &#x27;응&#x27; ||
+        normalized == &#x27;네&#x27; ||
+        normalized == &#x27;예&#x27; ||
+        normalized == &#x27;좋아&#x27; ||
+        normalized == &#x27;그래&#x27; ||
+        normalized == &#x27;재생해줘&#x27; ||
+        normalized == &#x27;진행해줘&#x27; ||
+        normalized == &#x27;실행해줘&#x27;;
+  }
+
+  static String? _keyLabel(LogicalKeyboardKey key) {
+    final label = key.keyLabel.trim();
+    if (label.isNotEmpty) {
+      return label;
+    }
+
+    if (key == LogicalKeyboardKey.space) {
+      return &#x27;space&#x27;;
+    }
+
+    final debugName = key.debugName;
+    if (debugName == null || debugName.isEmpty) {
+      return null;
+    }
+
+    if (debugName.startsWith(&#x27;Key &#x27;)) {
+      return debugName.replaceFirst(&#x27;Key &#x27;, &#x27;&#x27;);
+    }
+
+    if (debugName.startsWith(&#x27;Digit &#x27;)) {
+      return debugName.replaceFirst(&#x27;Digit &#x27;, &#x27;&#x27;);
+    }
+
+    if (debugName.startsWith(&#x27;Numpad &#x27;)) {
+      return debugName.replaceFirst(&#x27;Numpad &#x27;, &#x27;num&#x27;);
+    }
+
+    return debugName.toLowerCase().replaceAll(&#x27; &#x27;, &#x27;_&#x27;);
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>2. SessionController에 follow-up 전용 메서드 추가</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <p><code>hasPendingFollowUp()</code>로 현재 후속 질문 상태인지 판단하고, <code>submitFollowUpResponse(...)</code>로 짧은 승인 응답을 일반 텍스트 명령과 분리해 처리합니다.</p>
+      <pre><code>import &#x27;dart:convert&#x27;;
+
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+import &#x27;package:http/http.dart&#x27; as http;
+
+import &#x27;../../../shared/models/response_models.dart&#x27;;
+
+const _unset = Object();
+const _agentApiBaseUrl = String.fromEnvironment(&#x27;AGENT_API_BASE_URL&#x27;); 
+//실제에서는 &#x27;http://127.0.0.1:8000&#x27;;이런식으로 하면 http://127.0.0.1:8000/agent/respond 로 요청이됨
+
+class SessionUiState {
+  const SessionUiState({
+    this.lastSummary,
+    this.lastFollowUp,
+    this.pendingAction,
+    this.pendingTarget,
+    this.isBusy = false,
+    this.isRecording = false,
+  });
+
+  final String? lastSummary;
+  final String? lastFollowUp;
+  final String? pendingAction;
+  final String? pendingTarget;
+  final bool isBusy;
+  final bool isRecording;
+
+  SessionUiState copyWith({
+    Object? lastSummary = _unset,
+    Object? lastFollowUp = _unset,
+    Object? pendingAction = _unset,
+    Object? pendingTarget = _unset,
+    bool? isBusy,
+    bool? isRecording,
+  }) {
+    return SessionUiState(
+      lastSummary: identical(lastSummary, _unset)
+          ? this.lastSummary
+          : lastSummary as String?,
+      lastFollowUp: identical(lastFollowUp, _unset)
+          ? this.lastFollowUp
+          : lastFollowUp as String?,
+      pendingAction: identical(pendingAction, _unset)
+          ? this.pendingAction
+          : pendingAction as String?,
+      pendingTarget: identical(pendingTarget, _unset)
+          ? this.pendingTarget
+          : pendingTarget as String?,
+      isBusy: isBusy ?? this.isBusy,
+      isRecording: isRecording ?? this.isRecording,
+    );
+  }
+}
+
+class SessionController extends StateNotifier&lt;SessionUiState&gt; {
+  SessionController() : super(const SessionUiState());
+
+  bool hasPendingFollowUp() {
+    return _cleanText(state.lastFollowUp) != null &amp;&amp;
+        _cleanText(state.pendingAction) != null;
+  }
+
+  Future&lt;CommandResponseModel&gt; submitTextCommand(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    final payload = await _requestAgentResponse(
+      command: text,
+      source: &#x27;text&#x27;,
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: text,
+      fallbackSummary: &#x27;텍스트 명령을 처리했습니다.&#x27;,
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; submitFollowUpResponse(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    final payload = await _requestAgentResponse(
+      command: text,
+      source: &#x27;text&#x27;,
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: text,
+      fallbackSummary: &#x27;후속 응답을 처리했습니다.&#x27;,
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;void&gt; startListening() async {
+    state = state.copyWith(isRecording: true);
+  }
+
+  Future&lt;CommandResponseModel&gt; stopListeningAndProcess() async {
+    state = state.copyWith(isRecording: false, isBusy: true);
+
+    const transcript = &#x27;음성 인식 결과 텍스트&#x27;;
+
+    final payload = await _requestAgentResponse(
+      command: transcript,
+      source: &#x27;voice&#x27;,
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: transcript,
+      fallbackSummary: &#x27;음성 명령을 처리했습니다.&#x27;,
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; triggerScreenRead() async {
+    state = state.copyWith(isBusy: true);
+
+    const command = &#x27;screen_read&#x27;;
+
+    final payload = await _requestAgentResponse(
+      command: command,
+      source: &#x27;screen_read&#x27;,
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: command,
+      fallbackSummary: &#x27;현재 화면을 읽었습니다.&#x27;,
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  void _applyResponse(CommandResponseModel response) {
+    state = state.copyWith(
+      isBusy: false,
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+      pendingAction: response.pendingAction,
+      pendingTarget: response.pendingTarget,
+    );
+  }
+
+  Future&lt;AgentCommandPayload&gt; _requestAgentResponse({
+    required String command,
+    required String source,
+  }) async {
+    if (_agentApiBaseUrl.isEmpty) {
+      return AgentCommandPayload(
+        transcript: command,
+        summary: &#x27;Agent API 주소가 설정되지 않았습니다.&#x27;,
+        followUp: &#x27;실행 시 --dart-define=AGENT_API_BASE_URL=... 값을 추가할까요?&#x27;,
+        isError: true,
+        rawText: &#x27;Missing AGENT_API_BASE_URL&#x27;,
+      );
+    }
+
+    final uri = Uri.parse(&#x27;$_agentApiBaseUrl/agent/respond&#x27;);
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const {
+              &#x27;Content-Type&#x27;: &#x27;application/json&#x27;,
+              &#x27;Accept&#x27;: &#x27;application/json&#x27;,
+            },
+            body: jsonEncode(_buildRequestBody(
+              command: command,
+              source: source,
+            )),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode &lt; 200 || response.statusCode &gt;= 300) {
+        return AgentCommandPayload(
+          transcript: command,
+          summary: &#x27;Agent 서버 요청에 실패했습니다. (${response.statusCode})&#x27;,
+          followUp: &#x27;서버 상태를 확인한 뒤 다시 시도할까요?&#x27;,
+          isError: true,
+          rawText: response.body,
+        );
+      }
+
+      return _parseAgentResponse(response.body);
+    } catch (error) {
+      return AgentCommandPayload(
+        transcript: command,
+        summary: &#x27;Agent 서버에 연결하지 못했습니다.&#x27;,
+        followUp: &#x27;네트워크 또는 API 주소를 확인한 뒤 다시 시도할까요?&#x27;,
+        isError: true,
+        rawText: error.toString(),
+      );
+    }
+  }
+
+  Map&lt;String, dynamic&gt; _buildRequestBody({
+    required String command,
+    required String source,
+  }) {
+    return {
+      &#x27;command&#x27;: command,
+      &#x27;source&#x27;: source, //명령방식 (키보드, 음성, 화면읽기)
+      &#x27;context&#x27;: {
+        &#x27;last_summary&#x27;: state.lastSummary, //이전 요약
+        &#x27;last_follow_up&#x27;: state.lastFollowUp, //이전 후속질문
+        &#x27;pending_action&#x27;: state.pendingAction, //보류중인 액션
+        &#x27;pending_target&#x27;: state.pendingTarget, //보류중인 타겟
+      },
+    };
+  }
+
+  AgentCommandPayload _parseAgentResponse(String rawResponse) {
+    try {
+      final decoded = jsonDecode(rawResponse);
+      if (decoded is Map&lt;String, dynamic&gt;) {
+        return AgentCommandPayload.fromJson(decoded);
+      }
+      if (decoded is Map) {
+        return AgentCommandPayload.fromJson(
+          decoded.map(
+            (key, value) =&gt; MapEntry(key.toString(), value),
+          ),
+        );
+      }
+    } catch (_) {
+      // Fall back to raw text extraction below.
+    }
+
+    return AgentCommandPayload(rawText: rawResponse);
+  }
+
+  CommandResponseModel _mapAgentPayloadToCommandResponse(
+    AgentCommandPayload payload, {
+    required String fallbackTranscript,
+    required String fallbackSummary,
+  }) {
+    final transcript = _cleanText(payload.transcript) ?? fallbackTranscript;
+    final summary = _cleanText(payload.summary) ??
+        _extractSummaryFromRaw(payload.rawText) ??
+        fallbackSummary;
+    final followUp = _cleanText(payload.followUp);
+    final pendingAction = _cleanText(payload.pendingAction);
+    final pendingTarget = _cleanText(payload.pendingTarget);
+
+    return CommandResponseModel(
+      transcript: transcript,
+      summary: summary,
+      followUp: followUp,
+      isError: payload.isError ?? false,
+      pendingAction: pendingAction,
+      pendingTarget: pendingTarget,
+    );
+  }
+
+  String? _cleanText(String? value) {
+    if (value == null) {
+      return null;
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _extractSummaryFromRaw(String? rawText) {
+    final normalized = _cleanText(rawText);
+    if (normalized == null) {
+      return null;
+    }
+
+    final lines = normalized
+        .split(&#x27;\n&#x27;)
+        .map((line) =&gt; line.trim())
+        .where((line) =&gt; line.isNotEmpty)
+        .toList();
+
+    if (lines.isEmpty) {
+      return null;
+    }
+
+    return lines.first;
+  }
+}
+
+final sessionControllerProvider =
+    StateNotifierProvider&lt;SessionController, SessionUiState&gt;((ref) {
+  return SessionController();
+});
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>3. HomePage 입력 게이트 정리</h2>
+      <div class="path">lib/features/home/presentation/home_page.dart</div>
+      <p>실제 모드 메인 화면에는 <code>FocusNode</code>, 설정 모달 닫기 전용 메서드, follow-up 분기 메서드를 추가합니다. 또한 background event도 설정 모달이 열려 있을 때는 실제 작업 실행을 막도록 정리합니다.</p>
+      <ul>
+        <li><code>_focusNode</code> 추가</li>
+        <li><code>_closeSettingsModal()</code>로 상태 닫기 + 포커스 복귀 통합</li>
+        <li><code>_shouldTreatAsFollowUp()</code>로 짧은 긍정 응답 분기</li>
+        <li><code>_canHandleBackgroundEvent()</code>가 모달 열림 상태도 고려</li>
+      </ul>
+      <pre><code>import &#x27;dart:async&#x27;;
+
+import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+import &#x27;../../../../app/theme/colors.dart&#x27;;
+import &#x27;../../../../shared/models/response_models.dart&#x27;;
+import &#x27;../../../../shared/services/local_background_event_service.dart&#x27;;
+import &#x27;../../../../shared/utils/shortcut_utils.dart&#x27;;
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../notifications/presentation/app_toast.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;../../settings/application/settings_controller.dart&#x27;;
+import &#x27;../../settings/presentation/settings_modal.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  final FocusNode _focusNode = FocusNode(debugLabel: &#x27;home_page_focus&#x27;);
+  bool _showSettings = false;
+  Timer? _backgroundEventTimer;
+  bool _handlingBackgroundEvent = false;
+  String? _lastHandledEventId;
+  int _lastHandledEventAtMs = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _backgroundEventTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) =&gt; _pollBackgroundEvent(),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _backgroundEventTimer?.cancel();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleToggleMode(bool secureEnabled) {
+    final notifier = ref.read(settingsControllerProvider.notifier);
+    notifier.setSecureMode(secureEnabled);
+  }
+
+  void _showCommandResultToast(CommandResponseModel response) {
+    showAppToast(
+      context,
+      response.isError ? response.summary : &#x27;결과를 읽어드립니다.&#x27;,
+      title: response.isError ? &#x27;작업 실패&#x27; : &#x27;작업 완료&#x27;,
+      state: response.isError ? AppToastState.info : AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      if (mounted) {
+        showAppToast(
+          context,
+          &#x27;음성을 듣고 있습니다. 말씀해주세요.&#x27;,
+          title: &#x27;음성 수신 중&#x27;,
+          state: AppToastState.listening,
+        );
+      }
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;작업을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;화면을 읽어드리고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final normalizedText = ShortcutUtils.normalizeCommandText(text);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;텍스트 명령을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = _shouldTreatAsFollowUp(normalizedText)
+        ? await sessionNotifier.submitFollowUpResponse(normalizedText)
+        : await sessionNotifier.submitTextCommand(normalizedText);
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  void _closeSettingsModal() {
+    if (!_showSettings) {
+      return;
+    }
+
+    setState(() =&gt; _showSettings = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  bool _shouldTreatAsFollowUp(String text) {
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    if (!sessionNotifier.hasPendingFollowUp()) {
+      return false;
+    }
+
+    return ShortcutUtils.isAffirmativeResponse(text);
+  }
+
+  bool _canHandleBackgroundEvent(BackgroundEvent event) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (_lastHandledEventId == event.id) {
+      return false;
+    }
+
+    if (now - _lastHandledEventAtMs &lt; 350) {
+      return false;
+    }
+
+    final sessionState = ref.read(sessionControllerProvider);
+
+    switch (event.type) {
+      case &#x27;START_LISTENING&#x27;:
+        return !sessionState.isBusy &amp;&amp; !_showSettings;
+      case &#x27;START_SCREEN_READ&#x27;:
+        return !sessionState.isBusy &amp;&amp; !_showSettings;
+      case &#x27;OPEN_SETTINGS&#x27;:
+        return !_showSettings;
+      default:
+        return false;
+    }
+  }
+
+  void _markBackgroundEventHandled(BackgroundEvent event) {
+    _lastHandledEventId = event.id;
+    _lastHandledEventAtMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  Future&lt;void&gt; _pollBackgroundEvent() async {
+    if (!mounted || _handlingBackgroundEvent) {
+      return;
+    }
+
+    _handlingBackgroundEvent = true;
+    try {
+      final event = await LocalBackgroundEventService.instance.pollEvent();
+      if (!mounted || event == null) {
+        return;
+      }
+
+      if (!_canHandleBackgroundEvent(event)) {
+        return;
+      }
+
+      switch (event.type) {
+        case &#x27;START_LISTENING&#x27;:
+          _markBackgroundEventHandled(event);
+          await _handleListen();
+          break;
+        case &#x27;START_SCREEN_READ&#x27;:
+          _markBackgroundEventHandled(event);
+          await _handleScreenRead();
+          break;
+        case &#x27;OPEN_SETTINGS&#x27;:
+          _markBackgroundEventHandled(event);
+          if (!_showSettings) {
+            setState(() =&gt; _showSettings = true);
+          }
+          break;
+      }
+    } finally {
+      _handlingBackgroundEvent = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: surfaceTheme.shellBackground,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const AppTitleBar(),
+                  Container(
+                    height: 92,
+                    color: surfaceTheme.surface,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatusCard(
+                            label: &#x27;마이크 상태&#x27;,
+                            value: _micLabel(listeningState),
+                            icon: Icons.mic_none_rounded,
+                            iconBackground:
+                                listeningState.status ==
+                                    ListeningStatus.listening
+                                ? AppColors.successSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor:
+                                listeningState.status ==
+                                    ListeningStatus.listening
+                                ? AppColors.success
+                                : surfaceTheme.textMuted,
+                            showWave: true,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: surfaceTheme.border,
+                        ),
+                        Expanded(
+                          child: StatusCard(
+                            label: &#x27;현재 모드&#x27;,
+                            value: settings.security.secureInputMode
+                                ? &#x27;보안 입력 모드&#x27;
+                                : &#x27;일반 모드&#x27;,
+                            icon: settings.security.secureInputMode
+                                ? Icons.lock_outline_rounded
+                                : Icons.volume_up_outlined,
+                            iconBackground: settings.security.secureInputMode
+                                ? AppColors.warningSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor: settings.security.secureInputMode
+                                ? AppColors.warning
+                                : surfaceTheme.textMuted,
+                            showDot: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 290,
+                          child: ActionPanel(
+                            secureModeEnabled: settings.security.secureInputMode,
+                            isRecording: sessionState.isRecording,
+                            listenShortcut: settings.shortcuts.listenToggle,
+                            screenReadShortcut: settings.shortcuts.screenRead,
+                            settingsShortcut: settings.shortcuts.openSettings,
+                            onListenPressed: _handleListen,
+                            onScreenReadPressed: _handleScreenRead,
+                            onSettingsPressed: () {
+                              setState(() =&gt; _showSettings = true);
+                            },
+                            onToggleMode: _handleToggleMode,
+                          ),
+                        ),
+                        Expanded(
+                          child: ReadyState(
+                            summary: sessionState.lastSummary,
+                            followUp: sessionState.lastFollowUp,
+                            isBusy: sessionState.isBusy,
+                            onSubmitText: _handleSubmitText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_showSettings) ...[
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeSettingsModal,
+                    child: Container(
+                      color: const Color(0x66000000),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: SettingsModal(
+                    onClose: _closeSettingsModal,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card success">
+      <h2>17일차 완료 기준</h2>
+      <ul>
+        <li>메인 화면이 <code>FocusNode</code>를 가진다.</li>
+        <li>설정 모달을 닫으면 포커스가 메인 화면으로 돌아온다.</li>
+        <li>설정 모달 열림 중 background event 실행이 제한된다.</li>
+        <li><code>응</code>, <code>네</code>, <code>재생해줘</code> 같은 입력이 follow-up 응답으로 분기될 수 있다.</li>
+        <li>실제 모드 입력 흐름이 이전보다 더 안정적이다.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

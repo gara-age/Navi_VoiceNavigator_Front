@@ -7,6 +7,7 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/colors.dart';
 import '../../../../shared/models/response_models.dart';
 import '../../../../shared/services/local_background_event_service.dart';
+import '../../../../shared/utils/shortcut_utils.dart';
 import '../../listening/application/listening_controller.dart';
 import '../../notifications/presentation/app_toast.dart';
 import '../../session/application/session_controller.dart';
@@ -25,6 +26,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  final FocusNode _focusNode = FocusNode(debugLabel: 'home_page_focus');
   bool _showSettings = false;
   Timer? _backgroundEventTimer;
   bool _handlingBackgroundEvent = false;
@@ -38,11 +40,17 @@ class _HomePageState extends ConsumerState<HomePage> {
       const Duration(milliseconds: 500),
       (_) => _pollBackgroundEvent(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _backgroundEventTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -118,6 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _handleSubmitText(String text) async {
     final listeningNotifier = ref.read(listeningControllerProvider.notifier);
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final normalizedText = ShortcutUtils.normalizeCommandText(text);
 
     listeningNotifier.setProcessing();
     if (mounted) {
@@ -128,7 +137,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         state: AppToastState.processing,
       );
     }
-    final response = await sessionNotifier.submitTextCommand(text);
+    final response = _shouldTreatAsFollowUp(normalizedText)
+        ? await sessionNotifier.submitFollowUpResponse(normalizedText)
+        : await sessionNotifier.submitTextCommand(normalizedText);
     listeningNotifier.reset();
     if (mounted) {
       _showCommandResultToast(response);
@@ -146,6 +157,29 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  void _closeSettingsModal() {
+    if (!_showSettings) {
+      return;
+    }
+
+    setState(() => _showSettings = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  bool _shouldTreatAsFollowUp(String text) {
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    if (!sessionNotifier.hasPendingFollowUp()) {
+      return false;
+    }
+
+    return ShortcutUtils.isAffirmativeResponse(text);
+  }
+
   bool _canHandleBackgroundEvent(BackgroundEvent event) {
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -161,9 +195,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     switch (event.type) {
       case 'START_LISTENING':
-        return !sessionState.isBusy;
+        return !sessionState.isBusy && !_showSettings;
       case 'START_SCREEN_READ':
-        return !sessionState.isBusy;
+        return !sessionState.isBusy && !_showSettings;
       case 'OPEN_SETTINGS':
         return !_showSettings;
       default:
@@ -220,111 +254,115 @@ class _HomePageState extends ConsumerState<HomePage> {
     final settings = ref.watch(settingsControllerProvider);
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
 
-    return Scaffold(
-      backgroundColor: surfaceTheme.shellBackground,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                const AppTitleBar(),
-                Container(
-                  height: 92,
-                  color: surfaceTheme.surface,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: StatusCard(
-                          label: '마이크 상태',
-                          value: _micLabel(listeningState),
-                          icon: Icons.mic_none_rounded,
-                          iconBackground:
-                              listeningState.status == ListeningStatus.listening
-                              ? AppColors.successSoft
-                              : surfaceTheme.contentBackground,
-                          iconColor:
-                              listeningState.status == ListeningStatus.listening
-                              ? AppColors.success
-                              : surfaceTheme.textMuted,
-                          showWave: true,
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: surfaceTheme.shellBackground,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const AppTitleBar(),
+                  Container(
+                    height: 92,
+                    color: surfaceTheme.surface,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatusCard(
+                            label: '마이크 상태',
+                            value: _micLabel(listeningState),
+                            icon: Icons.mic_none_rounded,
+                            iconBackground:
+                                listeningState.status ==
+                                    ListeningStatus.listening
+                                ? AppColors.successSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor:
+                                listeningState.status ==
+                                    ListeningStatus.listening
+                                ? AppColors.success
+                                : surfaceTheme.textMuted,
+                            showWave: true,
+                          ),
                         ),
-                      ),
-                      VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: surfaceTheme.border,
-                      ),
-                      Expanded(
-                        child: StatusCard(
-                          label: '현재 모드',
-                          value: settings.security.secureInputMode
-                              ? '보안 입력 모드'
-                              : '일반 모드',
-                          icon: settings.security.secureInputMode
-                              ? Icons.lock_outline_rounded
-                              : Icons.volume_up_outlined,
-                          iconBackground: settings.security.secureInputMode
-                              ? AppColors.warningSoft
-                              : surfaceTheme.contentBackground,
-                          iconColor: settings.security.secureInputMode
-                              ? AppColors.warning
-                              : surfaceTheme.textMuted,
-                          showDot: true,
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: surfaceTheme.border,
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: StatusCard(
+                            label: '현재 모드',
+                            value: settings.security.secureInputMode
+                                ? '보안 입력 모드'
+                                : '일반 모드',
+                            icon: settings.security.secureInputMode
+                                ? Icons.lock_outline_rounded
+                                : Icons.volume_up_outlined,
+                            iconBackground: settings.security.secureInputMode
+                                ? AppColors.warningSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor: settings.security.secureInputMode
+                                ? AppColors.warning
+                                : surfaceTheme.textMuted,
+                            showDot: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 290,
+                          child: ActionPanel(
+                            secureModeEnabled: settings.security.secureInputMode,
+                            isRecording: sessionState.isRecording,
+                            listenShortcut: settings.shortcuts.listenToggle,
+                            screenReadShortcut: settings.shortcuts.screenRead,
+                            settingsShortcut: settings.shortcuts.openSettings,
+                            onListenPressed: _handleListen,
+                            onScreenReadPressed: _handleScreenRead,
+                            onSettingsPressed: () {
+                              setState(() => _showSettings = true);
+                            },
+                            onToggleMode: _handleToggleMode,
+                          ),
+                        ),
+                        Expanded(
+                          child: ReadyState(
+                            summary: sessionState.lastSummary,
+                            followUp: sessionState.lastFollowUp,
+                            isBusy: sessionState.isBusy,
+                            onSubmitText: _handleSubmitText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_showSettings) ...[
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeSettingsModal,
+                    child: Container(
+                      color: const Color(0x66000000),
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 290,
-                        child: ActionPanel(
-                          secureModeEnabled: settings.security.secureInputMode,
-                          isRecording: sessionState.isRecording,
-                          listenShortcut: settings.shortcuts.listenToggle,
-                          screenReadShortcut: settings.shortcuts.screenRead,
-                          settingsShortcut: settings.shortcuts.openSettings,
-                          onListenPressed: _handleListen,
-                          onScreenReadPressed: _handleScreenRead,
-                          onSettingsPressed: () {
-                            setState(() => _showSettings = true);
-                          },
-                          onToggleMode: _handleToggleMode,
-                        ),
-                      ),
-                      Expanded(
-                        child: ReadyState(
-                          summary: sessionState.lastSummary,
-                          followUp: sessionState.lastFollowUp,
-                          isBusy: sessionState.isBusy,
-                          onSubmitText: _handleSubmitText,
-                        ),
-                      ),
-                    ],
+                Positioned.fill(
+                  child: SettingsModal(
+                    onClose: _closeSettingsModal,
                   ),
                 ),
               ],
-            ),
-            if (_showSettings) ...[
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () => setState(() => _showSettings = false),
-                  child: Container(
-                    color: const Color(0x66000000),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: SettingsModal(
-                  onClose: () {
-                    setState(() => _showSettings = false);
-                  },
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

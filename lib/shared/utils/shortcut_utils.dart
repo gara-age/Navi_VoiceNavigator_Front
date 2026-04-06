@@ -118,6 +118,23 @@ class ShortcutUtils {
         .join(' + ');
   }
 
+  static String normalizeCommandText(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  static bool isAffirmativeResponse(String value) {
+    final normalized = normalizeCommandText(value);
+
+    return normalized == '응' ||
+        normalized == '네' ||
+        normalized == '예' ||
+        normalized == '좋아' ||
+        normalized == '그래' ||
+        normalized == '재생해줘' ||
+        normalized == '진행해줘' ||
+        normalized == '실행해줘';
+  }
+
   static String? _keyLabel(LogicalKeyboardKey key) {
     final label = key.keyLabel.trim();
     if (label.isNotEmpty) {
