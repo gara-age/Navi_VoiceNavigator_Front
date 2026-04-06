@@ -339,10 +339,6 @@ class _DemoHomePageState extends State<DemoHomePage> {
                       });
                       widget.onSettingsSaved(next);
                     },
-                    onChanged: (next) {
-                      setState(() => _settings = next);
-                      widget.onSettingsChanged(next);
-                    },
                   ),
                 ),
               ],

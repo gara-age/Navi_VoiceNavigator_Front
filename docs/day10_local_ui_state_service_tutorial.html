@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day 10 Tutorial - Local UI State and Settings Rules</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #e2e8f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 32px 20px 80px;
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        color: var(--text);
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        line-height: 1.65;
+      }
+
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+
+      .hero,
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+
+      .section {
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 12px;
+        line-height: 1.3;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 24px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 20px;
+      }
+
+      h3 {
+        font-size: 18px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 20px;
+        padding: 0;
+        color: var(--muted);
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+
+      .path {
+        display: inline-block;
+        margin: 8px 0 14px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .callout,
+      .step {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .callout strong,
+      .step strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 14px 0 18px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <div class="badge">Day 10</div>
+        <h1>로컬 UI 상태 기록과 설정 동작 규칙 마무리</h1>
+        <p>
+          이 문서는 <strong>현재 실제 코드 상태</strong>를 기준으로 다시 정리한
+          Day 10 최종판입니다. 중간 수정 사항까지 포함해서,
+          지금 프로젝트에 실제로 반영된 내용만 설명합니다.
+        </p>
+        <p>
+          오늘 핵심은 세 가지입니다.
+        </p>
+        <ul>
+          <li>앱 포커스와 설정 모달 열림 상태를 <code>runtime/ui_state.json</code>에 기록</li>
+          <li>데모 모드는 반드시 <code>VoiceNavigatorDemoApp</code>을 통해 열리도록 정리</li>
+          <li>설정 모달에서 <code>다크테마</code>와 <code>고대비</code>가 동시에 켜지지 않도록 규칙 고정</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>오늘 최종 수정 파일</h2>
+        <div class="grid">
+          <div class="card">
+            <strong>새 파일</strong>
+            <div class="path">lib/shared/services/local_ui_state_service.dart</div>
+            <p>앱 포커스 상태와 설정 모달 열림 상태를 파일에 기록합니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/app/app_shell.dart</div>
+            <p>실제 앱 루트에서 포커스 상태를 기록합니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_app.dart</div>
+            <p>데모 앱 루트에서 포커스 상태를 기록합니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/app/mode_launcher_page.dart</div>
+            <p>데모 모드 진입 시 이제 DemoHomePage가 아니라 VoiceNavigatorDemoApp을 엽니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/features/settings/presentation/settings_modal.dart</div>
+            <p>실제 모드 설정 모달 열림 상태 기록 + 다크테마/고대비 상호배제 적용</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_settings_modal.dart</div>
+            <p>데모 모드 설정 모달 열림 상태 기록 + 다크테마/고대비 상호배제 적용</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_home_page.dart</div>
+            <p>데모 설정은 저장 버튼일 때만 반영되고, 취소/닫기면 버려집니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/features/settings/application/settings_controller.dart</div>
+            <p>실제 모드 설정 컨트롤러에도 다크테마/고대비 상호배제 규칙을 적용합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1. Day 10에서 최종적으로 해결한 문제</h2>
+
+        <h3>문제 1. 앱의 현재 UI 상태를 외부에서 알 수 없음</h3>
+        <p>
+          목표 프로젝트에는 앱 포커스 상태와 설정 모달 열림 상태를 기록하는 계층이 있습니다.
+          우리 프로젝트에도 그 기반을 추가했습니다.
+        </p>
+
+        <h3>문제 2. 데모 모드 화면 설정이 상위 테마에 반영되지 않음</h3>
+        <p>
+          원인은 데모 모드를 <code>DemoHomePage</code>로 직접 열고 있었기 때문입니다.
+          지금은 반드시 <code>VoiceNavigatorDemoApp</code>을 통해 진입하도록 수정되었습니다.
+        </p>
+
+        <h3>문제 3. 데모 설정이 저장 전에도 적용됨</h3>
+        <p>
+          원인은 <code>onChanged</code>로 상위 상태를 즉시 바꾸고 있었기 때문입니다.
+          지금은 <strong>저장 버튼일 때만</strong> 실제 반영되고,
+          취소/닫기면 draft만 버립니다.
+        </p>
+
+        <h3>문제 4. 고대비와 다크테마가 동시에 켜지거나 토글 방향이 꼬임</h3>
+        <p>
+          지금은 마지막으로 사용자가 켠 토글이 우선합니다.
+        </p>
+        <ul>
+          <li><code>다크테마 → 고대비</code>: 고대비가 켜지고 다크테마는 꺼집니다.</li>
+          <li><code>고대비 → 다크테마</code>: 다크테마가 켜지고 고대비는 꺼집니다.</li>
+          <li><code>큰 글씨</code>는 둘 중 어느 쪽과도 함께 켤 수 있습니다.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>2. 새 파일 만들기: local_ui_state_service.dart</h2>
+        <div class="path">lib/shared/services/local_ui_state_service.dart</div>
+        <p>
+          먼저 새로운 서비스 파일을 만듭니다. 이 파일은 앱이 지금 어떤 UI 상태인지
+          <code>runtime/ui_state.json</code>에 기록합니다.
+        </p>
+        <pre><code>import 'dart:convert';
+import 'dart:io';
+
+class LocalUiStateService {
+  LocalUiStateService._();
+
+  static final LocalUiStateService instance = LocalUiStateService._();
+
+  Future&lt;void&gt; setSettingsModalOpen(bool isOpen) async {
+    await _writeState({
+      'settings_modal_open': isOpen,
+      'updated_at_ms': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  Future&lt;void&gt; setAppFocused(bool isFocused) async {
+    await _writeState({
+      'app_focused': isFocused,
+      'updated_at_ms': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  Future&lt;void&gt; _writeState(Map&lt;String, dynamic&gt; patch) async {
+    final file = await _resolveStateFile();
+    if (file == null) {
+      return;
+    }
+
+    try {
+      final current = await _readState(file);
+      current.addAll(patch);
+      await file.parent.create(recursive: true);
+      await file.writeAsString(jsonEncode(current));
+    } catch (_) {
+      // Ignore local state write failures.
+    }
+  }
+
+  Future&lt;Map&lt;String, dynamic&gt;&gt; _readState(File file) async {
+    if (!await file.exists()) {
+      return &lt;String, dynamic&gt;{};
+    }
+
+    try {
+      final raw = await file.readAsString();
+      return Map&lt;String, dynamic&gt;.from(
+        jsonDecode(raw) as Map&lt;String, dynamic&gt;,
+      );
+    } catch (_) {
+      return &lt;String, dynamic&gt;{};
+    }
+  }
+
+  Future&lt;File?&gt; _resolveStateFile() async {
+    final envRoot = Platform.environment['VOICE_NAVIGATOR_ROOT'];
+    if (envRoot != null &amp;&amp; envRoot.isNotEmpty) {
+      return File(
+        '$envRoot${Platform.pathSeparator}runtime${Platform.pathSeparator}ui_state.json',
+      );
+    }
+
+    final roots = &lt;Directory&gt;[];
+
+    void addAncestors(Directory directory) {
+      var current = directory;
+      for (var i = 0; i &lt; 8; i++) {
+        roots.add(current);
+        final parent = current.parent;
+        if (parent.path == current.path) {
+          break;
+        }
+        current = parent;
+      }
+    }
+
+    addAncestors(Directory.current);
+    addAncestors(File(Platform.resolvedExecutable).parent);
+
+    for (final root in roots) {
+      final runtimeDir = Directory(
+        '${root.path}${Platform.pathSeparator}runtime',
+      );
+      if (runtimeDir.existsSync()) {
+        return File(
+          '${runtimeDir.path}${Platform.pathSeparator}ui_state.json',
+        );
+      }
+    }
+
+    return null;
+  }
+}</code></pre>
+
+        <div class="callout">
+          <strong>이 파일이 기록하는 값</strong>
+          <div>
+            현재 기준으로는 <code>app_focused</code>,
+            <code>settings_modal_open</code>,
+            <code>updated_at_ms</code> 세 값을 기록합니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. app_shell.dart 수정</h2>
+        <div class="path">lib/app/app_shell.dart</div>
+        <p>
+          실제 앱 루트는 앱 포커스 상태를 기록해야 하므로
+          <code>WidgetsBindingObserver</code>를 붙입니다.
+        </p>
+
+        <h3>추가할 import</h3>
+        <pre><code>import '../shared/services/local_ui_state_service.dart';</code></pre>
+
+        <h3>클래스 선언 변경</h3>
+        <pre><code>class _VoiceNavigatorAppState extends ConsumerState&lt;VoiceNavigatorApp&gt;
+    with WidgetsBindingObserver {</code></pre>
+
+        <h3>initState 변경</h3>
+        <pre><code>@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addObserver(this);
+  Future.microtask(() async {
+    await ref.read(settingsControllerProvider.notifier).load();
+    await LocalUiStateService.instance.setAppFocused(true);
+    if (mounted) {
+      setState(() =&gt; _settingsLoaded = true);
+    }
+  });
+}</code></pre>
+
+        <h3>dispose 추가</h3>
+        <pre><code>@override
+void dispose() {
+  WidgetsBinding.instance.removeObserver(this);
+  LocalUiStateService.instance.setAppFocused(false);
+  super.dispose();
+}</code></pre>
+
+        <h3>didChangeAppLifecycleState 추가</h3>
+        <pre><code>@override
+void didChangeAppLifecycleState(AppLifecycleState state) {
+  final focused = switch (state) {
+    AppLifecycleState.resumed =&gt; true,
+    AppLifecycleState.inactive =&gt; false,
+    AppLifecycleState.hidden =&gt; false,
+    AppLifecycleState.paused =&gt; false,
+    AppLifecycleState.detached =&gt; false,
+  };
+  LocalUiStateService.instance.setAppFocused(focused);
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>4. demo_app.dart 수정</h2>
+        <div class="path">lib/demo/demo_app.dart</div>
+        <p>
+          데모 앱도 별도 앱 셸이기 때문에 똑같이 포커스 상태를 기록해야 합니다.
+        </p>
+
+        <h3>추가할 import</h3>
+        <pre><code>import '../shared/services/local_ui_state_service.dart';</code></pre>
+
+        <h3>클래스 선언 변경</h3>
+        <pre><code>class _VoiceNavigatorDemoAppState extends State&lt;VoiceNavigatorDemoApp&gt;
+    with WidgetsBindingObserver {</code></pre>
+
+        <h3>initState 수정</h3>
+        <pre><code>@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addObserver(this);
+  _loadSettings();
+  LocalUiStateService.instance.setAppFocused(true);
+}</code></pre>
+
+        <h3>dispose와 didChangeAppLifecycleState 추가</h3>
+        <pre><code>@override
+void dispose() {
+  WidgetsBinding.instance.removeObserver(this);
+  LocalUiStateService.instance.setAppFocused(false);
+  super.dispose();
+}
+
+@override
+void didChangeAppLifecycleState(AppLifecycleState state) {
+  final focused = switch (state) {
+    AppLifecycleState.resumed =&gt; true,
+    AppLifecycleState.inactive =&gt; false,
+    AppLifecycleState.hidden =&gt; false,
+    AppLifecycleState.paused =&gt; false,
+    AppLifecycleState.detached =&gt; false,
+  };
+  LocalUiStateService.instance.setAppFocused(focused);
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>5. mode_launcher_page.dart 수정</h2>
+        <div class="path">lib/app/mode_launcher_page.dart</div>
+        <p>
+          이 부분은 Day 10 진행 중 실제로 중요하게 수정된 부분입니다.
+          데모 모드를 <code>DemoHomePage</code>로 직접 열면
+          데모 앱 셸의 테마와 설정 로드 흐름이 적용되지 않습니다.
+        </p>
+
+        <h3>기존 잘못된 방향</h3>
+        <pre><code>builder: (_) =&gt; DemoHomePage(...)</code></pre>
+
+        <h3>최종 수정</h3>
+        <pre><code>import '../demo/demo_app.dart';</code></pre>
+        <pre><code>void _openDemoMode(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute&lt;void&gt;(
+      builder: (_) =&gt; const VoiceNavigatorDemoApp(),
+    ),
+  );
+}</code></pre>
+
+        <div class="callout">
+          <strong>이 수정으로 해결된 것</strong>
+          <div>
+            데모 모드에서도 화면 설정이 상위 테마에 제대로 반영됩니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>6. settings_modal.dart 수정</h2>
+        <div class="path">lib/features/settings/presentation/settings_modal.dart</div>
+        <p>
+          실제 모드 설정 모달은 두 가지를 담당합니다.
+        </p>
+        <ul>
+          <li>열림 상태를 <code>LocalUiStateService</code>에 기록</li>
+          <li><code>다크테마</code>와 <code>고대비</code>가 동시에 켜지지 않게 제어</li>
+        </ul>
+
+        <h3>추가할 import</h3>
+        <pre><code>import '../../../shared/services/local_ui_state_service.dart';</code></pre>
+
+        <h3>initState에 추가</h3>
+        <pre><code>LocalUiStateService.instance.setSettingsModalOpen(true);</code></pre>
+
+        <h3>dispose에 추가</h3>
+        <pre><code>LocalUiStateService.instance.setSettingsModalOpen(false);</code></pre>
+
+        <h3>화면 설정 전용 helper 메서드 추가</h3>
+        <p>
+          실제로 중요한 최종 로직은 이 메서드입니다.
+          새로 켠 토글을 우선 적용하고, 반대쪽 토글은 자동으로 끕니다.
+        </p>
+        <pre><code>void _updateDisplay({
+  bool? darkTheme,
+  bool? highContrast,
+  bool? largeText,
+}) {
+  final current = _draftSettings.display;
+  var nextDarkTheme = darkTheme ?? current.darkTheme;
+  var nextHighContrast = highContrast ?? current.highContrast;
+  final nextLargeText = largeText ?? current.largeText;
+
+  if (darkTheme == true) {
+    nextHighContrast = false;
+  }
+  if (highContrast == true) {
+    nextDarkTheme = false;
+  }
+
+  _update(
+    _draftSettings.copyWith(
+      display: current.copyWith(
+        darkTheme: nextDarkTheme,
+        highContrast: nextHighContrast,
+        largeText: nextLargeText,
+      ),
+    ),
+  );
+}</code></pre>
+
+        <h3>토글 연결 방식 변경</h3>
+        <pre><code>onChanged: (value) =&gt; _updateDisplay(darkTheme: value)</code></pre>
+        <pre><code>onChanged: (value) =&gt; _updateDisplay(highContrast: value)</code></pre>
+        <pre><code>onChanged: (value) =&gt; _updateDisplay(largeText: value)</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>7. demo_settings_modal.dart 수정</h2>
+        <div class="path">lib/demo/demo_settings_modal.dart</div>
+        <p>
+          데모 설정 모달도 같은 방식으로 바뀌었습니다.
+        </p>
+        <ul>
+          <li>열릴 때 <code>settings_modal_open = true</code></li>
+          <li>닫힐 때 <code>settings_modal_open = false</code></li>
+          <li><code>다크테마</code>와 <code>고대비</code>는 마지막에 켠 토글이 우선</li>
+        </ul>
+
+        <h3>중요한 최종 로직</h3>
+        <pre><code>void _updateDisplay({
+  bool? darkTheme,
+  bool? highContrast,
+  bool? largeText,
+}) {
+  final current = _settings.display;
+  var nextDarkTheme = darkTheme ?? current.darkTheme;
+  var nextHighContrast = highContrast ?? current.highContrast;
+  final nextLargeText = largeText ?? current.largeText;
+
+  if (darkTheme == true) {
+    nextHighContrast = false;
+  }
+  if (highContrast == true) {
+    nextDarkTheme = false;
+  }
+
+  _update(
+    _settings.copyWith(
+      display: current.copyWith(
+        darkTheme: nextDarkTheme,
+        highContrast: nextHighContrast,
+        largeText: nextLargeText,
+      ),
+    ),
+  );
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>8. demo_home_page.dart 최종 보정</h2>
+        <div class="path">lib/demo/demo_home_page.dart</div>
+        <p>
+          이 파일은 Day 10 진행 중 같이 정리된 부분이 하나 더 있습니다.
+          데모 설정 모달은 저장 전에는 draft만 바뀌고,
+          <strong>저장 버튼을 눌렀을 때만</strong> 실제로 데모 앱 셸과 테마에 반영됩니다.
+        </p>
+
+        <h3>최종 상태</h3>
+        <ul>
+          <li><code>onSaved</code>에서는 상위 설정 반영</li>
+          <li><code>onChanged</code>는 제거됨</li>
+          <li>따라서 취소/닫기로 닫으면 변경 내용은 버려짐</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>9. 실행 후 꼭 확인할 것</h2>
+        <ol>
+          <li>앱 실행 후 <code>runtime/ui_state.json</code> 파일이 생성되는지 확인합니다.</li>
+          <li>앱에 포커스가 있을 때 <code>app_focused: true</code>인지 확인합니다.</li>
+          <li>실제/데모 설정 모달을 열면 <code>settings_modal_open: true</code>로 바뀌는지 확인합니다.</li>
+          <li>설정 모달을 닫으면 <code>settings_modal_open: false</code>로 돌아오는지 확인합니다.</li>
+          <li>데모 모드에서 화면 설정을 바꾼 뒤 <strong>저장</strong>을 눌렀을 때만 반영되는지 확인합니다.</li>
+          <li>데모 모드에서 <strong>취소/닫기</strong>로 나오면 변경이 버려지는지 확인합니다.</li>
+          <li><code>다크테마 → 고대비</code>, <code>고대비 → 다크테마</code> 전환이 둘 다 되는지 확인합니다.</li>
+          <li>하지만 둘이 동시에 켜지지는 않는지 확인합니다.</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>10. 오늘 꼭 이해해야 하는 것</h2>
+        <ul>
+          <li>왜 UI 상태를 로컬 JSON 파일에 기록하는가</li>
+          <li>왜 데모 모드는 반드시 <code>VoiceNavigatorDemoApp</code>을 통해 열어야 하는가</li>
+          <li>왜 데모 설정은 저장 전에는 상위 상태를 바꾸면 안 되는가</li>
+          <li>왜 <code>다크테마</code>와 <code>고대비</code>는 상호배제 규칙을 코드 레벨에서 가져야 하는가</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>11. Day 10 최종 완료 기준</h2>
+        <ul>
+          <li><code>local_ui_state_service.dart</code>가 추가되어 있다.</li>
+          <li>실제 앱과 데모 앱이 포커스 상태를 기록한다.</li>
+          <li>실제/데모 설정 모달이 열림 상태를 기록한다.</li>
+          <li>데모 모드는 <code>VoiceNavigatorDemoApp</code>으로 진입한다.</li>
+          <li>데모 설정은 저장 버튼일 때만 반영된다.</li>
+          <li><code>다크테마</code>와 <code>고대비</code>는 동시에 켜지지 않는다.</li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/theme/app_theme.dart';
 import '../shared/models/settings_models.dart';
 import '../shared/services/local_settings_store.dart';
+import '../shared/services/local_ui_state_service.dart';
 import 'demo_home_page.dart';
 
 class VoiceNavigatorDemoApp extends StatefulWidget {
@@ -12,14 +13,36 @@ class VoiceNavigatorDemoApp extends StatefulWidget {
   State<VoiceNavigatorDemoApp> createState() => _VoiceNavigatorDemoAppState();
 }
 
-class _VoiceNavigatorDemoAppState extends State<VoiceNavigatorDemoApp> {
+class _VoiceNavigatorDemoAppState extends State<VoiceNavigatorDemoApp>
+    with WidgetsBindingObserver {
   AppSettings _settings = AppSettings.defaults();
   bool _settingsLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSettings();
+    LocalUiStateService.instance.setAppFocused(true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    LocalUiStateService.instance.setAppFocused(false);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final focused = switch (state) {
+      AppLifecycleState.resumed => true,
+      AppLifecycleState.inactive => false,
+      AppLifecycleState.hidden => false,
+      AppLifecycleState.paused => false,
+      AppLifecycleState.detached => false,
+    };
+    LocalUiStateService.instance.setAppFocused(focused);
   }
 
   Future<void> _loadSettings() async {

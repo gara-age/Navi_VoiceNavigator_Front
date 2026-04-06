@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../shared/models/settings_models.dart';
+import '../../../shared/services/local_ui_state_service.dart';
 import '../../../shared/utils/shortcut_utils.dart';
 import '../application/settings_controller.dart';
 
@@ -33,6 +34,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
   void initState() {
     super.initState();
     _draftSettings = ref.read(settingsControllerProvider);
+    LocalUiStateService.instance.setSettingsModalOpen(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -43,6 +45,7 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
 
   @override
   void dispose() {
+    LocalUiStateService.instance.setSettingsModalOpen(false);
     _bodyScrollController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -81,6 +84,34 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
 
   void _update(AppSettings next) {
     setState(() => _draftSettings = next);
+  }
+
+  void _updateDisplay({
+    bool? darkTheme,
+    bool? highContrast,
+    bool? largeText,
+  }) {
+    final current = _draftSettings.display;
+    var nextDarkTheme = darkTheme ?? current.darkTheme;
+    var nextHighContrast = highContrast ?? current.highContrast;
+    final nextLargeText = largeText ?? current.largeText;
+
+    if (darkTheme == true) {
+      nextHighContrast = false;
+    }
+    if (highContrast == true) {
+      nextDarkTheme = false;
+    }
+
+    _update(
+      _draftSettings.copyWith(
+        display: current.copyWith(
+          darkTheme: nextDarkTheme,
+          highContrast: nextHighContrast,
+          largeText: nextLargeText,
+        ),
+      ),
+    );
   }
 
   void _selectTab(int value) {
@@ -361,31 +392,19 @@ class _SettingsModalState extends ConsumerState<SettingsModal> {
               title: '다크 테마',
               description: '어두운 테마를 사용합니다.',
               value: _draftSettings.display.darkTheme,
-              onChanged: (value) => _update(
-                _draftSettings.copyWith(
-                  display: _draftSettings.display.copyWith(darkTheme: value),
-                ),
-              ),
+              onChanged: (value) => _updateDisplay(darkTheme: value),
             ),
             _ToggleCard(
               title: '큰 글씨',
               description: '앱 전체 텍스트를 더 크게 표시합니다.',
               value: _draftSettings.display.largeText,
-              onChanged: (value) => _update(
-                _draftSettings.copyWith(
-                  display: _draftSettings.display.copyWith(largeText: value),
-                ),
-              ),
+              onChanged: (value) => _updateDisplay(largeText: value),
             ),
             _ToggleCard(
               title: '고대비',
               description: '명암 대비를 높여 가독성을 향상합니다.',
               value: _draftSettings.display.highContrast,
-              onChanged: (value) => _update(
-                _draftSettings.copyWith(
-                  display: _draftSettings.display.copyWith(highContrast: value),
-                ),
-              ),
+              onChanged: (value) => _updateDisplay(highContrast: value),
             ),
           ],
         );

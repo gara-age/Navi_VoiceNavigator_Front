@@ -26,7 +26,10 @@ class SettingsController extends StateNotifier<AppSettings> {
 
   void setDarkTheme(bool value) {
     state = state.copyWith(
-      display: state.display.copyWith(darkTheme: value),
+      display: state.display.copyWith(
+        darkTheme: value,
+        highContrast: value ? false : state.display.highContrast,
+      ),
     );
   }
 
@@ -56,7 +59,10 @@ class SettingsController extends StateNotifier<AppSettings> {
 
   void setHighContrast(bool value) {
     state = state.copyWith(
-      display: state.display.copyWith(highContrast: value),
+      display: state.display.copyWith(
+        highContrast: value,
+        darkTheme: value ? false : state.display.darkTheme,
+      ),
     );
   }
 }
