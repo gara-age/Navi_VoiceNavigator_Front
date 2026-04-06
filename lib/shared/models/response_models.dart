@@ -1,3 +1,9 @@
+enum CommandResponseStatus {
+  success,
+  warning,
+  error,
+}
+
 class CommandResponseModel {
   const CommandResponseModel({
     required this.transcript,
@@ -6,6 +12,8 @@ class CommandResponseModel {
     this.isError = false,
     this.pendingAction,
     this.pendingTarget,
+    this.status = CommandResponseStatus.success,
+    this.completesFollowUp = false,
   });
 
   final String transcript;
@@ -14,6 +22,8 @@ class CommandResponseModel {
   final bool isError;
   final String? pendingAction;
   final String? pendingTarget;
+  final CommandResponseStatus status;
+  final bool completesFollowUp;
 }
 
 class AgentCommandPayload {
@@ -24,6 +34,8 @@ class AgentCommandPayload {
     this.isError,
     this.pendingAction,
     this.pendingTarget,
+    this.status,
+    this.completesFollowUp,
     this.rawText,
   });
 
@@ -33,6 +45,8 @@ class AgentCommandPayload {
   final bool? isError;
   final String? pendingAction;
   final String? pendingTarget;
+  final String? status;
+  final bool? completesFollowUp;
   final String? rawText;
 
   factory AgentCommandPayload.fromJson(Map<String, dynamic> json) {
@@ -45,6 +59,10 @@ class AgentCommandPayload {
           json['pending_action'] as String? ?? json['pendingAction'] as String?,
       pendingTarget:
           json['pending_target'] as String? ?? json['pendingTarget'] as String?,
+      status: json['status'] as String?,
+      completesFollowUp:
+          json['completes_follow_up'] as bool? ??
+          json['completesFollowUp'] as bool?,
       rawText: json['raw_text'] as String? ?? json['rawText'] as String?,
     );
   }

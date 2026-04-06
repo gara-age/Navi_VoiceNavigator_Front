@@ -142,12 +142,14 @@ class SessionController extends StateNotifier<SessionUiState> {
   }
 
   void _applyResponse(CommandResponseModel response) {
+    final clearsPending = response.completesFollowUp;
+
     state = state.copyWith(
       isBusy: false,
       lastSummary: response.summary,
       lastFollowUp: response.followUp,
-      pendingAction: response.pendingAction,
-      pendingTarget: response.pendingTarget,
+      pendingAction: clearsPending ? null : response.pendingAction,
+      pendingTarget: clearsPending ? null : response.pendingTarget,
     );
   }
 
@@ -158,9 +160,11 @@ class SessionController extends StateNotifier<SessionUiState> {
     if (_agentApiBaseUrl.isEmpty) {
       return AgentCommandPayload(
         transcript: command,
-        summary: 'Agent API 주소가 설정되지 않았습니다.',
-        followUp: '실행 시 --dart-define=AGENT_API_BASE_URL=... 값을 추가할까요?',
+        summary: 'Agent 서버 주소가 아직 설정되지 않아 명령을 처리할 수 없습니다.',
+        followUp: 'API 서버 주소를 설정한 뒤 다시 시도할까요?',
         isError: true,
+        status: 'error',
+        completesFollowUp: true,
         rawText: 'Missing AGENT_API_BASE_URL',
       );
     }
@@ -188,6 +192,8 @@ class SessionController extends StateNotifier<SessionUiState> {
           summary: 'Agent 서버 요청에 실패했습니다. (${response.statusCode})',
           followUp: '서버 상태를 확인한 뒤 다시 시도할까요?',
           isError: true,
+          status: 'error',
+          completesFollowUp: true,
           rawText: response.body,
         );
       }
@@ -199,6 +205,8 @@ class SessionController extends StateNotifier<SessionUiState> {
         summary: 'Agent 서버에 연결하지 못했습니다.',
         followUp: '네트워크 또는 API 주소를 확인한 뒤 다시 시도할까요?',
         isError: true,
+        status: 'error',
+        completesFollowUp: true,
         rawText: error.toString(),
       );
     }
@@ -252,15 +260,38 @@ class SessionController extends StateNotifier<SessionUiState> {
     final followUp = _cleanText(payload.followUp);
     final pendingAction = _cleanText(payload.pendingAction);
     final pendingTarget = _cleanText(payload.pendingTarget);
+    final status = _resolveStatus(payload);
+    final completesFollowUp = payload.completesFollowUp ?? false;
 
     return CommandResponseModel(
       transcript: transcript,
       summary: summary,
       followUp: followUp,
-      isError: payload.isError ?? false,
+      isError: status == CommandResponseStatus.error,
       pendingAction: pendingAction,
       pendingTarget: pendingTarget,
+      status: status,
+      completesFollowUp: completesFollowUp,
     );
+  }
+
+  CommandResponseStatus _resolveStatus(AgentCommandPayload payload) {
+    final rawStatus = _cleanText(payload.status)?.toLowerCase();
+
+    switch (rawStatus) {
+      case 'warning':
+        return CommandResponseStatus.warning;
+      case 'error':
+        return CommandResponseStatus.error;
+      case 'success':
+        return CommandResponseStatus.success;
+    }
+
+    if (payload.isError == true) {
+      return CommandResponseStatus.error;
+    }
+
+    return CommandResponseStatus.success;
   }
 
   String? _cleanText(String? value) {
