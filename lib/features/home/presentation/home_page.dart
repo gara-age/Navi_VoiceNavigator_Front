@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/colors.dart';
 import '../../../../shared/models/response_models.dart';
+import '../../../../shared/services/local_background_event_service.dart';
 import '../../listening/application/listening_controller.dart';
 import '../../notifications/presentation/app_toast.dart';
 import '../../session/application/session_controller.dart';
@@ -23,6 +26,23 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   bool _showSettings = false;
+  Timer? _backgroundEventTimer;
+  bool _handlingBackgroundEvent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _backgroundEventTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) => _pollBackgroundEvent(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _backgroundEventTimer?.cancel();
+    super.dispose();
+  }
 
   void _handleToggleMode(bool secureEnabled) {
     final notifier = ref.read(settingsControllerProvider.notifier);
@@ -121,6 +141,36 @@ class _HomePageState extends ConsumerState<HomePage> {
         return '듣는 중';
       case ListeningStatus.processing:
         return '처리중';
+    }
+  }
+
+  Future<void> _pollBackgroundEvent() async {
+    if (!mounted || _handlingBackgroundEvent) {
+      return;
+    }
+
+    _handlingBackgroundEvent = true;
+    try {
+      final event = await LocalBackgroundEventService.instance.pollEvent();
+      if (!mounted || event == null) {
+        return;
+      }
+
+      switch (event) {
+        case 'START_LISTENING':
+          await _handleListen();
+          break;
+        case 'START_SCREEN_READ':
+          await _handleScreenRead();
+          break;
+        case 'OPEN_SETTINGS':
+          if (!_showSettings) {
+            setState(() => _showSettings = true);
+          }
+          break;
+      }
+    } finally {
+      _handlingBackgroundEvent = false;
     }
   }
 

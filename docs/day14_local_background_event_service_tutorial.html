@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 14 Local Background Event Service Tutorial</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 18px 72px; }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 30px; }
+    .card { padding: 24px; }
+    .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; }
+    h1,h2,h3 { line-height:1.3; margin:0 0 14px; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; margin-top: 6px; }
+    h3 { font-size: 20px; margin-top: 4px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .callout { padding: 16px 18px; border-radius: 16px; background: #fff8e8; border: 1px solid #f6d482; color: #92400e; margin-top: 18px; }
+    .success { background: #ecfdf5; border-color: #bbf7d0; color: #166534; }
+    .path { display:inline-block; margin:8px 0 14px; padding:8px 12px; border-radius:10px; background:var(--soft); border:1px solid var(--line); color:var(--muted); font-size:14px; }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 18px; border-radius: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 14</span>
+      <h1>Local Background Event Service</h1>
+      <p>14일차는 앱 바깥에서 들어오는 신호를 Flutter 화면 액션으로 연결하는 단계입니다. 오늘 만드는 핵심 파일은 <code>local_background_event_service.dart</code>이고, 이 파일이 <code>runtime/background_event.json</code>을 읽어서 실제 모드와 데모 모드에 전달합니다.</p>
+      <div class="callout"><strong>오늘 목표:</strong> 버튼을 직접 누르지 않아도 외부 파일에 <code>START_LISTENING</code>, <code>START_SCREEN_READ</code>, <code>OPEN_SETTINGS</code>를 쓰면 앱이 이를 읽고 실제 액션을 실행하게 만듭니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>오늘 수정할 파일</h2>
+      <ul>
+        <li><code>lib/shared/services/local_background_event_service.dart</code> 새 파일</li>
+        <li><code>lib/features/home/presentation/home_page.dart</code> 수정</li>
+        <li><code>lib/demo/demo_home_page.dart</code> 수정</li>
+      </ul>
+      <p>오늘 추가하는 서비스 파일은 특정 화면 전용이 아니라 앱 전체에서 공유되는 공통 서비스라서 <code>shared/services</code> 아래에 둡니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>동작 흐름 먼저 이해하기</h2>
+      <ol>
+        <li>외부 프로세스 또는 스크립트가 <code>runtime/background_event.json</code> 파일에 이벤트를 씁니다.</li>
+        <li>실제 모드와 데모 모드가 0.5초마다 이 파일을 확인합니다.</li>
+        <li>이벤트가 있으면 읽어서 문자열로 반환합니다.</li>
+        <li>이벤트를 읽은 뒤에는 파일을 비워서 중복 실행을 막습니다.</li>
+        <li>화면은 읽어온 이벤트에 따라 듣기, 화면 읽기, 설정 열기 중 하나를 실행합니다.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>이벤트 파일 예시</h2>
+      <p>외부에서 쓰는 파일 형식은 아주 단순합니다.</p>
+      <pre><code>{
+  "type": "START_LISTENING"
+}</code></pre>
+      <pre><code>{
+  "type": "START_SCREEN_READ"
+}</code></pre>
+      <pre><code>{
+  "type": "OPEN_SETTINGS"
+}</code></pre>
+      <p>앱은 이벤트를 읽은 뒤 자동으로 파일을 비우기 때문에 같은 요청이 계속 반복되지 않습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>1. 새 파일 만들기</h2>
+      <div class="path">lib/shared/services/local_background_event_service.dart</div>
+      <p>이 파일은 로컬 파일을 읽는 역할만 담당합니다. UI를 직접 바꾸지 않고, 화면이 이해할 수 있는 이벤트 문자열만 넘겨주는 것이 핵심입니다.</p>
+      <ul>
+        <li><code>pollEvent()</code>: 파일을 읽고 이벤트 타입을 반환</li>
+        <li><code>clearEvent()</code>: 처리한 이벤트를 지움</li>
+        <li><code>_resolveEventFile()</code>: <code>runtime/background_event.json</code> 위치를 찾음</li>
+      </ul>
+      <pre><code>import &#x27;dart:convert&#x27;;
+import &#x27;dart:io&#x27;;
+
+class LocalBackgroundEventService {
+  LocalBackgroundEventService._();
+
+  static final LocalBackgroundEventService instance =
+      LocalBackgroundEventService._();
+
+  Future&lt;String?&gt; pollEvent() async {
+    final file = await _resolveEventFile();
+    if (file == null || !await file.exists()) {
+      return null;
+    }
+
+    try {
+      final raw = await file.readAsString();
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+
+      final decoded = jsonDecode(trimmed);
+      if (decoded is! Map&lt;String, dynamic&gt;) {
+        await clearEvent();
+        return null;
+      }
+
+      final type = decoded[&#x27;type&#x27;]?.toString().trim();
+      if (type == null || type.isEmpty) {
+        await clearEvent();
+        return null;
+      }
+
+      await clearEvent();
+      return type;
+    } catch (_) {
+      await clearEvent();
+      return null;
+    }
+  }
+
+  Future&lt;void&gt; clearEvent() async {
+    final file = await _resolveEventFile();
+    if (file == null) {
+      return;
+    }
+
+    try {
+      await file.parent.create(recursive: true);
+      await file.writeAsString(&#x27;&#x27;);
+    } catch (_) {
+      // Ignore local event cleanup failures.
+    }
+  }
+
+  Future&lt;File?&gt; _resolveEventFile() async {
+    final envRoot = Platform.environment[&#x27;VOICE_NAVIGATOR_ROOT&#x27;];
+    if (envRoot != null &amp;&amp; envRoot.isNotEmpty) {
+      return File(
+        &#x27;$envRoot${Platform.pathSeparator}runtime${Platform.pathSeparator}background_event.json&#x27;,
+      );
+    }
+
+    final roots = &lt;Directory&gt;[];
+
+    void addAncestors(Directory directory) {
+      var current = directory;
+      for (var i = 0; i &lt; 8; i++) {
+        roots.add(current);
+        final parent = current.parent;
+        if (parent.path == current.path) {
+          break;
+        }
+        current = parent;
+      }
+    }
+
+    addAncestors(Directory.current);
+    addAncestors(File(Platform.resolvedExecutable).parent);
+
+    for (final root in roots) {
+      final runtimeDir = Directory(
+        &#x27;${root.path}${Platform.pathSeparator}runtime&#x27;,
+      );
+      if (runtimeDir.existsSync()) {
+        return File(
+          &#x27;${runtimeDir.path}${Platform.pathSeparator}background_event.json&#x27;,
+        );
+      }
+    }
+
+    final fallbackRuntimeDir = Directory(
+      &#x27;${Directory.current.path}${Platform.pathSeparator}runtime&#x27;,
+    );
+    return File(
+      &#x27;${fallbackRuntimeDir.path}${Platform.pathSeparator}background_event.json&#x27;,
+    );
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>2. 실제 모드에 연결</h2>
+      <div class="path">lib/features/home/presentation/home_page.dart</div>
+      <p>실제 모드에서는 새 서비스가 읽은 이벤트를 기존 액션 메서드에 그대로 연결합니다. 즉 오늘은 새 비즈니스 로직을 만드는 것이 아니라, 이미 있던 <code>_handleListen()</code>, <code>_handleScreenRead()</code>, 설정 모달 열기 흐름을 외부 이벤트와 연결하는 작업입니다.</p>
+      <ul>
+        <li><code>Timer.periodic</code>로 500ms polling</li>
+        <li><code>_handlingBackgroundEvent</code>로 중복 처리 방지</li>
+        <li><code>START_LISTENING</code> → <code>_handleListen()</code></li>
+        <li><code>START_SCREEN_READ</code> → <code>_handleScreenRead()</code></li>
+        <li><code>OPEN_SETTINGS</code> → 설정 모달 열기</li>
+      </ul>
+      <pre><code>import &#x27;dart:async&#x27;;
+
+import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+import &#x27;../../../../app/theme/colors.dart&#x27;;
+import &#x27;../../../../shared/models/response_models.dart&#x27;;
+import &#x27;../../../../shared/services/local_background_event_service.dart&#x27;;
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../notifications/presentation/app_toast.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;../../settings/application/settings_controller.dart&#x27;;
+import &#x27;../../settings/presentation/settings_modal.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+  Timer? _backgroundEventTimer;
+  bool _handlingBackgroundEvent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _backgroundEventTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) =&gt; _pollBackgroundEvent(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _backgroundEventTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handleToggleMode(bool secureEnabled) {
+    final notifier = ref.read(settingsControllerProvider.notifier);
+    notifier.setSecureMode(secureEnabled);
+  }
+
+  void _showCommandResultToast(CommandResponseModel response) {
+    showAppToast(
+      context,
+      response.isError ? response.summary : &#x27;결과를 읽어드립니다.&#x27;,
+      title: response.isError ? &#x27;작업 실패&#x27; : &#x27;작업 완료&#x27;,
+      state: response.isError ? AppToastState.info : AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      if (mounted) {
+        showAppToast(
+          context,
+          &#x27;음성을 듣고 있습니다. 말씀해주세요.&#x27;,
+          title: &#x27;음성 수신 중&#x27;,
+          state: AppToastState.listening,
+        );
+      }
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;작업을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;화면을 읽어드리고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;텍스트 명령을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    final response = await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+    if (mounted) {
+      _showCommandResultToast(response);
+    }
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  Future&lt;void&gt; _pollBackgroundEvent() async {
+    if (!mounted || _handlingBackgroundEvent) {
+      return;
+    }
+
+    _handlingBackgroundEvent = true;
+    try {
+      final event = await LocalBackgroundEventService.instance.pollEvent();
+      if (!mounted || event == null) {
+        return;
+      }
+
+      switch (event) {
+        case &#x27;START_LISTENING&#x27;:
+          await _handleListen();
+          break;
+        case &#x27;START_SCREEN_READ&#x27;:
+          await _handleScreenRead();
+          break;
+        case &#x27;OPEN_SETTINGS&#x27;:
+          if (!_showSettings) {
+            setState(() =&gt; _showSettings = true);
+          }
+          break;
+      }
+    } finally {
+      _handlingBackgroundEvent = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;마이크 상태&#x27;,
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                          iconBackground:
+                              listeningState.status == ListeningStatus.listening
+                              ? AppColors.successSoft
+                              : surfaceTheme.contentBackground,
+                          iconColor:
+                              listeningState.status == ListeningStatus.listening
+                              ? AppColors.success
+                              : surfaceTheme.textMuted,
+                          showWave: true,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;현재 모드&#x27;,
+                          value: settings.security.secureInputMode
+                              ? &#x27;보안 입력 모드&#x27;
+                              : &#x27;일반 모드&#x27;,
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                          iconBackground: settings.security.secureInputMode
+                              ? AppColors.warningSoft
+                              : surfaceTheme.contentBackground,
+                          iconColor: settings.security.secureInputMode
+                              ? AppColors.warning
+                              : surfaceTheme.textMuted,
+                          showDot: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          secureModeEnabled: settings.security.secureInputMode,
+                          isRecording: sessionState.isRecording,
+                          listenShortcut: settings.shortcuts.listenToggle,
+                          screenReadShortcut: settings.shortcuts.screenRead,
+                          settingsShortcut: settings.shortcuts.openSettings,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                          onToggleMode: _handleToggleMode,
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>3. 데모 모드에 연결</h2>
+      <div class="path">lib/demo/demo_home_page.dart</div>
+      <p>데모 모드도 같은 구조를 씁니다. 차이는 실제 액션 대신 데모용 메서드를 호출한다는 점뿐입니다. 이렇게 하면 외부 이벤트 흐름을 실제 모드와 데모 모드에서 모두 테스트할 수 있습니다.</p>
+      <ul>
+        <li><code>START_LISTENING</code> → <code>_simulateListen()</code></li>
+        <li><code>START_SCREEN_READ</code> → <code>_simulateScreenRead()</code></li>
+        <li><code>OPEN_SETTINGS</code> → <code>_openSettings()</code></li>
+      </ul>
+      <pre><code>import &#x27;dart:async&#x27;;
+
+import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter/services.dart&#x27;;
+
+import &#x27;../app/theme/app_theme.dart&#x27;;
+import &#x27;../app/theme/colors.dart&#x27;;
+import &#x27;demo_settings_modal.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/action_panel.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/ready_state.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/status_card.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/title_bar.dart&#x27;;
+import &#x27;../features/notifications/presentation/app_toast.dart&#x27;;
+import &#x27;../shared/models/settings_models.dart&#x27;;
+import &#x27;../shared/services/local_background_event_service.dart&#x27;;
+import &#x27;../shared/utils/shortcut_utils.dart&#x27;;
+
+enum DemoScenario {
+  youtube,
+  naverMap,
+  secureInput,
+  general,
+}
+
+class _DemoResult {
+  const _DemoResult({
+    required this.summary,
+    required this.followUp,
+  });
+
+  final String summary;
+  final String followUp;
+}
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({
+    super.key,
+    required this.initialSettings,
+    required this.onSettingsChanged,
+    required this.onSettingsSaved,
+  });
+
+  final AppSettings initialSettings;
+  final ValueChanged&lt;AppSettings&gt; onSettingsChanged;
+  final ValueChanged&lt;AppSettings&gt; onSettingsSaved;
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  final FocusNode _focusNode = FocusNode(debugLabel: &#x27;demo_home_focus&#x27;);
+
+  late AppSettings _settings;
+  String _micStatus = &#x27;대기&#x27;;
+  bool _isRecording = false;
+  bool _isBusy = false;
+  bool _showSettingsModal = false;
+  String? _summary;
+  String? _followUp;
+  Timer? _backgroundEventTimer;
+  bool _handlingBackgroundEvent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _settings = widget.initialSettings;
+
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+    _backgroundEventTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) =&gt; _pollBackgroundEvent(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _backgroundEventTimer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (ModalRoute.of(context)?.isCurrent != true || event is! KeyDownEvent) {
+      return false;
+    }
+
+    if (_showSettingsModal) {
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        _closeSettings();
+        return true;
+      }
+      return false;
+    }
+
+    if (!_settings.shortcuts.enabled) {
+      return false;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.listenToggle)) {
+      _simulateListen();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.screenRead)) {
+      _simulateScreenRead();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.openSettings)) {
+      _openSettings();
+      return true;
+    }
+
+    return false;
+  }
+
+  void _openSettings() {
+    if (_showSettingsModal) {
+      return;
+    }
+    setState(() =&gt; _showSettingsModal = true);
+  }
+
+  void _closeSettings() {
+    if (!_showSettingsModal) {
+      return;
+    }
+    setState(() =&gt; _showSettingsModal = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  void _handleToggleMode(bool secureEnabled) {
+    setState(() {
+      _settings = _settings.copyWith(
+        security: _settings.security.copyWith(
+          secureInputMode: secureEnabled,
+        ),
+      );
+    });
+  }
+
+  _DemoResult _scenarioResult(DemoScenario scenario) {
+    switch (scenario) {
+      case DemoScenario.youtube:
+        return const _DemoResult(
+          summary:
+              &#x27;유튜브 검색 결과를 준비했습니다. 요청한 키워드와 관련된 상위 영상을 읽어드릴 수 있습니다.&#x27;,
+          followUp: &#x27;첫 번째 영상을 재생할까요?&#x27;,
+        );
+      case DemoScenario.naverMap:
+        return const _DemoResult(
+          summary:
+              &#x27;네이버 지도 검색 결과를 준비했습니다. 현재 위치 기준으로 가장 관련성이 높은 장소를 찾았습니다.&#x27;,
+          followUp: &#x27;길찾기 안내를 시작할까요?&#x27;,
+        );
+      case DemoScenario.secureInput:
+        return const _DemoResult(
+          summary:
+              &#x27;보안 입력 화면으로 판단했습니다. 민감한 입력을 보호하기 위해 읽기와 자동 입력이 제한됩니다.&#x27;,
+          followUp: &#x27;보안 입력 모드를 유지한 채 계속 진행할까요?&#x27;,
+        );
+      case DemoScenario.general:
+        return const _DemoResult(
+          summary: &#x27;명령을 처리했습니다. 현재 데모 환경에서는 요약된 결과만 표시합니다.&#x27;,
+          followUp: &#x27;이어서 다음 작업도 진행할까요?&#x27;,
+        );
+    }
+  }
+
+  _DemoResult _buildDemoResponse(String text) {
+    final normalized = text.trim().toLowerCase();
+
+    if (normalized.contains(&#x27;유튜브&#x27;) ||
+        normalized.contains(&#x27;youtube&#x27;) ||
+        normalized.contains(&#x27;영상&#x27;) ||
+        normalized.contains(&#x27;동영상&#x27;)) {
+      return _scenarioResult(DemoScenario.youtube);
+    }
+
+    if (normalized.contains(&#x27;지도&#x27;) ||
+        normalized.contains(&#x27;map&#x27;) ||
+        normalized.contains(&#x27;길찾기&#x27;) ||
+        normalized.contains(&#x27;네이버&#x27;)) {
+      return _scenarioResult(DemoScenario.naverMap);
+    }
+
+    if (normalized.contains(&#x27;비밀번호&#x27;) ||
+        normalized.contains(&#x27;password&#x27;) ||
+        normalized.contains(&#x27;로그인&#x27;) ||
+        normalized.contains(&#x27;보안&#x27;)) {
+      return _scenarioResult(DemoScenario.secureInput);
+    }
+
+    return _scenarioResult(DemoScenario.general);
+  }
+
+  Future&lt;void&gt; _pollBackgroundEvent() async {
+    if (!mounted || _handlingBackgroundEvent) {
+      return;
+    }
+
+    _handlingBackgroundEvent = true;
+    try {
+      final event = await LocalBackgroundEventService.instance.pollEvent();
+      if (!mounted || event == null) {
+        return;
+      }
+
+      switch (event) {
+        case &#x27;START_LISTENING&#x27;:
+          await _simulateListen();
+          break;
+        case &#x27;START_SCREEN_READ&#x27;:
+          await _simulateScreenRead();
+          break;
+        case &#x27;OPEN_SETTINGS&#x27;:
+          _openSettings();
+          break;
+      }
+    } finally {
+      _handlingBackgroundEvent = false;
+    }
+  }
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = &#x27;듣는 중&#x27;;
+      _summary = &#x27;음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;음성을 듣고 있습니다. 말씀해주세요.&#x27;,
+      title: &#x27;음성 수신 중&#x27;,
+      state: AppToastState.listening,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = &#x27;처리중&#x27;;
+      _isRecording = false;
+      _summary = &#x27;명령을 분석하고 실행 계획을 준비하고 있습니다.&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;작업을 처리하고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    final result = _scenarioResult(DemoScenario.youtube);
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = result.summary;
+      _followUp = result.followUp;
+    });
+    showAppToast(
+      context,
+      &#x27;결과를 읽어드립니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;화면을 읽어드리고 있습니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;화면을 읽어드리고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary =
+          &#x27;현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.&#x27;;
+      _followUp = &#x27;다른 화면도 읽어드릴까요?&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;화면을 읽어드렸습니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;텍스트 명령을 처리하고 있습니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;텍스트 명령을 처리하고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    final result = _buildDemoResponse(text);
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = result.summary;
+      _followUp = result.followUp;
+    });
+    showAppToast(
+      context,
+      &#x27;텍스트 명령 처리가 완료되었습니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: surfaceTheme.shellBackground,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const AppTitleBar(),
+                  Container(
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      border: Border(
+                        bottom: BorderSide(color: surfaceTheme.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatusCard(
+                            label: &#x27;마이크 상태&#x27;,
+                            value: _micStatus,
+                            icon: Icons.mic_none_rounded,
+                            iconBackground: _micStatus == &#x27;듣는 중&#x27;
+                                ? AppColors.successSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor: _micStatus == &#x27;듣는 중&#x27;
+                                ? AppColors.success
+                                : surfaceTheme.textMuted,
+                            showWave: true,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: surfaceTheme.border,
+                        ),
+                        Expanded(
+                          child: StatusCard(
+                            label: &#x27;현재 모드&#x27;,
+                            value: &#x27;데모 모드&#x27;,
+                            icon: Icons.play_circle_outline_rounded,
+                            iconBackground: surfaceTheme.contentBackground,
+                            iconColor: surfaceTheme.accent,
+                            showDot: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 260,
+                          child: ActionPanel(
+                            secureModeEnabled: _settings.security.secureInputMode,
+                            isRecording: _isRecording,
+                            listenShortcut: _settings.shortcuts.listenToggle,
+                            screenReadShortcut: _settings.shortcuts.screenRead,
+                            settingsShortcut: _settings.shortcuts.openSettings,
+                            onListenPressed: _simulateListen,
+                            onScreenReadPressed: _simulateScreenRead,
+                            onSettingsPressed: _openSettings,
+                            onToggleMode: _handleToggleMode,
+                          ),
+                        ),
+                        Expanded(
+                          child: ReadyState(
+                            summary: _summary,
+                            followUp: _followUp,
+                            isBusy: _isBusy,
+                            onSubmitText: _handleTextCommand,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_showSettingsModal) ...[
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeSettings,
+                    child: Container(
+                      color: const Color(0x66000000),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DemoSettingsModal(
+                    initialSettings: _settings,
+                    onClose: _closeSettings,
+                    onSaved: (next) {
+                      setState(() {
+                        _settings = next;
+                        _showSettingsModal = false;
+                      });
+                      widget.onSettingsSaved(next);
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+    </section>
+
+    <section class="card success">
+      <h2>14일차 완료 기준</h2>
+      <ul>
+        <li><code>local_background_event_service.dart</code>가 추가되어 있다.</li>
+        <li>실제 모드가 이벤트 파일을 읽고 동작한다.</li>
+        <li>데모 모드도 이벤트 파일을 읽고 동작한다.</li>
+        <li><code>START_LISTENING</code>, <code>START_SCREEN_READ</code>, <code>OPEN_SETTINGS</code> 세 이벤트가 처리된다.</li>
+        <li>이벤트 처리 후 파일이 자동으로 비워진다.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

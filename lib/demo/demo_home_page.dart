@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,6 +12,7 @@ import '../features/home/presentation/widgets/status_card.dart';
 import '../features/home/presentation/widgets/title_bar.dart';
 import '../features/notifications/presentation/app_toast.dart';
 import '../shared/models/settings_models.dart';
+import '../shared/services/local_background_event_service.dart';
 import '../shared/utils/shortcut_utils.dart';
 
 enum DemoScenario {
@@ -55,6 +58,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
   bool _showSettingsModal = false;
   String? _summary;
   String? _followUp;
+  Timer? _backgroundEventTimer;
+  bool _handlingBackgroundEvent = false;
 
   @override
   void initState() {
@@ -67,10 +72,15 @@ class _DemoHomePageState extends State<DemoHomePage> {
         _focusNode.requestFocus();
       }
     });
+    _backgroundEventTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) => _pollBackgroundEvent(),
+    );
   }
 
   @override
   void dispose() {
+    _backgroundEventTimer?.cancel();
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _focusNode.dispose();
     super.dispose();
@@ -194,6 +204,34 @@ class _DemoHomePageState extends State<DemoHomePage> {
     }
 
     return _scenarioResult(DemoScenario.general);
+  }
+
+  Future<void> _pollBackgroundEvent() async {
+    if (!mounted || _handlingBackgroundEvent) {
+      return;
+    }
+
+    _handlingBackgroundEvent = true;
+    try {
+      final event = await LocalBackgroundEventService.instance.pollEvent();
+      if (!mounted || event == null) {
+        return;
+      }
+
+      switch (event) {
+        case 'START_LISTENING':
+          await _simulateListen();
+          break;
+        case 'START_SCREEN_READ':
+          await _simulateScreenRead();
+          break;
+        case 'OPEN_SETTINGS':
+          _openSettings();
+          break;
+      }
+    } finally {
+      _handlingBackgroundEvent = false;
+    }
   }
 
   Future<void> _simulateListen() async {
