@@ -12,7 +12,16 @@ import '../shared/models/settings_models.dart';
 import '../shared/utils/shortcut_utils.dart';
 
 class DemoHomePage extends StatefulWidget {
-  const DemoHomePage({super.key});
+  const DemoHomePage({
+    super.key,
+    required this.initialSettings,
+    required this.onSettingsChanged,
+    required this.onSettingsSaved,
+  });
+
+  final AppSettings initialSettings;
+  final ValueChanged<AppSettings> onSettingsChanged;
+  final ValueChanged<AppSettings> onSettingsSaved;
 
   @override
   State<DemoHomePage> createState() => _DemoHomePageState();
@@ -32,7 +41,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
   @override
   void initState() {
     super.initState();
-    _settings = AppSettings.defaults();
+    _settings = widget.initialSettings;
 
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -328,9 +337,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
                         _settings = next;
                         _showSettingsModal = false;
                       });
+                      widget.onSettingsSaved(next);
                     },
                     onChanged: (next) {
                       setState(() => _settings = next);
+                      widget.onSettingsChanged(next);
                     },
                   ),
                 ),

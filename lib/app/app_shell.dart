@@ -6,7 +6,12 @@ import 'mode_launcher_page.dart';
 import 'theme/app_theme.dart';
 
 class VoiceNavigatorApp extends ConsumerStatefulWidget {
-  const VoiceNavigatorApp({super.key});
+  const VoiceNavigatorApp({
+    super.key,
+    this.home,
+  });
+
+  final Widget? home;
 
   @override
   ConsumerState<VoiceNavigatorApp> createState() => _VoiceNavigatorAppState();
@@ -49,7 +54,7 @@ class _VoiceNavigatorAppState extends ConsumerState<VoiceNavigatorApp> {
         );
       },
       home: _loaded
-          ? const ModeLauncherPage()
+          ? (widget.home ?? const ModeLauncherPage())
           : const Scaffold(
               body: Center(
                 child: SizedBox(

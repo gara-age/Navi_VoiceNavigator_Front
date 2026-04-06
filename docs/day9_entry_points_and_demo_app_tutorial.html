@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day 9 Tutorial - Entry Points and Demo App</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #e2e8f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 32px 20px 80px;
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        color: var(--text);
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        line-height: 1.65;
+      }
+
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+
+      .hero,
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+
+      .section {
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 12px;
+        line-height: 1.3;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 24px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 20px;
+      }
+
+      h3 {
+        font-size: 18px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 20px;
+        padding: 0;
+        color: var(--muted);
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+
+      .path {
+        display: inline-block;
+        margin: 8px 0 14px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .callout,
+      .step {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .callout strong,
+      .step strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 14px 0 18px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <div class="badge">Day 9</div>
+        <h1>앱 실행 진입점 분리와 데모 전용 앱 셸 만들기</h1>
+        <p>
+          이 문서는 Day 8이 끝난 상태에서 시작합니다. 오늘 목표는 기능 하나를 더 넣는 것이 아니라
+          <strong>프로젝트 실행 구조를 목표 프로젝트처럼 정리</strong>하는 것입니다.
+        </p>
+        <p>
+          즉 <code>main.dart</code> 하나로만 앱을 실행하는 구조에서 벗어나,
+          <strong>데모 전용 실행</strong>과 <strong>실제 모드 전용 실행</strong>을
+          분리하는 단계입니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>오늘 수정할 파일</h2>
+        <div class="grid">
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/app/app_shell.dart</div>
+            <p>루트 앱이 시작 화면을 외부에서 주입받을 수 있게 만듭니다.</p>
+          </div>
+          <div class="card">
+            <strong>새 파일</strong>
+            <div class="path">lib/main_demo.dart</div>
+            <p>데모 모드 전용 실행 진입점입니다.</p>
+          </div>
+          <div class="card">
+            <strong>새 파일</strong>
+            <div class="path">lib/main_connected.dart</div>
+            <p>실제 모드 전용 실행 진입점입니다.</p>
+          </div>
+          <div class="card">
+            <strong>새 파일</strong>
+            <div class="path">lib/demo/demo_app.dart</div>
+            <p>데모 모드 전체를 감싸는 전용 앱 셸입니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_home_page.dart</div>
+            <p>설정을 내부에서 직접 만들지 않고 외부에서 받아 쓰도록 바꿉니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1. app_shell.dart 수정</h2>
+        <div class="path">lib/app/app_shell.dart</div>
+        <p>
+          현재 <code>VoiceNavigatorApp</code>은 무조건 <code>ModeLauncherPage</code>에서 시작합니다.
+          하지만 목표 프로젝트처럼 가려면,
+          <strong>원하는 홈 화면을 바깥에서 주입할 수 있어야</strong> 합니다.
+        </p>
+
+        <h3>수정 1: 생성자에 home 추가</h3>
+        <p>기존 생성자 부분을 아래처럼 바꿉니다.</p>
+        <pre><code>class VoiceNavigatorApp extends ConsumerStatefulWidget {
+  const VoiceNavigatorApp({
+    super.key,
+    this.home,
+  });
+
+  final Widget? home;</code></pre>
+
+        <h3>수정 2: build 안의 home 변경</h3>
+        <p>기존 <code>home: _loaded ? const ModeLauncherPage() ...</code> 부분을 아래로 바꿉니다.</p>
+        <pre><code>home: _loaded
+    ? (widget.home ?? const ModeLauncherPage())
+    : const Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2.8),
+          ),
+        ),
+      ),</code></pre>
+
+        <div class="callout">
+          <strong>이 수정의 의미</strong>
+          <div>
+            이제 루트 앱은 기본적으로는 모드 선택 화면으로 시작하지만,
+            원하면 <code>HomePage</code>나 다른 화면을 시작점으로 직접 넣을 수 있습니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2. main_demo.dart 새로 만들기</h2>
+        <div class="path">lib/main_demo.dart</div>
+        <p>
+          이 파일은 데모 모드만 바로 실행하기 위한 전용 entry point입니다.
+        </p>
+        <pre><code>import 'package:flutter/material.dart';
+
+import 'demo/demo_app.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const VoiceNavigatorDemoApp());
+}</code></pre>
+        <p>
+          이제 <code>flutter run -t lib/main_demo.dart</code>처럼 실행하면
+          데모 모드만 바로 띄울 수 있습니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>3. main_connected.dart 새로 만들기</h2>
+        <div class="path">lib/main_connected.dart</div>
+        <p>
+          이 파일은 실제 모드만 바로 실행하기 위한 전용 entry point입니다.
+        </p>
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/app_shell.dart';
+import 'features/home/presentation/home_page.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const ProviderScope(
+      child: VoiceNavigatorApp(
+        home: HomePage(),
+      ),
+    ),
+  );
+}</code></pre>
+        <p>
+          이제 <code>flutter run -t lib/main_connected.dart</code>처럼 실행하면
+          모드 선택 없이 바로 실제 모드로 들어갑니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>4. demo_app.dart 새로 만들기</h2>
+        <div class="path">lib/demo/demo_app.dart</div>
+        <p>
+          이제 데모 모드도 하나의 독립 앱처럼 다뤄야 합니다. 그래서
+          <strong>데모 전용 앱 셸</strong>을 만듭니다.
+        </p>
+
+        <pre><code>import 'package:flutter/material.dart';
+
+import '../app/theme/app_theme.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/services/local_settings_store.dart';
+import 'demo_home_page.dart';
+
+class VoiceNavigatorDemoApp extends StatefulWidget {
+  const VoiceNavigatorDemoApp({super.key});
+
+  @override
+  State&lt;VoiceNavigatorDemoApp&gt; createState() =&gt; _VoiceNavigatorDemoAppState();
+}
+
+class _VoiceNavigatorDemoAppState extends State&lt;VoiceNavigatorDemoApp&gt; {
+  AppSettings _settings = AppSettings.defaults();
+  bool _settingsLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future&lt;void&gt; _loadSettings() async {
+    final loaded = await LocalSettingsStore.instance.load();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _settings = loaded;
+      _settingsLoaded = true;
+    });
+  }
+
+  Future&lt;void&gt; _saveSettings(AppSettings settings) async {
+    await LocalSettingsStore.instance.save(settings);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Navi: Voice Navigator Demo',
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(display: _settings.display),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final scale = _settings.display.largeText ? 1.32 : 1.0;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(fontFamily: 'Pretendard'),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
+      home: _settingsLoaded
+          ? DemoHomePage(
+              initialSettings: _settings,
+              onSettingsChanged: (settings) {
+                setState(() =&gt; _settings = settings);
+              },
+              onSettingsSaved: (settings) {
+                setState(() =&gt; _settings = settings);
+                _saveSettings(settings);
+              },
+            )
+          : const _DemoBootstrapScreen(),
+    );
+  }
+}
+
+class _DemoBootstrapScreen extends StatelessWidget {
+  const _DemoBootstrapScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 2.8),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+
+        <div class="callout">
+          <strong>이 파일의 핵심 역할</strong>
+          <div>
+            데모 모드 설정을 로드하고, 테마를 적용하고, 저장까지 담당하는
+            <strong>데모 전용 루트 앱</strong>입니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5. demo_home_page.dart 수정</h2>
+        <div class="path">lib/demo/demo_home_page.dart</div>
+        <p>
+          이제 <code>DemoHomePage</code>는 더 이상 내부에서 기본 설정을 직접 만들지 않습니다.
+          대신 바깥 <code>demo_app.dart</code>가 전달한 설정을 사용합니다.
+        </p>
+
+        <h3>수정 1: 생성자와 필드 추가</h3>
+        <pre><code>class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({
+    super.key,
+    required this.initialSettings,
+    required this.onSettingsChanged,
+    required this.onSettingsSaved,
+  });
+
+  final AppSettings initialSettings;
+  final ValueChanged&lt;AppSettings&gt; onSettingsChanged;
+  final ValueChanged&lt;AppSettings&gt; onSettingsSaved;</code></pre>
+
+        <h3>수정 2: initState 변경</h3>
+        <p>기존:</p>
+        <pre><code>_settings = AppSettings.defaults();</code></pre>
+        <p>변경:</p>
+        <pre><code>_settings = widget.initialSettings;</code></pre>
+
+        <h3>수정 3: 설정 저장/변경 콜백 연결</h3>
+        <p>
+          <code>DemoSettingsModal</code>를 여는 부분에서
+          <code>onSaved</code> / <code>onChanged</code> 안에 부모 콜백을 추가합니다.
+        </p>
+        <pre><code>onSaved: (next) {
+  setState(() {
+    _settings = next;
+    _showSettingsModal = false;
+  });
+  widget.onSettingsSaved(next);
+},
+onChanged: (next) {
+  setState(() =&gt; _settings = next);
+  widget.onSettingsChanged(next);
+},</code></pre>
+
+        <p>
+          이 수정으로 이제 데모 홈은 “설정 사용 화면”이 되고,
+          저장/로드 책임은 바깥 앱 셸이 담당하게 됩니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>6. main.dart는 왜 그대로 두나</h2>
+        <div class="path">lib/main.dart</div>
+        <p>
+          기본 실행은 여전히 전체 앱 진입점으로 남겨둡니다.
+          즉 <code>main.dart</code>는 유지하고,
+          데모/실제 모드 전용 실행 파일만 추가하는 방식입니다.
+        </p>
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/app_shell.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: VoiceNavigatorApp()));
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>7. 실행 후 확인할 것</h2>
+        <ol>
+          <li><code>flutter run -t lib/main.dart</code>로 전체 앱이 기존처럼 실행되는지 확인합니다.</li>
+          <li><code>flutter run -t lib/main_demo.dart</code>로 데모 모드만 바로 뜨는지 확인합니다.</li>
+          <li><code>flutter run -t lib/main_connected.dart</code>로 실제 모드가 바로 뜨는지 확인합니다.</li>
+          <li>데모 모드에서 설정을 저장한 뒤 앱을 다시 실행해도 값이 유지되는지 확인합니다.</li>
+          <li>데모 모드 설정 변경이 즉시 테마에 반영되는지 확인합니다.</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>8. 오늘 꼭 이해해야 하는 것</h2>
+        <ul>
+          <li>왜 entry point를 여러 개로 나누는가</li>
+          <li>왜 데모 모드도 별도 앱 셸이 필요한가</li>
+          <li>왜 DemoHomePage가 설정을 직접 만들지 않고 외부에서 받아야 하는가</li>
+          <li>왜 VoiceNavigatorApp이 <code>home</code>을 주입받는 구조가 유연한가</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>9. Day 9 완료 기준</h2>
+        <ul>
+          <li><code>main_demo.dart</code>로 데모 모드만 바로 실행 가능하다.</li>
+          <li><code>main_connected.dart</code>로 실제 모드만 바로 실행 가능하다.</li>
+          <li><code>demo_app.dart</code>가 데모 전용 앱 셸 역할을 한다.</li>
+          <li><code>DemoHomePage</code>가 외부에서 설정을 주입받아 사용한다.</li>
+          <li>프로젝트 실행 구조가 목표 프로젝트와 훨씬 가까워진다.</li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

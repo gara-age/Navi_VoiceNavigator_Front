@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../demo/demo_home_page.dart';
 import '../features/home/presentation/home_page.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/services/local_settings_store.dart';
 import 'theme/colors.dart';
 
 class ModeLauncherPage extends StatelessWidget {
@@ -18,7 +20,13 @@ class ModeLauncherPage extends StatelessWidget {
   void _openDemoMode(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const DemoHomePage(),
+        builder: (_) => DemoHomePage(
+          initialSettings: AppSettings.defaults(),
+          onSettingsChanged: (_) {},
+          onSettingsSaved: (settings) {
+            LocalSettingsStore.instance.save(settings);
+          },
+        ),
       ),
     );
   }
