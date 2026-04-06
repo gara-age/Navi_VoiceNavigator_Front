@@ -1,0 +1,5347 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navi Voice Navigator Commit Tutorial</title>
+    <style>
+      :root {
+        --bg: #f3f7fc;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        position: sticky; top: 0; height: 100vh; overflow: auto;
+        padding: 24px 18px 48px; background: rgba(255,255,255,0.92);
+        border-right: 1px solid var(--border); backdrop-filter: blur(16px);
+      }
+      .content { padding: 32px 28px 80px; }
+      .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; }
+      .brand h1 { margin:10px 0 8px; font-size:26px; line-height:1.2; }
+      .brand p { margin:0; color:var(--muted); font-size:14px; }
+      .nav-title { margin:24px 0 10px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+      .nav { display:grid; gap:8px; }
+      .nav button { width:100%; text-align:left; border:1px solid var(--border); background:var(--surface); color:var(--text); padding:12px 14px; border-radius:14px; cursor:pointer; font:inherit; }
+      .nav button.active { border-color:#bfdbfe; background:var(--accent-soft); color:var(--accent); font-weight:700; }
+      .panel { display:none; max-width:1120px; }
+      .panel.active { display:block; }
+      .hero, .card { background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:0 18px 40px rgba(15,23,42,.06); }
+      .hero { padding:32px; margin-bottom:24px; }
+      .card { padding:24px; margin-bottom:20px; }
+      h2,h3 { line-height:1.25; margin:0 0 16px; }
+      h2 { font-size:34px; }
+      h3 { font-size:24px; margin-top:8px; }
+      p { margin:0 0 14px; }
+      ul,ol { margin:0 0 14px 22px; }
+      li { margin-bottom:8px; }
+      .lead { font-size:18px; color:var(--muted); }
+      .file-path { display:inline-block; margin:8px 0 14px; padding:8px 12px; border-radius:10px; background:var(--surface-2); border:1px solid var(--border); color:var(--muted); font-size:14px; }
+      .callout { padding:16px 18px; border-radius:16px; background:#fff8e8; border:1px solid #f7d78c; margin:18px 0; }
+      .success { background:#ecfdf5; border-color:#bbf7d0; }
+      .step { margin-top:18px; padding-top:18px; border-top:1px dashed var(--border); }
+      pre { margin:0 0 16px; padding:18px; border-radius:16px; overflow:auto; background:var(--code-bg); color:var(--code-text); font-size:13px; line-height:1.6; }
+      code { font-family:"SFMono-Regular", Consolas, Monaco, monospace; }
+      @media (max-width:980px) { .layout { grid-template-columns:1fr; } .sidebar { position:relative; height:auto; } .content { padding:24px 16px 48px; } }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="badge">Commit Tutorial</span>
+          <h1>커밋 로그 기준 전체 튜토리얼</h1>
+          <p>이 문서는 실제 Git 커밋 순서를 그대로 따라갑니다. Day 기준이 아니라 프로젝트가 실제로 어떻게 자라났는지를 커밋 단위로 다시 따라 만드는 문서입니다.</p>
+        </div>
+        <div class="nav-title">탭 이동</div>
+        <div class="nav">
+          <button class="active" data-target="overview">개요</button>
+          <button data-target="commit0">d96ae44 초기화</button>
+          <button data-target="commit1">1d3fdb0 기본 홈 UI</button>
+          <button data-target="commit2">0b98911 상태 연결</button>
+          <button data-target="commit3">65dab25 로컬 설정</button>
+          <button data-target="commit4">42801f7 테마 기반</button>
+          <button data-target="commit5">1e9cd50 모드 선택</button>
+          <button data-target="commit6">8508272 데모 흐름</button>
+          <button data-target="commit7">d003063 설정 모달 고도화</button>
+          <button data-target="commit8">c049350 실제 모드 UI 다듬기</button>
+          <button data-target="commit9">0e8c5fe 앱 내부 토스트</button>
+        </div>
+      </aside>
+      <main class="content">
+        <section class="panel active" id="overview">
+          <div class="hero">
+            <span class="badge">Start Here</span>
+            <h2>이 문서 보는 법</h2>
+            <p class="lead">이 문서는 각 커밋의 순서를 그대로 따릅니다. 문서 안에서 아래쪽으로 갈수록 더 최신 상태의 코드가 됩니다.</p>
+            <div class="callout"><strong>핵심 원칙:</strong> 각 커밋 탭은 그 커밋에서 직접 수정한 파일만 다룹니다. 생성형 플랫폼 파일은 <code>flutter create</code>가 담당하고, 우리가 실제로 손으로 바꾸는 파일은 모두 코드 블록으로 제공합니다.</div>
+          </div>
+          <div class="card">
+            <h3>권장 진행 순서</h3>
+            <ol>
+              <li>먼저 <code>flutter create</code>로 새 프로젝트를 만듭니다.</li>
+              <li>Commit 0부터 Commit 9까지 순서대로 따라갑니다.</li>
+              <li>각 커밋 탭에서 제시한 파일만 수정합니다.</li>
+              <li>각 커밋 끝의 완료 기준을 만족하는지 실행으로 확인합니다.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>프로젝트 생성 명령</h3>
+            <pre><code>flutter create navi_front
+cd navi_front</code></pre>
+            <p>Pretendard 폰트는 <code>assets/fonts/</code>에 직접 넣어둔 뒤 Commit 0부터 따라가면 됩니다.</p>
+          </div>
+        </section>
+<section class="panel" id="commit0"><div class="hero"><span class="badge">Commit 0</span><h2>d96ae44 초기 프로젝트 만들기</h2><p class="lead">Flutter 프로젝트 뼈대를 만들고, 앱이 최소한 실행되도록 pubspec.yaml, main.dart, app_shell.dart를 정리한 단계입니다.</p></div><div class="card"><h3>핵심 수동 수정 파일</h3>
+<ul><li><code>pubspec.yaml</code></li><li><code>lib/main.dart</code></li><li><code>lib/app/app_shell.dart</code></li></ul></div>
+<div class="card"><h3>직접 손으로 준비할 것</h3><ol><li><code>flutter create navi_front</code>를 실행합니다.</li><li><code>assets/fonts/</code> 폴더를 만들고 Pretendard 폰트 4개를 복사합니다.</li><li>아래 3개 파일을 문서대로 교체합니다.</li></ol></div>
+<div class="card"><h3>1. pubspec.yaml 전체 교체</h3><p>프로젝트 이름, Riverpod 의존성, Pretendard 폰트 등록을 한 번에 맞춥니다.</p>
+<div class="step">
+<div class="file-path">pubspec.yaml</div>
+<pre><code># 프로젝트 이름
+name: navi_voice_navigator
+
+# 프로젝트 설명
+description: Voice Navigator accessibility desktop assistant
+
+# pub.dev에 공개 배포하지 않음
+publish_to: none
+
+# 앱 버전명 + 빌드번호
+version: 0.1.0+1
+
+# 사용할 Dart SDK 버전 범위
+environment:
+  sdk: &quot;&gt;=3.4.0 &lt;4.0.0&quot;
+
+# 실제 앱 실행에 필요한 패키지
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+
+# 개발/테스트용 패키지
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # Material Design 리소스 사용
+  uses-material-design: true
+
+  # 커스텀 폰트 등록
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700</code></pre>
+</div>
+</div><div class="card"><h3>2. main.dart 전체 교체</h3><p>Riverpod를 쓰기 위해 <code>ProviderScope</code>로 앱 전체를 감쌉니다.</p>
+<div class="step">
+<div class="file-path">lib/main.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;app/app_shell.dart&#x27;;
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: VoiceNavigatorApp()));
+}
+</code></pre>
+</div>
+</div><div class="card"><h3>3. app_shell.dart 전체 교체</h3><p>가장 단순한 시작 화면을 만듭니다. Commit 1부터 이 파일이 실제 진입점으로 확장됩니다.</p>
+<div class="step">
+<div class="file-path">lib/app/app_shell.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class VoiceNavigatorApp extends StatelessWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text(&#x27;App Started&#x27;),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div><div class="card success"><h3>Commit 0 완료 기준</h3><ul><li>앱을 실행하면 <code>App Started</code>가 보입니다.</li><li>폰트와 Riverpod 의존성이 등록되어 있습니다.</li></ul></div></section>
+<section class="panel" id="commit1"><div class="hero"><span class="badge">Commit 1</span><h2>1d3fdb0 모드 런처와 홈 UI 뼈대</h2><p class="lead">임시 시작 화면을 없애고, 모드 선택 진입점과 홈 화면 위젯 세트를 처음 만듭니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>lib/app/app_shell.dart</code></li><li><code>lib/app/mode_launcher_page.dart</code></li><li><code>lib/features/home/presentation/home_page.dart</code></li><li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li><li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li><li><code>lib/features/home/presentation/widgets/status_card.dart</code></li><li><code>lib/features/home/presentation/widgets/text_command_composer.dart</code></li><li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li></ul></div>
+<div class="card"><h3>진행 순서</h3><ol><li><code>app_shell.dart</code>를 실제 진입 구조로 교체합니다.</li><li><code>mode_launcher_page.dart</code>를 새로 만듭니다.</li><li><code>home_page.dart</code>와 <code>widgets/</code> 내부 파일들을 만듭니다.</li></ol></div>
+<div class="card"><h3>1. app_shell.dart를 홈 진입 구조로 교체</h3>
+<div class="step">
+<div class="file-path">lib/app/app_shell.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;mode_launcher_page.dart&#x27;;
+
+class VoiceNavigatorApp extends StatelessWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title:&#x27;Navi : Voice Navigator&#x27;,
+      debugShowCheckedModeBanner: false,
+      home: ModeLauncherPage(),
+    );
+  }
+}</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. mode_launcher_page.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/app/mode_launcher_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../features/home/presentation/home_page.dart&#x27;;
+
+class ModeLauncherPage extends StatelessWidget {
+  const ModeLauncherPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  &#x27;Navi: Voice Navigator&#x27;,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(&#x27;개발용으로 확인할 모드를 선택&#x27;),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute&lt;void&gt;(
+                          builder: (_) =&gt; const HomePage(),
+                        ),
+                      );
+                    },
+                    child: const Text(&#x27;실제 모드로 이동&#x27;),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. home_page.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: &#x27;마이크 상태&#x27;,
+                      value: &#x27;대기&#x27;,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  VerticalDivider(width: 1, thickness: 1),
+                  Expanded(
+                    child: StatusCard(
+                      label: &#x27;현재 모드&#x27;,
+                      value: &#x27;일반 모드&#x27;,
+                      icon: Icons.volume_up_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(),
+                  ),
+                  Expanded(
+                    child: ReadyState(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>4. title_bar.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.blue.shade600,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                &#x27;Navi: Voice Navigator&#x27;,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              Text(
+                &#x27;AI Voice Assistant for PC Accessibility&#x27;,
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: null,
+            icon: Icon(Icons.remove_rounded),
+          ),
+          IconButton(
+            onPressed: null,
+            icon: Icon(Icons.crop_square_rounded),
+          ),
+          IconButton(
+            onPressed: null,
+            icon: Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>5. status_card.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: Colors.grey.shade700),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>6. action_panel.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class ActionPanel extends StatelessWidget {
+  const ActionPanel({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          right: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            &#x27;주요 기능&#x27;,
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.mic_rounded,
+            title: &#x27;음성 듣기&#x27;,
+            description: &#x27;음성 명령 인식을 시작합니다.&#x27;,
+          ),
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon: Icons.visibility_rounded,
+            title: &#x27;현재 화면 읽기&#x27;,
+            description: &#x27;현재 화면 요약과 읽기를 시작합니다.&#x27;,
+          ),
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon: Icons.settings_rounded,
+            title: &#x27;설정&#x27;,
+            description: &#x27;기본 설정, 단축키, 보안, 화면 모드&#x27;,
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 16),
+          const Text(
+            &#x27;모드 전환&#x27;,
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          _ModeCard(
+            title: &#x27;일반 모드&#x27;,
+            description: &#x27;기본 자동화와 안내를 수행합니다.&#x27;,
+            selected: true,
+          ),
+          const SizedBox(height: 8),
+          _ModeCard(
+            title: &#x27;보안 입력 모드&#x27;,
+            description: &#x27;민감한 입력과 읽기를 제한합니다.&#x27;,
+            selected: false,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: () {},
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(description, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  const _ModeCard({
+    required this.title,
+    required this.description,
+    required this.selected,
+  });
+
+  final String title;
+  final String description;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFEFF6FF) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? const Color(0xFFBFDBFE) : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(description, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>7. ready_state.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;text_command_composer.dart&#x27;;
+
+class ReadyState extends StatelessWidget {
+  const ReadyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: const Icon(
+                  Icons.mic_none_rounded,
+                  size: 48,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                &#x27;Navi: Voice Navigator&#x27;,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                &#x27;준비 완료. 왼쪽의 기능을 선택하여 시작하세요.&#x27;,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              const TextCommandComposer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>8. text_command_composer.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/text_command_composer.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class TextCommandComposer extends StatefulWidget {
+  const TextCommandComposer({super.key});
+
+  @override
+  State&lt;TextCommandComposer&gt; createState() =&gt; _TextCommandComposerState();
+}
+
+class _TextCommandComposerState extends State&lt;TextCommandComposer&gt; {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(&#x27;입력한 명령: $text&#x27;)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _controller,
+          minLines: 2,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: &#x27;메시지 입력을 통해서도 명령을 내릴 수 있습니다&#x27;,
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed: _submit,
+          child: const Text(&#x27;텍스트 명령 실행&#x27;),
+        ),
+      ],
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 1 완료 기준</h3><ul><li>앱 시작 시 모드 선택 화면이 보입니다.</li><li>실제 모드 버튼으로 기본 홈 화면에 들어갈 수 있습니다.</li><li>상단 바, 상태 카드, 왼쪽 패널, 중앙 준비 화면이 보입니다.</li></ul></div></section>
+<section class="panel" id="commit2"><div class="hero"><span class="badge">Commit 2</span><h2>0b98911 상태 연결과 세션 흐름</h2><p class="lead">정적인 홈 UI에 Riverpod 상태를 연결하고, 음성 듣기/처리/텍스트 명령 흐름을 controller 기반으로 바꾸는 단계입니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>lib/features/home/presentation/home_page.dart</code></li><li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li><li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li><li><code>lib/features/home/presentation/widgets/text_command_composer.dart</code></li><li><code>lib/features/listening/application/listening_controller.dart</code></li><li><code>lib/features/session/application/session_controller.dart</code></li><li><code>lib/shared/models/response_models.dart</code></li></ul></div>
+<div class="card"><h3>진행 순서</h3><ol><li><code>response_models.dart</code>를 만듭니다.</li><li><code>listening_controller.dart</code>, <code>session_controller.dart</code>를 만듭니다.</li><li>홈 화면과 위젯을 상태 기반으로 교체합니다.</li></ol></div>
+<div class="card"><h3>1. response_models.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/shared/models/response_models.dart</div>
+<pre><code>class CommandResponseModel {
+  const CommandResponseModel({
+    required this.transcript,
+    required this.summary,
+    this.followUp,
+  });
+
+  final String transcript;
+  final String summary;
+  final String? followUp;
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. listening_controller.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/listening/application/listening_controller.dart</div>
+<pre><code>import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+enum ListeningStatus { idle, listening, processing }
+
+class ListeningState {
+  const ListeningState(this.status);
+
+  final ListeningStatus status;
+}
+
+class ListeningController extends StateNotifier&lt;ListeningState&gt; {
+  ListeningController() : super(const ListeningState(ListeningStatus.idle));
+
+  void startListening() {
+    state = const ListeningState(ListeningStatus.listening);
+  }
+
+  void setProcessing() {
+    state = const ListeningState(ListeningStatus.processing);
+  }
+
+  void reset() {
+    state = const ListeningState(ListeningStatus.idle);
+  }
+}
+
+final listeningControllerProvider =
+    StateNotifierProvider&lt;ListeningController, ListeningState&gt;((ref) {
+  return ListeningController();
+});
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. session_controller.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/session/application/session_controller.dart</div>
+<pre><code>import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../shared/models/response_models.dart&#x27;;
+
+class SessionUiState {
+  const SessionUiState({
+    this.lastSummary,
+    this.lastFollowUp,
+    this.isBusy = false,
+    this.isRecording = false,
+  });
+
+  final String? lastSummary;
+  final String? lastFollowUp;
+  final bool isBusy;
+  final bool isRecording;
+
+  SessionUiState copyWith({
+    String? lastSummary,
+    String? lastFollowUp,
+    bool? isBusy,
+    bool? isRecording,
+  }) {
+    return SessionUiState(
+      lastSummary: lastSummary ?? this.lastSummary,
+      lastFollowUp: lastFollowUp ?? this.lastFollowUp,
+      isBusy: isBusy ?? this.isBusy,
+      isRecording: isRecording ?? this.isRecording,
+    );
+  }
+}
+
+class SessionController extends StateNotifier&lt;SessionUiState&gt; {
+  SessionController() : super(const SessionUiState());
+
+  Future&lt;CommandResponseModel&gt; submitTextCommand(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1000));
+
+    final response = CommandResponseModel(
+      transcript: text,
+      summary: &#x27;텍스트 명령 &quot;$text&quot; 처리 결과입니다.&#x27;,
+      followUp: &#x27;다음 작업도 진행할까요?&#x27;,
+    );
+
+    state = state.copyWith(
+      isBusy: false,
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+    );
+
+    return response;
+  }
+
+  Future&lt;void&gt; startListening() async {
+    state = state.copyWith(isRecording: true);
+  }
+
+  Future&lt;CommandResponseModel&gt; stopListeningAndProcess() async {
+    state = state.copyWith(isRecording: false, isBusy: true);
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    const response = CommandResponseModel(
+      transcript: &#x27;유튜브에서 고양이 영상 찾아줘&#x27;,
+      summary: &#x27;유튜브 검색 결과를 준비했습니다.&#x27;,
+      followUp: &#x27;첫 번째 결과를 재생할까요?&#x27;,
+    );
+
+    state = state.copyWith(
+      isBusy: false,
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+    );
+
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; triggerScreenRead() async {
+    state = state.copyWith(isBusy: true);
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 900));
+
+    const response = CommandResponseModel(
+      transcript: &#x27;screen_read&#x27;,
+      summary: &#x27;현재 화면에는 왼쪽 기능 패널과 중앙 결과 영역이 있습니다.&#x27;,
+      followUp: &#x27;더 자세히 읽어드릴까요?&#x27;,
+    );
+
+    state = state.copyWith(
+      isBusy: false,
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+    );
+
+    return response;
+  }
+}
+
+final sessionControllerProvider =
+    StateNotifierProvider&lt;SessionController, SessionUiState&gt;((ref) {
+  return SessionController();
+});
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>4. home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerWidget {
+  const HomePage({super.key});
+
+  Future&lt;void&gt; _handleListen(WidgetRef ref) async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleScreenRead(WidgetRef ref) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleSubmitText(WidgetRef ref, String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: &#x27;마이크 상태&#x27;,
+                      value: _micLabel(listeningState),
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: &#x27;현재 모드&#x27;,
+                      value: &#x27;일반 모드&#x27;,
+                      icon: Icons.volume_up_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: sessionState.isRecording,
+                      onListenPressed: () =&gt; _handleListen(ref),
+                      onScreenReadPressed: () =&gt; _handleScreenRead(ref),
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: sessionState.lastSummary,
+                      followUp: sessionState.lastFollowUp,
+                      isBusy: sessionState.isBusy,
+                      onSubmitText: (text) =&gt; _handleSubmitText(ref, text),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>5. action_panel.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class ActionPanel extends StatelessWidget {
+  const ActionPanel({
+    super.key,
+    required this.isRecording,
+    required this.onListenPressed,
+    required this.onScreenReadPressed,
+    required this.onSettingsPressed,
+  });
+
+  final bool isRecording;
+  final VoidCallback onListenPressed;
+  final VoidCallback onScreenReadPressed;
+  final VoidCallback onSettingsPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          right: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(&#x27;주요 기능&#x27;, style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.mic_rounded,
+            title: isRecording ? &#x27;듣는 중&#x27; : &#x27;음성 듣기&#x27;,
+            description: &#x27;음성 명령 인식을 시작합니다.&#x27;,
+            onPressed: onListenPressed,
+          ),
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon: Icons.visibility_rounded,
+            title: &#x27;현재 화면 읽기&#x27;,
+            description: &#x27;현재 화면 요약과 읽기를 시작합니다.&#x27;,
+            onPressed: onScreenReadPressed,
+          ),
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon: Icons.settings_rounded,
+            title: &#x27;설정&#x27;,
+            description: &#x27;기본 설정, 단축키, 보안, 화면 모드&#x27;,
+            onPressed: onSettingsPressed,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(description, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>6. ready_state.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;text_command_composer.dart&#x27;;
+
+class ReadyState extends StatelessWidget {
+  const ReadyState({
+    super.key,
+    required this.summary,
+    required this.followUp,
+    required this.isBusy,
+    required this.onSubmitText,
+  });
+
+  final String? summary;
+  final String? followUp;
+  final bool isBusy;
+  final ValueChanged&lt;String&gt; onSubmitText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Icon(
+                  isBusy ? Icons.hourglass_top_rounded : Icons.mic_none_rounded,
+                  size: 48,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                &#x27;Navi: Voice Navigator&#x27;,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isBusy
+                    ? &#x27;명령을 처리하고 있습니다. 잠시만 기다려 주세요.&#x27;
+                    : &#x27;준비 완료. 왼쪽의 기능을 선택하여 시작하세요.&#x27;,
+                textAlign: TextAlign.center,
+              ),
+              if (summary != null) ...[
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(&#x27;결과 요약&#x27;, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Text(summary!),
+                      if (followUp != null) ...[
+                        const SizedBox(height: 10),
+                        Text(followUp!, style: const TextStyle(color: Colors.grey)),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
+              TextCommandComposer(
+                isBusy: isBusy,
+                onSubmit: onSubmitText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>7. text_command_composer.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/text_command_composer.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class TextCommandComposer extends StatefulWidget {
+  const TextCommandComposer({
+    super.key,
+    required this.onSubmit,
+    required this.isBusy,
+  });
+
+  final ValueChanged&lt;String&gt; onSubmit;
+  final bool isBusy;
+
+  @override
+  State&lt;TextCommandComposer&gt; createState() =&gt; _TextCommandComposerState();
+}
+
+class _TextCommandComposerState extends State&lt;TextCommandComposer&gt; {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isEmpty || widget.isBusy) return;
+    widget.onSubmit(text);
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _controller,
+          minLines: 2,
+          maxLines: 3,
+          onSubmitted: (_) =&gt; _submit(),
+          decoration: const InputDecoration(
+            hintText: &#x27;메시지 입력을 통해서도 명령을 내릴 수 있습니다&#x27;,
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed: widget.isBusy ? null : _submit,
+          child: Text(widget.isBusy ? &#x27;처리 중...&#x27; : &#x27;텍스트 명령 실행&#x27;),
+        ),
+      ],
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 2 완료 기준</h3><ul><li>실제 모드에서 상태값이 바뀌면 화면이 함께 바뀝니다.</li><li>듣기/처리/텍스트 명령이 더미 결과라도 상태 기반으로 동작합니다.</li></ul></div></section>
+<section class="panel" id="commit3"><div class="hero"><span class="badge">Commit 3</span><h2>65dab25 로컬 설정 저장과 모달 추가</h2><p class="lead">설정 모델, 로컬 JSON 저장소, 설정 컨트롤러, 설정 모달을 도입해서 앱 설정을 실제로 저장할 수 있게 만듭니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>lib/app/app_shell.dart</code></li><li><code>lib/features/home/presentation/home_page.dart</code></li><li><code>lib/features/settings/application/settings_controller.dart</code></li><li><code>lib/features/settings/presentation/settings_modal.dart</code></li><li><code>lib/shared/models/settings_models.dart</code></li><li><code>lib/shared/services/local_settings_store.dart</code></li></ul></div>
+<div class="card"><h3>1. settings_models.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/shared/models/settings_models.dart</div>
+<pre><code>class AppSettings {
+  const AppSettings({
+    required this.shortcuts,
+    required this.security,
+    required this.display,
+  });
+
+  final ShortcutSettings shortcuts;
+  final SecuritySettings security;
+  final DisplaySettings display;
+
+  factory AppSettings.defaults() {
+    return const AppSettings(
+      shortcuts: ShortcutSettings(
+        enabled: true,
+        listenToggle: &#x27;F2&#x27;,
+        screenRead: &#x27;F3&#x27;,
+        openSettings: &#x27;F4&#x27;,
+      ),
+      security: SecuritySettings(
+        secureInputMode: false,
+      ),
+      display: DisplaySettings(
+        darkTheme: false,
+        largeText: false,
+      ),
+    );
+  }
+
+  AppSettings copyWith({
+    ShortcutSettings? shortcuts,
+    SecuritySettings? security,
+    DisplaySettings? display,
+  }) {
+    return AppSettings(
+      shortcuts: shortcuts ?? this.shortcuts,
+      security: security ?? this.security,
+      display: display ?? this.display,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;shortcuts&#x27;: shortcuts.toJson(),
+      &#x27;security&#x27;: security.toJson(),
+      &#x27;display&#x27;: display.toJson(),
+    };
+  }
+
+  factory AppSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return AppSettings(
+      shortcuts: ShortcutSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;shortcuts&#x27;] ?? const {}),
+      ),
+      security: SecuritySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;security&#x27;] ?? const {}),
+      ),
+      display: DisplaySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;display&#x27;] ?? const {}),
+      ),
+    );
+  }
+}
+
+class ShortcutSettings {
+  const ShortcutSettings({
+    required this.enabled,
+    required this.listenToggle,
+    required this.screenRead,
+    required this.openSettings,
+  });
+
+  final bool enabled;
+  final String listenToggle;
+  final String screenRead;
+  final String openSettings;
+
+  ShortcutSettings copyWith({
+    bool? enabled,
+    String? listenToggle,
+    String? screenRead,
+    String? openSettings,
+  }) {
+    return ShortcutSettings(
+      enabled: enabled ?? this.enabled,
+      listenToggle: listenToggle ?? this.listenToggle,
+      screenRead: screenRead ?? this.screenRead,
+      openSettings: openSettings ?? this.openSettings,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;enabled&#x27;: enabled,
+      &#x27;listen_toggle&#x27;: listenToggle,
+      &#x27;screen_read&#x27;: screenRead,
+      &#x27;open_settings&#x27;: openSettings,
+    };
+  }
+
+  factory ShortcutSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return ShortcutSettings(
+      enabled: json[&#x27;enabled&#x27;] as bool? ?? true,
+      listenToggle: json[&#x27;listen_toggle&#x27;] as String? ?? &#x27;F2&#x27;,
+      screenRead: json[&#x27;screen_read&#x27;] as String? ?? &#x27;F3&#x27;,
+      openSettings: json[&#x27;open_settings&#x27;] as String? ?? &#x27;F4&#x27;,
+    );
+  }
+}
+
+class SecuritySettings {
+  const SecuritySettings({
+    required this.secureInputMode,
+  });
+
+  final bool secureInputMode;
+
+  SecuritySettings copyWith({
+    bool? secureInputMode,
+  }) {
+    return SecuritySettings(
+      secureInputMode: secureInputMode ?? this.secureInputMode,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;secure_input_mode&#x27;: secureInputMode,
+    };
+  }
+
+  factory SecuritySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return SecuritySettings(
+      secureInputMode: json[&#x27;secure_input_mode&#x27;] as bool? ?? false,
+    );
+  }
+}
+
+class DisplaySettings {
+  const DisplaySettings({
+    required this.darkTheme,
+    required this.largeText,
+  });
+
+  final bool darkTheme;
+  final bool largeText;
+
+  DisplaySettings copyWith({
+    bool? darkTheme,
+    bool? largeText,
+  }) {
+    return DisplaySettings(
+      darkTheme: darkTheme ?? this.darkTheme,
+      largeText: largeText ?? this.largeText,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;dark_theme&#x27;: darkTheme,
+      &#x27;large_text&#x27;: largeText,
+    };
+  }
+
+  factory DisplaySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return DisplaySettings(
+      darkTheme: json[&#x27;dark_theme&#x27;] as bool? ?? false,
+      largeText: json[&#x27;large_text&#x27;] as bool? ?? false,
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. local_settings_store.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/shared/services/local_settings_store.dart</div>
+<pre><code>import &#x27;dart:convert&#x27;;
+import &#x27;dart:io&#x27;;
+
+import &#x27;../models/settings_models.dart&#x27;;
+
+class LocalSettingsStore {
+  LocalSettingsStore._();
+
+  static final LocalSettingsStore instance = LocalSettingsStore._();
+
+  Future&lt;AppSettings&gt; load() async {
+    final file = File(&#x27;${Directory.current.path}/runtime/settings.json&#x27;);
+
+    if (!await file.exists()) {
+      return AppSettings.defaults();
+    }
+
+    try {
+      final raw = await file.readAsString();
+      final json = jsonDecode(raw) as Map&lt;String, dynamic&gt;;
+      return AppSettings.fromJson(json);
+    } catch (_) {
+      return AppSettings.defaults();
+    }
+  }
+
+  Future&lt;void&gt; save(AppSettings settings) async {
+    final file = File(&#x27;${Directory.current.path}/runtime/settings.json&#x27;);
+    await file.parent.create(recursive: true);
+
+    await file.writeAsString(
+      const JsonEncoder.withIndent(&#x27;  &#x27;).convert(settings.toJson()),
+      flush: true,
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. settings_controller.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+<pre><code>import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../shared/models/settings_models.dart&#x27;;
+import &#x27;../../../shared/services/local_settings_store.dart&#x27;;
+
+class SettingsController extends StateNotifier&lt;AppSettings&gt; {
+  SettingsController() : super(AppSettings.defaults());
+
+  Future&lt;void&gt; load() async {
+    state = await LocalSettingsStore.instance.load();
+  }
+
+  Future&lt;void&gt; save() async {
+    await LocalSettingsStore.instance.save(state);
+  }
+
+  void setSecureMode(bool value) {
+    state = state.copyWith(
+      security: state.security.copyWith(secureInputMode: value),
+    );
+  }
+
+  void setDarkTheme(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(darkTheme: value),
+    );
+  }
+
+  void setLargeText(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(largeText: value),
+    );
+  }
+
+  void setListenToggleShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(listenToggle: value),
+    );
+  }
+
+  void setScreenReadShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(screenRead: value),
+    );
+  }
+
+  void setOpenSettingsShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(openSettings: value),
+    );
+  }
+}
+
+final settingsControllerProvider =
+    StateNotifierProvider&lt;SettingsController, AppSettings&gt;((ref) {
+  return SettingsController();
+});
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>4. settings_modal.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../application/settings_controller.dart&#x27;;
+
+class SettingsModal extends ConsumerWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsControllerProvider);
+    final notifier = ref.read(settingsControllerProvider.notifier);
+
+    return Center(
+      child: Container(
+        width: 720,
+        height: 560,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  &#x27;설정&#x27;,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SwitchListTile(
+              title: const Text(&#x27;보안 입력 모드&#x27;),
+              value: settings.security.secureInputMode,
+              onChanged: notifier.setSecureMode,
+            ),
+            SwitchListTile(
+              title: const Text(&#x27;다크 테마&#x27;),
+              value: settings.display.darkTheme,
+              onChanged: notifier.setDarkTheme,
+            ),
+            SwitchListTile(
+              title: const Text(&#x27;큰 글씨&#x27;),
+              value: settings.display.largeText,
+              onChanged: notifier.setLargeText,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: TextEditingController(
+                text: settings.shortcuts.listenToggle,
+              ),
+              decoration: const InputDecoration(
+                labelText: &#x27;음성 듣기 단축키&#x27;,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: notifier.setListenToggleShortcut,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: TextEditingController(
+                text: settings.shortcuts.screenRead,
+              ),
+              decoration: const InputDecoration(
+                labelText: &#x27;화면 읽기 단축키&#x27;,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: notifier.setScreenReadShortcut,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: TextEditingController(
+                text: settings.shortcuts.openSettings,
+              ),
+              decoration: const InputDecoration(
+                labelText: &#x27;설정 열기 단축키&#x27;,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: notifier.setOpenSettingsShortcut,
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                const Spacer(),
+                OutlinedButton(
+                  onPressed: onClose,
+                  child: const Text(&#x27;닫기&#x27;),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () async {
+                    await notifier.save();
+                    if (context.mounted) {
+                      onClose();
+                    }
+                  },
+                  child: const Text(&#x27;저장&#x27;),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>5. app_shell.dart 전체 교체</h3><p>앱 시작 시 설정을 먼저 읽어오는 구조가 들어갑니다.</p>
+<div class="step">
+<div class="file-path">lib/app/app_shell.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../features/settings/application/settings_controller.dart&#x27;;
+import &#x27;mode_launcher_page.dart&#x27;;
+
+class VoiceNavigatorApp extends ConsumerStatefulWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  ConsumerState&lt;VoiceNavigatorApp&gt; createState() =&gt; _VoiceNavigatorAppState();
+}
+
+class _VoiceNavigatorAppState extends ConsumerState&lt;VoiceNavigatorApp&gt; {
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(settingsControllerProvider.notifier).load();
+      if (mounted) {
+        setState(() =&gt; _loaded = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: &#x27;Navi: Voice Navigator&#x27;,
+      debugShowCheckedModeBanner: false,
+      home: _loaded
+          ? const ModeLauncherPage()
+          : const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>6. home_page.dart 전체 교체</h3><p>설정 모달을 띄우는 오버레이 구조가 추가됩니다.</p>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;../../settings/application/settings_controller.dart&#x27;;
+import &#x27;../../settings/presentation/settings_modal.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 88,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;마이크 상태&#x27;,
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      const VerticalDivider(width: 1, thickness: 1),
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;현재 모드&#x27;,
+                          value: settings.security.secureInputMode ? &#x27;보안 입력 모드&#x27; : &#x27;일반 모드&#x27;,
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 260,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 3 완료 기준</h3><ul><li>설정 버튼으로 모달을 열고 닫을 수 있습니다.</li><li>설정을 저장하면 로컬 파일에 반영됩니다.</li></ul></div></section>
+<section class="panel" id="commit4"><div class="hero"><span class="badge">Commit 4</span><h2>42801f7 앱 테마 기반 추가</h2><p class="lead">색상, 글꼴, 앱 전체 테마, 확장된 설정 모델을 넣어서 앞으로 모든 화면이 같은 스타일을 공유하도록 만듭니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day0_project_baseline_tutorial.html</code></li><li><code>docs/day1_flutter_theme_tutorial.html</code></li><li><code>lib/app/app_shell.dart</code></li><li><code>lib/app/theme/app_theme.dart</code></li><li><code>lib/app/theme/colors.dart</code></li><li><code>lib/app/theme/typography.dart</code></li><li><code>lib/shared/models/settings_models.dart</code></li></ul></div>
+<div class="card"><h3>1. settings_models.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/shared/models/settings_models.dart</div>
+<pre><code>class AppSettings {
+  const AppSettings({
+    required this.general,
+    required this.shortcuts,
+    required this.security,
+    required this.display,
+  });
+
+  final GeneralSettings general;
+  final ShortcutSettings shortcuts;
+  final SecuritySettings security;
+  final DisplaySettings display;
+
+  factory AppSettings.defaults() {
+    return const AppSettings(
+      general: GeneralSettings(
+        autoLanguageDetection: true,
+        microphoneSensitivity: 0.72,
+        ttsSpeed: 1.0,
+        voiceType: &#x27;ko-KR-Neural2-A&#x27;,
+        autoErrorLogUpload: false,
+      ),
+      shortcuts: ShortcutSettings(
+        enabled: true,
+        listenToggle: &#x27;F2&#x27;,
+        screenRead: &#x27;F3&#x27;,
+        openSettings: &#x27;F4&#x27;,
+      ),
+      security: SecuritySettings(
+        secureInputMode: false,
+        sensitiveDomainAlert: true,
+      ),
+      display: DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      ),
+    );
+  }
+
+  AppSettings copyWith({
+    GeneralSettings? general,
+    ShortcutSettings? shortcuts,
+    SecuritySettings? security,
+    DisplaySettings? display,
+  }) {
+    return AppSettings(
+      general: general ?? this.general,
+      shortcuts: shortcuts ?? this.shortcuts,
+      security: security ?? this.security,
+      display: display ?? this.display,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;general&#x27;: general.toJson(),
+      &#x27;shortcuts&#x27;: shortcuts.toJson(),
+      &#x27;security&#x27;: security.toJson(),
+      &#x27;display&#x27;: display.toJson(),
+    };
+  }
+
+  factory AppSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return AppSettings(
+      general: GeneralSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;general&#x27;] ?? const {}),
+      ),
+      shortcuts: ShortcutSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;shortcuts&#x27;] ?? const {}),
+      ),
+      security: SecuritySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;security&#x27;] ?? const {}),
+      ),
+      display: DisplaySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json[&#x27;display&#x27;] ?? const {}),
+      ),
+    );
+  }
+}
+
+class GeneralSettings {
+  const GeneralSettings({
+    required this.autoLanguageDetection,
+    required this.microphoneSensitivity,
+    required this.ttsSpeed,
+    required this.voiceType,
+    required this.autoErrorLogUpload,
+  });
+
+  final bool autoLanguageDetection;
+  final double microphoneSensitivity;
+  final double ttsSpeed;
+  final String voiceType;
+  final bool autoErrorLogUpload;
+
+  GeneralSettings copyWith({
+    bool? autoLanguageDetection,
+    double? microphoneSensitivity,
+    double? ttsSpeed,
+    String? voiceType,
+    bool? autoErrorLogUpload,
+  }) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          autoLanguageDetection ?? this.autoLanguageDetection,
+      microphoneSensitivity:
+          microphoneSensitivity ?? this.microphoneSensitivity,
+      ttsSpeed: ttsSpeed ?? this.ttsSpeed,
+      voiceType: voiceType ?? this.voiceType,
+      autoErrorLogUpload: autoErrorLogUpload ?? this.autoErrorLogUpload,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;auto_language_detection&#x27;: autoLanguageDetection,
+      &#x27;microphone_sensitivity&#x27;: microphoneSensitivity,
+      &#x27;tts_speed&#x27;: ttsSpeed,
+      &#x27;voice_type&#x27;: voiceType,
+      &#x27;auto_error_log_upload&#x27;: autoErrorLogUpload,
+    };
+  }
+
+  factory GeneralSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          json[&#x27;auto_language_detection&#x27;] as bool? ?? true,
+      microphoneSensitivity:
+          (json[&#x27;microphone_sensitivity&#x27;] as num?)?.toDouble() ?? 0.72,
+      ttsSpeed: (json[&#x27;tts_speed&#x27;] as num?)?.toDouble() ?? 1.0,
+      voiceType: json[&#x27;voice_type&#x27;] as String? ?? &#x27;ko-KR-Neural2-A&#x27;,
+      autoErrorLogUpload: json[&#x27;auto_error_log_upload&#x27;] as bool? ?? false,
+    );
+  }
+}
+
+class ShortcutSettings {
+  const ShortcutSettings({
+    required this.enabled,
+    required this.listenToggle,
+    required this.screenRead,
+    required this.openSettings,
+  });
+
+  final bool enabled;
+  final String listenToggle;
+  final String screenRead;
+  final String openSettings;
+
+  ShortcutSettings copyWith({
+    bool? enabled,
+    String? listenToggle,
+    String? screenRead,
+    String? openSettings,
+  }) {
+    return ShortcutSettings(
+      enabled: enabled ?? this.enabled,
+      listenToggle: listenToggle ?? this.listenToggle,
+      screenRead: screenRead ?? this.screenRead,
+      openSettings: openSettings ?? this.openSettings,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;enabled&#x27;: enabled,
+      &#x27;listen_toggle&#x27;: listenToggle,
+      &#x27;screen_read&#x27;: screenRead,
+      &#x27;open_settings&#x27;: openSettings,
+    };
+  }
+
+  factory ShortcutSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return ShortcutSettings(
+      enabled: json[&#x27;enabled&#x27;] as bool? ?? true,
+      listenToggle: json[&#x27;listen_toggle&#x27;] as String? ?? &#x27;F2&#x27;,
+      screenRead: json[&#x27;screen_read&#x27;] as String? ?? &#x27;F3&#x27;,
+      openSettings: json[&#x27;open_settings&#x27;] as String? ?? &#x27;F4&#x27;,
+    );
+  }
+}
+
+class SecuritySettings {
+  const SecuritySettings({
+    required this.secureInputMode,
+    required this.sensitiveDomainAlert,
+  });
+
+  final bool secureInputMode;
+  final bool sensitiveDomainAlert;
+
+  SecuritySettings copyWith({
+    bool? secureInputMode,
+    bool? sensitiveDomainAlert,
+  }) {
+    return SecuritySettings(
+      secureInputMode: secureInputMode ?? this.secureInputMode,
+      sensitiveDomainAlert:
+          sensitiveDomainAlert ?? this.sensitiveDomainAlert,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;secure_input_mode&#x27;: secureInputMode,
+      &#x27;sensitive_domain_alert&#x27;: sensitiveDomainAlert,
+    };
+  }
+
+  factory SecuritySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return SecuritySettings(
+      secureInputMode: json[&#x27;secure_input_mode&#x27;] as bool? ?? false,
+      sensitiveDomainAlert:
+          json[&#x27;sensitive_domain_alert&#x27;] as bool? ?? true,
+    );
+  }
+}
+
+class DisplaySettings {
+  const DisplaySettings({
+    required this.darkTheme,
+    required this.highContrast,
+    required this.largeText,
+  });
+
+  final bool darkTheme;
+  final bool highContrast;
+  final bool largeText;
+
+  DisplaySettings copyWith({
+    bool? darkTheme,
+    bool? highContrast,
+    bool? largeText,
+  }) {
+    return DisplaySettings(
+      darkTheme: darkTheme ?? this.darkTheme,
+      highContrast: highContrast ?? this.highContrast,
+      largeText: largeText ?? this.largeText,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      &#x27;dark_theme&#x27;: darkTheme,
+      &#x27;high_contrast&#x27;: highContrast,
+      &#x27;large_text&#x27;: largeText,
+    };
+  }
+
+  factory DisplaySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return DisplaySettings(
+      darkTheme: json[&#x27;dark_theme&#x27;] as bool? ?? false,
+      highContrast: json[&#x27;high_contrast&#x27;] as bool? ?? false,
+      largeText: json[&#x27;large_text&#x27;] as bool? ?? false,
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. colors.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/app/theme/colors.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class AppColors {
+  AppColors._();
+
+  static const Color accent = Color(0xFF2563EB);
+  static const Color accentSoft = Color(0xFFEFF6FF);
+
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color shellBackground = Color(0xFFF1F5F9);
+  static const Color surface = Colors.white;
+
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+
+  static const Color border = Color(0xFFE2E8F0);
+
+  static const Color success = Color(0xFF16A34A);
+  static const Color successSoft = Color(0xFFDCFCE7);
+
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
+
+  static const Color error = Color(0xFFDC2626);
+}</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. typography.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/app/theme/typography.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+TextTheme buildTextTheme(TextTheme base) {
+  return base.copyWith(
+    headlineLarge: base.headlineLarge?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w800,
+      fontSize: 32,
+      height: 1.2,
+    ),
+    headlineMedium: base.headlineMedium?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w700,
+      fontSize: 28,
+      height: 1.25,
+    ),
+    titleLarge: base.titleLarge?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w700,
+      fontSize: 20,
+      height: 1.3,
+    ),
+    titleMedium: base.titleMedium?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w600,
+      fontSize: 16,
+      height: 1.35,
+    ),
+    bodyLarge: base.bodyLarge?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w500,
+      fontSize: 15,
+      height: 1.5,
+    ),
+    bodyMedium: base.bodyMedium?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w400,
+      fontSize: 14,
+      height: 1.45,
+    ),
+    bodySmall: base.bodySmall?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w400,
+      fontSize: 12,
+      height: 1.4,
+    ),
+    labelLarge: base.labelLarge?.copyWith(
+      fontFamily: &#x27;Pretendard&#x27;,
+      fontWeight: FontWeight.w700,
+      fontSize: 14,
+      height: 1.2,
+    ),
+  );
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>4. app_theme.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/app/theme/app_theme.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../shared/models/settings_models.dart&#x27;;
+import &#x27;colors.dart&#x27;;
+import &#x27;typography.dart&#x27;;
+
+ThemeData buildAppTheme({DisplaySettings? display}) {
+  final activeDisplay = display ??
+      const DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      );
+
+  final brightness =
+      activeDisplay.darkTheme ? Brightness.dark : Brightness.light;
+
+  final base = ThemeData(
+    brightness: brightness,
+    useMaterial3: true,
+    fontFamily: &#x27;Pretendard&#x27;,
+  );
+
+  final isDark = activeDisplay.darkTheme;
+  final isHighContrast = activeDisplay.highContrast;
+
+  final background = isHighContrast
+      ? Colors.black
+      : (isDark ? const Color(0xFF101214) : AppColors.background);
+
+  final surface = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF181B20) : AppColors.surface);
+
+  final scaffold = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF0D1117) : AppColors.shellBackground);
+
+  final textPrimary = isHighContrast
+      ? Colors.white
+      : (isDark ? const Color(0xFFF3F4F6) : AppColors.textPrimary);
+
+  final textMuted = isHighContrast
+      ? const Color(0xFFE5E7EB)
+      : (isDark ? const Color(0xFFCBD5E1) : AppColors.textMuted);
+
+  final border = isHighContrast
+      ? const Color(0xFFFFFFFF)
+      : (isDark ? const Color(0xFF3A4250) : AppColors.border);
+
+  final accent = isHighContrast
+      ? const Color(0xFFFFFF00)
+      : (isDark ? const Color(0xFF60A5FA) : AppColors.accent);
+
+  final rawTextTheme = buildTextTheme(base.textTheme).apply(
+    bodyColor: textPrimary,
+    displayColor: textPrimary,
+    fontFamily: &#x27;Pretendard&#x27;,
+  );
+
+  final textTheme =
+      _scaleTextTheme(rawTextTheme, activeDisplay.largeText ? 1.14 : 1.0);
+
+  return base.copyWith(
+    scaffoldBackgroundColor: scaffold,
+    colorScheme: ColorScheme(
+      brightness: brightness,
+      primary: accent,
+      onPrimary: isHighContrast ? Colors.black : Colors.white,
+      secondary: accent,
+      onSecondary: isHighContrast ? Colors.black : Colors.white,
+      error: AppColors.error,
+      onError: Colors.white,
+      surface: surface,
+      onSurface: textPrimary,
+    ),
+    textTheme: textTheme,
+    dividerColor: border,
+    cardTheme: CardThemeData(
+      color: surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: border),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: background,
+      hintStyle: TextStyle(
+        fontFamily: &#x27;Pretendard&#x27;,
+        color: textMuted,
+        fontSize: 13,
+      ),
+      labelStyle: TextStyle(
+        fontFamily: &#x27;Pretendard&#x27;,
+        color: textMuted,
+        fontSize: 13,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: accent, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: isHighContrast ? Colors.black : Colors.white,
+        minimumSize: const Size (0,54),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: &#x27;Pretendard&#x27;,
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size (0, 54),
+        backgroundColor: surface,
+        side: BorderSide(color: border),
+        foregroundColor: textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: &#x27;Pretendard&#x27;,
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: surface,
+      contentTextStyle: TextStyle(
+        fontFamily: &#x27;Pretendard&#x27;,
+        color: textPrimary,
+        fontSize: activeDisplay.largeText ? 14 : 13,
+        fontWeight: FontWeight.w500,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    extensions: &lt;ThemeExtension&lt;dynamic&gt;&gt;[
+      AppSurfaceTheme(
+        shellBackground: scaffold,
+        contentBackground: background,
+        surface: surface,
+        textPrimary: textPrimary,
+        textMuted: textMuted,
+        border: border,
+        accent: accent,
+      ),
+    ],
+  );
+}
+
+TextTheme _scaleTextTheme(TextTheme theme, double factor) {
+  if (factor == 1.0) {
+    return theme;
+  }
+
+  TextStyle? scale(TextStyle? style) =&gt; style?.copyWith(
+        fontSize: style.fontSize == null ? null : style.fontSize! * factor,
+      );
+
+  return theme.copyWith(
+    displayLarge: scale(theme.displayLarge),
+    displayMedium: scale(theme.displayMedium),
+    displaySmall: scale(theme.displaySmall),
+    headlineLarge: scale(theme.headlineLarge),
+    headlineMedium: scale(theme.headlineMedium),
+    headlineSmall: scale(theme.headlineSmall),
+    titleLarge: scale(theme.titleLarge),
+    titleMedium: scale(theme.titleMedium),
+    titleSmall: scale(theme.titleSmall),
+    bodyLarge: scale(theme.bodyLarge),
+    bodyMedium: scale(theme.bodyMedium),
+    bodySmall: scale(theme.bodySmall),
+    labelLarge: scale(theme.labelLarge),
+    labelMedium: scale(theme.labelMedium),
+    labelSmall: scale(theme.labelSmall),
+  );
+}
+
+@immutable
+class AppSurfaceTheme extends ThemeExtension&lt;AppSurfaceTheme&gt; {
+  const AppSurfaceTheme({
+    required this.shellBackground,
+    required this.contentBackground,
+    required this.surface,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.border,
+    required this.accent,
+  });
+
+  final Color shellBackground;
+  final Color contentBackground;
+  final Color surface;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color border;
+  final Color accent;
+
+  @override
+  AppSurfaceTheme copyWith({
+    Color? shellBackground,
+    Color? contentBackground,
+    Color? surface,
+    Color? textPrimary,
+    Color? textMuted,
+    Color? border,
+    Color? accent,
+  }) {
+    return AppSurfaceTheme(
+      shellBackground: shellBackground ?? this.shellBackground,
+      contentBackground: contentBackground ?? this.contentBackground,
+      surface: surface ?? this.surface,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textMuted: textMuted ?? this.textMuted,
+      border: border ?? this.border,
+      accent: accent ?? this.accent,
+    );
+  }
+
+  @override
+  AppSurfaceTheme lerp(ThemeExtension&lt;AppSurfaceTheme&gt;? other, double t) {
+    if (other is! AppSurfaceTheme) {
+      return this;
+    }
+
+    return AppSurfaceTheme(
+      shellBackground: Color.lerp(shellBackground, other.shellBackground, t)!,
+      contentBackground:
+          Color.lerp(contentBackground, other.contentBackground, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>5. app_shell.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/app/app_shell.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../features/settings/application/settings_controller.dart&#x27;;
+import &#x27;mode_launcher_page.dart&#x27;;
+import &#x27;theme/app_theme.dart&#x27;;
+
+class VoiceNavigatorApp extends ConsumerStatefulWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  ConsumerState&lt;VoiceNavigatorApp&gt; createState() =&gt; _VoiceNavigatorAppState();
+}
+
+class _VoiceNavigatorAppState extends ConsumerState&lt;VoiceNavigatorApp&gt; {
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(settingsControllerProvider.notifier).load();
+      if (mounted) {
+        setState(() =&gt; _loaded = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+
+    return MaterialApp(
+      title: &#x27;Navi: Voice Navigator&#x27;,
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(display: settings.display),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final scale = settings.display.largeText ? 1.32 : 1.0;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(fontFamily: &#x27;Pretendard&#x27;),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
+      home: _loaded
+          ? const ModeLauncherPage()
+          : const Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.8),
+                ),
+              ),
+            ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 4 완료 기준</h3><ul><li>앱 전체에 Pretendard와 공통 색상 체계가 적용됩니다.</li><li>다크/고대비/큰 글씨 설정을 담을 구조가 생깁니다.</li></ul></div></section>
+<section class="panel" id="commit5"><div class="hero"><span class="badge">Commit 5</span><h2>1e9cd50 모드 선택 카드와 데모 진입점</h2><p class="lead">초기 단일 버튼 런처를 실제 모드/데모 모드 카드 구조로 바꾸고 데모 전용 페이지 진입점을 연결합니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day2_mode_launcher_tutorial.html</code></li><li><code>lib/app/mode_launcher_page.dart</code></li><li><code>lib/demo/demo_home_page.dart</code></li></ul></div>
+<div class="card"><h3>1. demo_home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/demo/demo_home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+class DemoHomePage extends StatelessWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(&#x27;데모 모드&#x27;),
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            &#x27;데모 모드 화면입니다.\n3일차부터 이 화면에 데모 시나리오 UI를 붙입니다.&#x27;,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. mode_launcher_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/app/mode_launcher_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../demo/demo_home_page.dart&#x27;;
+import &#x27;../features/home/presentation/home_page.dart&#x27;;
+import &#x27;theme/colors.dart&#x27;;
+
+class ModeLauncherPage extends StatelessWidget {
+  const ModeLauncherPage({super.key});
+
+  void _openRealMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const HomePage(),
+      ),
+    );
+  }
+
+  void _openDemoMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const DemoHomePage(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      &#x27;Navi: Voice Navigator&#x27;,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      &#x27;실행할 모드를 선택하세요.&#x27;,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: &#x27;실제 모드&#x27;,
+                            subtitle: &#x27;실제 홈 화면과 연결되는 기본 앱 흐름입니다.&#x27;,
+                            badge: &#x27;서비스&#x27;,
+                            hint: &#x27;UI 연결&#x27;,
+                            icon: Icons.link_rounded,
+                            accentColor: AppColors.accent,
+                            background: AppColors.accentSoft,
+                            onTap: () =&gt; _openRealMode(context),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: &#x27;데모 모드&#x27;,
+                            subtitle: &#x27;백엔드 없이 시나리오 화면 흐름을 확인하는 모드입니다.&#x27;,
+                            badge: &#x27;오프라인&#x27;,
+                            hint: &#x27;데모&#x27;,
+                            icon: Icons.play_circle_outline_rounded,
+                            accentColor: AppColors.warning,
+                            background: AppColors.warningSoft,
+                            onTap: () =&gt; _openDemoMode(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      &#x27;2일차 목표는 실제 모드와 데모 모드 진입점을 만드는 것입니다.&#x27;,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeLaunchCard extends StatelessWidget {
+  const _ModeLaunchCard({
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    required this.hint,
+    required this.icon,
+    required this.accentColor,
+    required this.background,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badge;
+  final String hint;
+  final IconData icon;
+  final Color accentColor;
+  final Color background;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badge,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: accentColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textMuted,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Text(
+                  hint,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: accentColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: accentColor,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 5 완료 기준</h3><ul><li>첫 화면에 실제 모드/데모 모드 카드가 2개 보입니다.</li><li>데모 모드로도 진입할 수 있습니다.</li></ul></div></section>
+<section class="panel" id="commit6"><div class="hero"><span class="badge">Commit 6</span><h2>8508272 데모 모드 인터랙션 추가</h2><p class="lead">데모 페이지를 상태를 가진 시뮬레이션 화면으로 바꿉니다. 듣기, 처리, 완료, 결과 요약 흐름이 보이는 단계입니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day3_demo_home_tutorial.html</code></li><li><code>lib/demo/demo_home_page.dart</code></li></ul></div>
+<div class="card"><h3>1. demo_home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/demo/demo_home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../features/home/presentation/widgets/action_panel.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/ready_state.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/status_card.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/title_bar.dart&#x27;;
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  String _micStatus = &#x27;대기&#x27;;
+  bool _isRecording = false;
+  bool _isBusy = false;
+  String? _summary;
+  String? _followUp;
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = &#x27;듣는 중&#x27;;
+      _summary = &#x27;음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.&#x27;;
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = &#x27;처리중&#x27;;
+      _isRecording = false;
+      _summary = &#x27;명령을 분석하고 실행 계획을 준비하고 있습니다.&#x27;;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = &#x27;유튜브 검색 결과를 준비했습니다.&#x27;;
+      _followUp = &#x27;첫 번째 결과를 재생할까요?&#x27;;
+    });
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;화면을 읽어드리고 있습니다.&#x27;;
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary =
+          &#x27;현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.&#x27;;
+      _followUp = &#x27;다른 화면도 읽어드릴까요?&#x27;;
+    });
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;텍스트 명령을 처리하고 있습니다.&#x27;;
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = &#x27;텍스트 명령 &quot;$text&quot; 처리 결과입니다.&#x27;;
+      _followUp = &#x27;이어서 다음 작업도 진행할까요?&#x27;;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: &#x27;마이크 상태&#x27;,
+                      value: _micStatus,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: &#x27;현재 모드&#x27;,
+                      value: &#x27;데모 모드&#x27;,
+                      icon: Icons.play_circle_outline_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: _isRecording,
+                      onListenPressed: _simulateListen,
+                      onScreenReadPressed: _simulateScreenRead,
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: _summary,
+                      followUp: _followUp,
+                      isBusy: _isBusy,
+                      onSubmitText: _handleTextCommand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 6 완료 기준</h3><ul><li>데모 모드가 더 이상 빈 화면이 아닙니다.</li><li>음성 듣기와 화면 읽기 시뮬레이션이 보입니다.</li></ul></div></section>
+<section class="panel" id="commit7"><div class="hero"><span class="badge">Commit 7</span><h2>d003063 설정 모달 탭 구조 고도화</h2><p class="lead">설정 모달을 좌측 탭 + 우측 내용 패널 구조로 업그레이드하고 고대비 설정 제어를 추가합니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day4_settings_modal_tutorial.html</code></li><li><code>lib/features/settings/application/settings_controller.dart</code></li><li><code>lib/features/settings/presentation/settings_modal.dart</code></li></ul></div>
+<div class="card"><h3>1. settings_controller.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+<pre><code>import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../shared/models/settings_models.dart&#x27;;
+import &#x27;../../../shared/services/local_settings_store.dart&#x27;;
+
+class SettingsController extends StateNotifier&lt;AppSettings&gt; {
+  SettingsController() : super(AppSettings.defaults());
+
+  Future&lt;void&gt; load() async {
+    state = await LocalSettingsStore.instance.load();
+  }
+
+  Future&lt;void&gt; save() async {
+    await LocalSettingsStore.instance.save(state);
+  }
+
+  void setSecureMode(bool value) {
+    state = state.copyWith(
+      security: state.security.copyWith(secureInputMode: value),
+    );
+  }
+
+  void setDarkTheme(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(darkTheme: value),
+    );
+  }
+
+  void setLargeText(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(largeText: value),
+    );
+  }
+
+  void setListenToggleShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(listenToggle: value),
+    );
+  }
+
+  void setScreenReadShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(screenRead: value),
+    );
+  }
+
+  void setOpenSettingsShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(openSettings: value),
+    );
+  }
+
+  void setHighContrast(bool value) {
+  state = state.copyWith(
+    display: state.display.copyWith(highContrast: value),
+  );
+}
+
+}
+
+final settingsControllerProvider =
+    StateNotifierProvider&lt;SettingsController, AppSettings&gt;((ref) {
+  return SettingsController();
+});
+
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. settings_modal.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../shared/models/settings_models.dart&#x27;;
+import &#x27;../application/settings_controller.dart&#x27;;
+
+class SettingsModal extends ConsumerStatefulWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
+}
+
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
+  static const List&lt;String&gt; _tabs = [
+    &#x27;기본 설정&#x27;,
+    &#x27;단축키&#x27;,
+    &#x27;보안&#x27;,
+    &#x27;화면 설정&#x27;,
+  ];
+
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+    final notifier = ref.read(settingsControllerProvider.notifier);
+
+    return Center(
+      child: Container(
+        width: 820,
+        height: 620,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const Divider(height: 1),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSidebar(),
+                  Container(
+                    width: 1,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildBody(settings, notifier),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildFooter(notifier),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+      child: Row(
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                &#x27;설정&#x27;,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                &#x27;앱 설정과 화면 옵션을 조정합니다.&#x27;,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onClose,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    return SizedBox(
+      width: 190,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _tabs.length,
+        itemBuilder: (context, index) {
+          final selected = _selectedTab == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                setState(() =&gt; _selectedTab = index);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    switch (_selectedTab) {
+      case 0:
+        return _buildGeneralTab(settings);
+      case 1:
+        return _buildShortcutsTab(settings, notifier);
+      case 2:
+        return _buildSecurityTab(settings, notifier);
+      case 3:
+        return _buildDisplayTab(settings, notifier);
+      default:
+        return _buildGeneralTab(settings);
+    }
+  }
+
+  Widget _buildGeneralTab(AppSettings settings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;기본 설정&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;앱의 기본 동작에 관련된 항목입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildInfoTile(
+          title: &#x27;자동 언어 감지&#x27;,
+          description:
+              settings.general.autoLanguageDetection ? &#x27;사용 중&#x27; : &#x27;사용 안 함&#x27;,
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: &#x27;마이크 감도&#x27;,
+          description:
+              settings.general.microphoneSensitivity.toStringAsFixed(2),
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: &#x27;음성 속도&#x27;,
+          description: settings.general.ttsSpeed.toStringAsFixed(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShortcutsTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;단축키&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;자주 사용하는 기능의 단축키를 수정합니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.listenToggle,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;음성 듣기 단축키&#x27;,
+          ),
+          onChanged: notifier.setListenToggleShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.screenRead,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;화면 읽기 단축키&#x27;,
+          ),
+          onChanged: notifier.setScreenReadShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.openSettings,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;설정 열기 단축키&#x27;,
+          ),
+          onChanged: notifier.setOpenSettingsShortcut,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;보안&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;민감한 입력과 안내 관련 옵션입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text(&#x27;보안 입력 모드&#x27;),
+          subtitle: const Text(&#x27;민감한 입력 상황에서 읽기와 입력을 제한합니다.&#x27;),
+          value: settings.security.secureInputMode,
+          onChanged: notifier.setSecureMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;화면 설정&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;테마와 글자 크기 같은 화면 표시 옵션입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text(&#x27;다크 테마&#x27;),
+          subtitle: const Text(&#x27;어두운 배경 테마를 사용합니다.&#x27;),
+          value: settings.display.darkTheme,
+          onChanged: notifier.setDarkTheme,
+        ),
+        SwitchListTile(
+          title: const Text(&#x27;큰 글씨&#x27;),
+          subtitle: const Text(&#x27;앱 전체 텍스트를 더 크게 표시합니다.&#x27;),
+          value: settings.display.largeText,
+          onChanged: notifier.setLargeText,
+        ),
+        SwitchListTile(
+          title: const Text(&#x27;고대비&#x27;),
+          subtitle: const Text(&#x27;명암 대비를 높여 가독성을 향상합니다.&#x27;),
+          value: settings.display.highContrast,
+          onChanged: notifier.setHighContrast,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(SettingsController notifier) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            &#x27;변경 후 저장을 누르면 설정 파일에 반영됩니다.&#x27;,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: widget.onClose,
+            child: const Text(&#x27;닫기&#x27;),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () async {
+              await notifier.save();
+              if (mounted) {
+                widget.onClose();
+              }
+            },
+            child: const Text(&#x27;저장&#x27;),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 7 완료 기준</h3><ul><li>설정 모달이 탭형 구조로 보입니다.</li><li>단축키/보안/화면 설정 탭이 분리됩니다.</li></ul></div></section>
+<section class="panel" id="commit8"><div class="hero"><span class="badge">Commit 8</span><h2>c049350 실제 모드 UI 다듬기</h2><p class="lead">실제 모드 화면의 시각적 완성도를 끌어올리는 단계입니다. 상단 바, 상태 카드, 액션 패널, 결과 패널이 모두 제품 UI처럼 보이도록 정리됩니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day5_home_ui_polish_tutorial.html</code></li><li><code>lib/features/home/presentation/home_page.dart</code></li><li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li><li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li><li><code>lib/features/home/presentation/widgets/status_card.dart</code></li><li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li><li><code>lib/features/settings/presentation/settings_modal.dart</code></li></ul></div>
+<div class="card"><h3>1. title_bar.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+
+class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: surfaceTheme.surface,
+        border: Border(
+          bottom: BorderSide(color: surfaceTheme.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: surfaceTheme.accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.mic_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  &#x27;Navi: Voice Navigator&#x27;,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  &#x27;AI Voice Assistant for Accessibility&#x27;,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _TitleIconButton(
+            icon: Icons.remove_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.crop_square_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.close_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TitleIconButton extends StatelessWidget {
+  const _TitleIconButton({
+    required this.icon,
+    required this.color,
+  });
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(
+        icon,
+        size: 18,
+        color: color,
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. status_card.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: surfaceTheme.border),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. action_panel.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+
+class ActionPanel extends StatelessWidget {
+  const ActionPanel({
+    super.key,
+    required this.isRecording,
+    required this.onListenPressed,
+    required this.onScreenReadPressed,
+    required this.onSettingsPressed,
+  });
+
+  final bool isRecording;
+  final VoidCallback onListenPressed;
+  final VoidCallback onScreenReadPressed;
+  final VoidCallback onSettingsPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.surface,
+      child: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          Text(
+            &#x27;주요 기능&#x27;,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Text(
+          //   &#x27;실행할 기능을 선택하면 오른쪽 패널에 결과가 정리됩니다.&#x27;,
+          //   style: TextStyle(
+          //     fontSize: 13,
+          //     height: 1.5,
+          //     color: surfaceTheme.textMuted,
+          //   ),
+          // ),
+          const SizedBox(height: 18),
+          _ActionButton(
+            icon: Icons.mic_rounded,
+            title: isRecording ? &#x27;듣는 중&#x27; : &#x27;음성 듣기&#x27;,
+            description: &#x27;음성 명령 인식을 시작하고 중지합니다.&#x27;,
+            onPressed: onListenPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.visibility_rounded,
+            title: &#x27;현재 화면 읽기&#x27;,
+            description: &#x27;현재 화면의 구조와 내용을 요약합니다.&#x27;,
+            onPressed: onScreenReadPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.settings_rounded,
+            title: &#x27;설정&#x27;,
+            description: &#x27;단축키, 보안, 화면 설정을 조정합니다.&#x27;,
+            onPressed: onSettingsPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onPressed,
+    required this.accentColor,
+    required this.surfaceTheme,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onPressed;
+  final Color accentColor;
+  final AppSurfaceTheme surfaceTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(16),
+        side: BorderSide(color: surfaceTheme.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: accentColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>4. ready_state.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+import &#x27;text_command_composer.dart&#x27;;
+
+class ReadyState extends StatelessWidget {
+  const ReadyState({
+    super.key,
+    required this.summary,
+    required this.followUp,
+    required this.isBusy,
+    required this.onSubmitText,
+  });
+
+  final String? summary;
+  final String? followUp;
+  final bool isBusy;
+  final ValueChanged&lt;String&gt; onSubmitText;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.contentBackground,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    color: surfaceTheme.surface,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: surfaceTheme.border),
+                  ),
+                  child: Icon(
+                    isBusy ? Icons.hourglass_top_rounded : Icons.mic_none_rounded,
+                    size: 48,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  &#x27;Navi: Voice Navigator&#x27;,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isBusy
+                      ? &#x27;명령을 처리하고 있습니다. 잠시만 기다려 주세요.&#x27;
+                      : &#x27;준비 완료. 왼쪽의 기능을 선택하거나 텍스트 명령을 입력하세요.&#x27;,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                if (summary != null) ...[
+                  const SizedBox(height: 26),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: surfaceTheme.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          &#x27;결과 요약&#x27;,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: surfaceTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          summary!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: surfaceTheme.textPrimary,
+                          ),
+                        ),
+                        if (followUp != null) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: surfaceTheme.contentBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: surfaceTheme.border),
+                            ),
+                            child: Text(
+                              followUp!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: surfaceTheme.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                TextCommandComposer(
+                  isBusy: isBusy,
+                  onSubmit: onSubmitText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>5. settings_modal.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../shared/models/settings_models.dart&#x27;;
+import &#x27;../application/settings_controller.dart&#x27;;
+
+class SettingsModal extends ConsumerStatefulWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
+}
+
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
+  static const List&lt;String&gt; _tabs = [
+    &#x27;기본 설정&#x27;,
+    &#x27;단축키&#x27;,
+    &#x27;보안&#x27;,
+    &#x27;화면 설정&#x27;,
+  ];
+
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+    final notifier = ref.read(settingsControllerProvider.notifier);
+
+    return Center(
+      child: Container(
+        width: 820,
+        height: 620,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const Divider(height: 1),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSidebar(),
+                  Container(
+                    width: 1,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildBody(settings, notifier),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildFooter(notifier),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+      child: Row(
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                &#x27;설정&#x27;,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                &#x27;앱 설정과 화면 옵션을 조정합니다.&#x27;,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onClose,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    return SizedBox(
+      width: 190,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _tabs.length,
+        itemBuilder: (context, index) {
+          final selected = _selectedTab == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                setState(() =&gt; _selectedTab = index);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    switch (_selectedTab) {
+      case 0:
+        return _buildGeneralTab(settings);
+      case 1:
+        return _buildShortcutsTab(settings, notifier);
+      case 2:
+        return _buildSecurityTab(settings, notifier);
+      case 3:
+        return _buildDisplayTab(settings, notifier);
+      default:
+        return _buildGeneralTab(settings);
+    }
+  }
+
+  Widget _buildGeneralTab(AppSettings settings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;기본 설정&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;앱의 기본 동작에 관련된 항목입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildInfoTile(
+          title: &#x27;자동 언어 감지&#x27;,
+          description:
+              settings.general.autoLanguageDetection ? &#x27;사용 중&#x27; : &#x27;사용 안 함&#x27;,
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: &#x27;마이크 감도&#x27;,
+          description:
+              settings.general.microphoneSensitivity.toStringAsFixed(2),
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: &#x27;음성 속도&#x27;,
+          description: settings.general.ttsSpeed.toStringAsFixed(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShortcutsTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;단축키&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;자주 사용하는 기능의 단축키를 수정합니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.listenToggle,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;음성 듣기 단축키&#x27;,
+          ),
+          onChanged: notifier.setListenToggleShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.screenRead,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;화면 읽기 단축키&#x27;,
+          ),
+          onChanged: notifier.setScreenReadShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.openSettings,
+          ),
+          decoration: const InputDecoration(
+            labelText: &#x27;설정 열기 단축키&#x27;,
+          ),
+          onChanged: notifier.setOpenSettingsShortcut,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;보안&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;민감한 입력과 안내 관련 옵션입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text(&#x27;보안 입력 모드&#x27;),
+          subtitle: const Text(&#x27;민감한 입력 상황에서 읽기와 입력을 제한합니다.&#x27;),
+          value: settings.security.secureInputMode,
+          onChanged: notifier.setSecureMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          &#x27;화면 설정&#x27;,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          &#x27;테마와 글자 크기 같은 화면 표시 옵션입니다.&#x27;,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text(&#x27;다크 테마&#x27;),
+          subtitle: const Text(&#x27;어두운 배경 테마를 사용합니다.&#x27;),
+          value: settings.display.darkTheme,
+          onChanged: notifier.setDarkTheme,
+        ),
+                SwitchListTile(
+          title: const Text(&#x27;고대비&#x27;),
+          subtitle: const Text(&#x27;명암 대비를 높여 가독성을 향상합니다.&#x27;),
+          value: settings.display.highContrast,
+          onChanged: notifier.setHighContrast,
+        ),
+        SwitchListTile(
+          title: const Text(&#x27;큰 글씨&#x27;),
+          subtitle: const Text(&#x27;앱 전체 텍스트를 더 크게 표시합니다.&#x27;),
+          value: settings.display.largeText,
+          onChanged: notifier.setLargeText,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(SettingsController notifier) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            &#x27;변경 후 저장을 누르면 설정 파일에 반영됩니다.&#x27;,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: widget.onClose,
+            child: const Text(&#x27;닫기&#x27;),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () async {
+              await notifier.save();
+              if (mounted) {
+                widget.onClose();
+              }
+            },
+            child: const Text(&#x27;저장&#x27;),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>6. home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;../../settings/application/settings_controller.dart&#x27;;
+import &#x27;../../settings/presentation/settings_modal.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;마이크 상태&#x27;,
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;현재 모드&#x27;,
+                          value: settings.security.secureInputMode
+                              ? &#x27;보안 입력 모드&#x27;
+                              : &#x27;일반 모드&#x27;,
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 8 완료 기준</h3><ul><li>실제 모드가 제품 메인 화면처럼 보입니다.</li><li>상단 상태 카드, 왼쪽 패널, 결과 영역이 모두 더 선명해집니다.</li></ul></div></section>
+<section class="panel" id="commit9"><div class="hero"><span class="badge">Commit 9</span><h2>0e8c5fe 앱 내부 토스트 피드백 추가</h2><p class="lead">실제 모드와 데모 모드에 공통 토스트 피드백을 붙입니다. 듣기 시작, 처리 중, 완료 상태를 화면 우측 상단 토스트로 보여주는 단계입니다.</p></div><div class="card"><h3>변경 파일</h3>
+<ul><li><code>docs/day6_in_app_toast_tutorial.html</code></li><li><code>lib/demo/demo_home_page.dart</code></li><li><code>lib/features/home/presentation/home_page.dart</code></li><li><code>lib/features/notifications/presentation/app_toast.dart</code></li></ul></div>
+<div class="card"><h3>1. app_toast.dart 새로 만들기</h3>
+<div class="step">
+<div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+<pre><code>import &#x27;dart:async&#x27;;
+
+import &#x27;package:flutter/material.dart&#x27;;
+
+enum AppToastState {
+  info,
+  listening,
+  processing,
+  success,
+}
+
+void showAppToast(
+  BuildContext context,
+  String message, {
+  String title = &#x27;Navi: Voice Navigator&#x27;,
+  AppToastState state = AppToastState.info,
+  int durationMs = 2200,
+}) {
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: state,
+    durationMs: durationMs,
+  );
+}
+
+class _ToastOverlay {
+  _ToastOverlay._();
+
+  static final _ToastOverlay instance = _ToastOverlay._();
+
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required int durationMs,
+  }) {
+    _dismissTimer?.cancel();
+    _entry?.remove();
+
+    final overlay = Overlay.of(context);
+    _entry = OverlayEntry(
+      builder: (context) {
+        return _ToastView(
+          title: title,
+          message: message,
+          state: state,
+        );
+      },
+    );
+
+    overlay.insert(_entry!);
+
+    _dismissTimer = Timer(Duration(milliseconds: durationMs), () {
+      _entry?.remove();
+      _entry = null;
+    });
+  }
+}
+
+class _ToastView extends StatelessWidget {
+  const _ToastView({
+    required this.title,
+    required this.message,
+    required this.state,
+  });
+
+  final String title;
+  final String message;
+  final AppToastState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _resolveColors(state);
+    final icon = _resolveIcon(state);
+
+    return Positioned(
+      top: 24,
+      right: 24,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.background,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colors.iconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: colors.iconColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData _resolveIcon(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return Icons.info_outline_rounded;
+    case AppToastState.listening:
+      return Icons.mic_rounded;
+    case AppToastState.processing:
+      return Icons.hourglass_top_rounded;
+    case AppToastState.success:
+      return Icons.check_rounded;
+  }
+}
+
+_ToastColors _resolveColors(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFE2E8F0),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.listening:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFBFDBFE),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.processing:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFFDE68A),
+        iconBackground: Color(0xFFFEF3C7),
+        iconColor: Color(0xFFF59E0B),
+      );
+    case AppToastState.success:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFBBF7D0),
+        iconBackground: Color(0xFFDCFCE7),
+        iconColor: Color(0xFF16A34A),
+      );
+  }
+}
+
+class _ToastColors {
+  const _ToastColors({
+    required this.background,
+    required this.border,
+    required this.iconBackground,
+    required this.iconColor,
+  });
+
+  final Color background;
+  final Color border;
+  final Color iconBackground;
+  final Color iconColor;
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>2. home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/features/home/presentation/home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+import &#x27;package:flutter_riverpod/flutter_riverpod.dart&#x27;;
+
+import &#x27;../../../../app/theme/app_theme.dart&#x27;;
+import &#x27;../../listening/application/listening_controller.dart&#x27;;
+import &#x27;../../notifications/presentation/app_toast.dart&#x27;;
+import &#x27;../../session/application/session_controller.dart&#x27;;
+import &#x27;../../settings/application/settings_controller.dart&#x27;;
+import &#x27;../../settings/presentation/settings_modal.dart&#x27;;
+import &#x27;widgets/action_panel.dart&#x27;;
+import &#x27;widgets/ready_state.dart&#x27;;
+import &#x27;widgets/status_card.dart&#x27;;
+import &#x27;widgets/title_bar.dart&#x27;;
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      if (mounted) {
+        showAppToast(
+          context,
+          &#x27;음성을 듣고 있습니다. 말씀해주세요.&#x27;,
+          title: &#x27;음성 수신 중&#x27;,
+          state: AppToastState.listening,
+        );
+      }
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;작업을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;결과를 읽어드립니다.&#x27;,
+        title: &#x27;작업 완료&#x27;,
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;화면을 읽어드리고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;화면을 읽어드렸습니다.&#x27;,
+        title: &#x27;작업 완료&#x27;,
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;텍스트 명령을 처리하고 있습니다.&#x27;,
+        title: &#x27;작업 처리 중&#x27;,
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        &#x27;텍스트 명령 처리가 완료되었습니다.&#x27;,
+        title: &#x27;작업 완료&#x27;,
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return &#x27;대기&#x27;;
+      case ListeningStatus.listening:
+        return &#x27;듣는 중&#x27;;
+      case ListeningStatus.processing:
+        return &#x27;처리중&#x27;;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;마이크 상태&#x27;,
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: &#x27;현재 모드&#x27;,
+                          value: settings.security.secureInputMode
+                              ? &#x27;보안 입력 모드&#x27;
+                              : &#x27;일반 모드&#x27;,
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card"><h3>3. demo_home_page.dart 전체 교체</h3>
+<div class="step">
+<div class="file-path">lib/demo/demo_home_page.dart</div>
+<pre><code>import &#x27;package:flutter/material.dart&#x27;;
+
+import &#x27;../features/home/presentation/widgets/action_panel.dart&#x27;;
+import &#x27;../features/notifications/presentation/app_toast.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/ready_state.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/status_card.dart&#x27;;
+import &#x27;../features/home/presentation/widgets/title_bar.dart&#x27;;
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  String _micStatus = &#x27;대기&#x27;;
+  bool _isRecording = false;
+  bool _isBusy = false;
+  String? _summary;
+  String? _followUp;
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = &#x27;듣는 중&#x27;;
+      _summary = &#x27;음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;음성을 듣고 있습니다. 말씀해주세요.&#x27;,
+      title: &#x27;음성 수신 중&#x27;,
+      state: AppToastState.listening,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = &#x27;처리중&#x27;;
+      _isRecording = false;
+      _summary = &#x27;명령을 분석하고 실행 계획을 준비하고 있습니다.&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;작업을 처리하고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = &#x27;유튜브 검색 결과를 준비했습니다.&#x27;;
+      _followUp = &#x27;첫 번째 결과를 재생할까요?&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;결과를 읽어드립니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;화면을 읽어드리고 있습니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;화면을 읽어드리고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary =
+          &#x27;현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.&#x27;;
+      _followUp = &#x27;다른 화면도 읽어드릴까요?&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;화면을 읽어드렸습니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = &#x27;처리중&#x27;;
+      _summary = &#x27;텍스트 명령을 처리하고 있습니다.&#x27;;
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      &#x27;텍스트 명령을 처리하고 있습니다.&#x27;,
+      title: &#x27;작업 처리 중&#x27;,
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = &#x27;대기&#x27;;
+      _summary = &#x27;텍스트 명령 &quot;$text&quot; 처리 결과입니다.&#x27;;
+      _followUp = &#x27;이어서 다음 작업도 진행할까요?&#x27;;
+    });
+    showAppToast(
+      context,
+      &#x27;텍스트 명령 처리가 완료되었습니다.&#x27;,
+      title: &#x27;작업 완료&#x27;,
+      state: AppToastState.success,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: &#x27;마이크 상태&#x27;,
+                      value: _micStatus,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: &#x27;현재 모드&#x27;,
+                      value: &#x27;데모 모드&#x27;,
+                      icon: Icons.play_circle_outline_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: _isRecording,
+                      onListenPressed: _simulateListen,
+                      onScreenReadPressed: _simulateScreenRead,
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: _summary,
+                      followUp: _followUp,
+                      isBusy: _isBusy,
+                      onSubmitText: _handleTextCommand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre>
+</div>
+</div>
+<div class="card success"><h3>Commit 9 완료 기준</h3><ul><li>실제 모드와 데모 모드 모두 토스트가 뜹니다.</li><li>듣기/처리/완료 단계가 사용자에게 더 명확히 보입니다.</li></ul></div></section>
+      </main>
+    </div>
+    <script>
+      const buttons = document.querySelectorAll('.nav button');
+      const panels = document.querySelectorAll('.panel');
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const target = button.dataset.target;
+          buttons.forEach((b) => b.classList.remove('active'));
+          panels.forEach((p) => p.classList.remove('active'));
+          button.classList.add('active');
+          document.getElementById(target).classList.add('active');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    </script>
+  </body>
+</html>

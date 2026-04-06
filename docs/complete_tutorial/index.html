@@ -1,0 +1,4237 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navi Voice Navigator Complete Tutorial</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --success: #16a34a;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.75;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        padding: 24px 18px;
+        background: rgba(255, 255, 255, 0.88);
+        border-right: 1px solid var(--border);
+        backdrop-filter: blur(16px);
+        overflow: auto;
+      }
+
+      .content {
+        padding: 36px 28px 80px;
+      }
+
+      .brand {
+        margin-bottom: 24px;
+      }
+
+      .brand h1 {
+        margin: 10px 0 8px;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      .brand p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .nav-title {
+        margin: 24px 0 10px;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .nav {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav button {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        text-align: left;
+        padding: 12px 14px;
+        border-radius: 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .nav button.active {
+        border-color: #bfdbfe;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .panel {
+        display: none;
+        max-width: 1100px;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      .hero,
+      .card,
+      .mini {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .hero {
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+
+      .card {
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+
+      .mini {
+        padding: 18px;
+        border-radius: 18px;
+        background: var(--surface-2);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      h2,
+      h3,
+      h4 {
+        line-height: 1.25;
+        margin: 0 0 16px;
+      }
+
+      h2 {
+        font-size: 34px;
+      }
+
+      h3 {
+        font-size: 24px;
+        margin-top: 10px;
+      }
+
+      h4 {
+        font-size: 18px;
+        margin-top: 18px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 22px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      .lead {
+        font-size: 18px;
+        color: var(--muted);
+      }
+
+      .file-path {
+        display: inline-block;
+        margin-bottom: 14px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: #fff8e8;
+        border: 1px solid #f8d88b;
+        margin: 18px 0;
+      }
+
+      .success {
+        background: #ecfdf5;
+        border-color: #bbf7d0;
+      }
+
+      .danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        background: #eff3f8;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.94em;
+      }
+
+      pre {
+        margin: 14px 0 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font-size: 13px;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+
+      .checklist li::marker {
+        color: var(--accent);
+      }
+
+      .small {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 960px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: relative;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="badge">Complete Course</span>
+          <h1>Navi Voice Navigator Full Tutorial</h1>
+          <p>
+            이 문서는 신규 Flutter 프로젝트 생성부터 day0~day6 구현까지를
+            하나의 흐름으로 따라갈 수 있도록 만든 상세 튜토리얼입니다.
+          </p>
+        </div>
+
+        <div class="nav-title">Course</div>
+        <div class="nav">
+          <button class="active" data-target="overview">개요</button>
+          <button data-target="setup">프로젝트 생성 / 기본 세팅</button>
+          <button data-target="day0">Day 0 기준선 만들기</button>
+          <button data-target="day1">Day 1 테마 기초</button>
+          <button data-target="day2">Day 2 모드 선택 화면</button>
+          <button data-target="day3">Day 3 데모 모드</button>
+          <button data-target="day4">Day 4 설정 모달</button>
+          <button data-target="day5">Day 5 실제 모드 UI 다듬기</button>
+          <button data-target="day6">Day 6 앱 내부 토스트</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="panel active" id="overview">
+          <div class="hero">
+            <span class="badge">How To Use</span>
+            <h2>이 문서를 읽는 방법</h2>
+            <p class="lead">
+              이 문서는 기존 요약형 문서와 다르게 “어느 파일을 열고”, “어느
+              코드 아래에 무엇을 추가하고”, “최종 코드는 무엇인지”를 최대한
+              구체적으로 적었습니다. 실제로 영상을 멈춰가며 따라치는 느낌으로
+              사용하면 됩니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>문서를 따라갈 때 규칙</h3>
+            <ol class="checklist">
+              <li>먼저 파일 경로를 확인합니다.</li>
+              <li>문서에 적힌 “찾을 코드”를 파일 안에서 찾습니다.</li>
+              <li>“이 코드 아래에 추가”라고 적힌 위치에 정확히 넣습니다.</li>
+              <li>필요하면 “기존 코드를 이 코드로 교체” 방식을 씁니다.</li>
+              <li>각 Day 마지막의 “최종 코드”를 기준으로 내 코드와 비교합니다.</li>
+            </ol>
+          </div>
+
+          <div class="grid">
+            <div class="mini">
+              <h4>이 문서가 다루는 범위</h4>
+              <p>Flutter 데스크탑 UI, 설정 저장, 데모 모드, 실제 모드, 앱 내부 토스트</p>
+            </div>
+            <div class="mini">
+              <h4>의도적으로 제외한 범위</h4>
+              <p>Windows/macOS 전용 네이티브 팝업, 백그라운드 서비스, OS 자동화</p>
+            </div>
+            <div class="mini">
+              <h4>추천 사용 방식</h4>
+              <p>하루에 한 탭씩 따라친 뒤, 반드시 실행 확인과 커밋까지 마칩니다.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="setup">
+          <div class="hero">
+            <span class="badge">Setup</span>
+            <h2>프로젝트 신규 생성 / 기본 세팅</h2>
+            <p class="lead">
+              이 섹션은 이 프로젝트를 완전히 처음부터 시작한다고 가정하고
+              적었습니다. 지금 이미 프로젝트가 있어도, 무엇을 왜 세팅했는지
+              이해하는 데 꼭 필요합니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. 신규 Flutter 프로젝트 생성</h3>
+            <p>터미널에서 새 프로젝트를 만들 때는 다음 흐름을 사용합니다.</p>
+            <pre><code>flutter create navi_voice_navigator
+cd navi_voice_navigator</code></pre>
+            <div class="callout">
+              <strong>왜 이 단계가 필요한가:</strong> 기본 Flutter 프로젝트를
+              생성해야 플랫폼 디렉터리, 실행 설정, 기본 테스트 파일이 함께
+              만들어집니다.
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. 폰트 파일 넣기</h3>
+            <p>아래 폴더를 직접 만듭니다.</p>
+            <pre><code>assets/
+assets/fonts/</code></pre>
+            <p>그 다음 Pretendard 폰트 파일 4개를 넣습니다.</p>
+            <ul>
+              <li><code>Pretendard-Regular.otf</code></li>
+              <li><code>Pretendard-Medium.otf</code></li>
+              <li><code>Pretendard-SemiBold.otf</code></li>
+              <li><code>Pretendard-Bold.otf</code></li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>3. pubspec.yaml 수정</h3>
+            <div class="file-path">pubspec.yaml</div>
+            <p>
+              프로젝트 생성 직후의 기본 <code>pubspec.yaml</code>를 아래처럼
+              정리합니다. 이 파일은 패키지, SDK 버전, 폰트 등록을 담당합니다.
+            </p>
+            <p>기존 <code>pubspec.yaml</code> 전체를 아래 코드로 교체합니다.</p>
+            <pre><code># 프로젝트 이름
+name: navi_voice_navigator
+
+# 프로젝트 설명
+description: Voice Navigator accessibility desktop assistant
+
+# pub.dev에 공개 배포하지 않음
+publish_to: none
+
+# 앱 버전명 + 빌드번호
+version: 0.1.0+1
+
+# 사용할 Dart SDK 버전 범위
+environment:
+  sdk: "&gt;=3.4.0 &lt;4.0.0"
+
+# 실제 앱 실행에 필요한 패키지
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+
+# 개발/테스트용 패키지
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # Material Design 리소스 사용
+  uses-material-design: true
+
+  # 커스텀 폰트 등록
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700</code></pre>
+            <p>수정 후 실행:</p>
+            <pre><code>flutter pub get</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. lib/main.dart 수정</h3>
+            <div class="file-path">lib/main.dart</div>
+            <p>기본 카운터 앱 코드를 지우고 아래 코드로 교체합니다.</p>
+            <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/app_shell.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: VoiceNavigatorApp()));
+}</code></pre>
+            <p>이 코드의 역할:</p>
+            <ul>
+              <li><code>WidgetsFlutterBinding.ensureInitialized()</code>: 앱 실행 전 초기화</li>
+              <li><code>ProviderScope</code>: Riverpod 상태관리 시작점</li>
+              <li><code>VoiceNavigatorApp</code>: 앱 루트 위젯 실행</li>
+            </ul>
+          </div>
+
+          <div class="card success">
+            <h3>Setup 완료 기준</h3>
+            <ul>
+              <li>프로젝트가 생성되었다.</li>
+              <li><code>flutter_riverpod</code>가 설치되었다.</li>
+              <li>Pretendard 폰트가 등록되었다.</li>
+              <li><code>main.dart</code>에서 <code>ProviderScope</code>를 사용한다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day0">
+          <div class="hero">
+            <span class="badge">Day 0</span>
+            <h2>기준선 프로젝트 만들기</h2>
+            <p class="lead">
+              Day 0는 “일단 실행되는 뼈대”를 만드는 날입니다. 세련된 UI보다
+              먼저, 앞으로 확장할 파일 구조와 기본 상태 구조를 잡습니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. 폴더 구조 만들기</h3>
+            <p>아래 폴더를 직접 생성합니다.</p>
+            <pre><code>lib/app/
+lib/features/home/presentation/widgets/
+lib/features/listening/application/
+lib/features/session/application/
+lib/features/settings/application/
+lib/features/settings/presentation/
+lib/shared/models/
+lib/shared/services/</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>2. app_shell.dart 만들기</h3>
+            <div class="file-path">lib/app/app_shell.dart</div>
+            <p>새 파일을 만들고 아래 코드를 넣습니다.</p>
+            <pre><code>import 'package:flutter/material.dart';
+
+import 'mode_launcher_page.dart';
+
+class VoiceNavigatorApp extends StatelessWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: ModeLauncherPage(),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. mode_launcher_page.dart 만들기</h3>
+            <div class="file-path">lib/app/mode_launcher_page.dart</div>
+            <p>처음 기준선은 단순하게 갑니다.</p>
+            <pre><code>import 'package:flutter/material.dart';
+
+class ModeLauncherPage extends StatelessWidget {
+  const ModeLauncherPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('App Started'),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. response_models.dart 만들기</h3>
+            <div class="file-path">lib/shared/models/response_models.dart</div>
+            <pre><code>class CommandResponseModel {
+  const CommandResponseModel({
+    required this.transcript,
+    required this.summary,
+    this.followUp,
+  });
+
+  final String transcript;
+  final String summary;
+  final String? followUp;
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>5. settings_models.dart 첫 버전 만들기</h3>
+            <p>Day 1에서 확장할 예정이므로, Day 0에서는 최소 구조로 시작해도 됩니다.</p>
+            <div class="callout danger">
+              <strong>중요:</strong> 실제 최종 프로젝트에서는 Day 1 버전처럼
+              확장된 구조를 쓰게 됩니다. Day 0는 “처음 만들 때의 개념”을 보여주기
+              위한 기준선입니다.
+            </div>
+            <pre><code>class AppSettings {
+  const AppSettings({
+    required this.shortcuts,
+    required this.security,
+    required this.display,
+  });
+
+  final ShortcutSettings shortcuts;
+  final SecuritySettings security;
+  final DisplaySettings display;
+
+  factory AppSettings.defaults() {
+    return const AppSettings(
+      shortcuts: ShortcutSettings(
+        enabled: true,
+        listenToggle: 'F2',
+        screenRead: 'F3',
+        openSettings: 'F4',
+      ),
+      security: SecuritySettings(
+        secureInputMode: false,
+      ),
+      display: DisplaySettings(
+        darkTheme: false,
+        largeText: false,
+      ),
+    );
+  }
+}
+
+class ShortcutSettings {
+  const ShortcutSettings({
+    required this.enabled,
+    required this.listenToggle,
+    required this.screenRead,
+    required this.openSettings,
+  });
+
+  final bool enabled;
+  final String listenToggle;
+  final String screenRead;
+  final String openSettings;
+}
+
+class SecuritySettings {
+  const SecuritySettings({
+    required this.secureInputMode,
+  });
+
+  final bool secureInputMode;
+}
+
+class DisplaySettings {
+  const DisplaySettings({
+    required this.darkTheme,
+    required this.largeText,
+  });
+
+  final bool darkTheme;
+  final bool largeText;
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>6. settings_controller.dart 만들기</h3>
+            <div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+            <pre><code>import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/models/settings_models.dart';
+
+class SettingsController extends StateNotifier&lt;AppSettings&gt; {
+  SettingsController() : super(AppSettings.defaults());
+}
+
+final settingsControllerProvider =
+    StateNotifierProvider&lt;SettingsController, AppSettings&gt;((ref) {
+  return SettingsController();
+});</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>7. listening_controller.dart 만들기</h3>
+            <div class="file-path">lib/features/listening/application/listening_controller.dart</div>
+            <pre><code>import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum ListeningStatus { idle, listening, processing }
+
+class ListeningState {
+  const ListeningState(this.status);
+
+  final ListeningStatus status;
+}
+
+class ListeningController extends StateNotifier&lt;ListeningState&gt; {
+  ListeningController() : super(const ListeningState(ListeningStatus.idle));
+
+  void startListening() {
+    state = const ListeningState(ListeningStatus.listening);
+  }
+
+  void setProcessing() {
+    state = const ListeningState(ListeningStatus.processing);
+  }
+
+  void reset() {
+    state = const ListeningState(ListeningStatus.idle);
+  }
+}
+
+final listeningControllerProvider =
+    StateNotifierProvider&lt;ListeningController, ListeningState&gt;((ref) {
+  return ListeningController();
+});</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>8. session_controller.dart 만들기</h3>
+            <div class="file-path">lib/features/session/application/session_controller.dart</div>
+            <pre><code>import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/models/response_models.dart';
+
+class SessionUiState {
+  const SessionUiState({
+    this.lastSummary,
+    this.lastFollowUp,
+    this.isBusy = false,
+    this.isRecording = false,
+  });
+
+  final String? lastSummary;
+  final String? lastFollowUp;
+  final bool isBusy;
+  final bool isRecording;
+}
+
+class SessionController extends StateNotifier&lt;SessionUiState&gt; {
+  SessionController() : super(const SessionUiState());
+
+  Future&lt;void&gt; startListening() async {
+    state = const SessionUiState(isRecording: true);
+  }
+
+  Future&lt;CommandResponseModel&gt; stopListeningAndProcess() async {
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+    const response = CommandResponseModel(
+      transcript: '유튜브에서 고양이 영상 찾아줘',
+      summary: '유튜브 검색 결과를 준비했습니다.',
+      followUp: '첫 번째 결과를 재생할까요?',
+    );
+    state = const SessionUiState(
+      lastSummary: '유튜브 검색 결과를 준비했습니다.',
+      lastFollowUp: '첫 번째 결과를 재생할까요?',
+      isBusy: false,
+      isRecording: false,
+    );
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; triggerScreenRead() async {
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 900));
+    const response = CommandResponseModel(
+      transcript: 'screen_read',
+      summary: '현재 화면을 읽어드렸습니다.',
+      followUp: '더 자세히 읽어드릴까요?',
+    );
+    state = const SessionUiState(
+      lastSummary: '현재 화면을 읽어드렸습니다.',
+      lastFollowUp: '더 자세히 읽어드릴까요?',
+      isBusy: false,
+      isRecording: false,
+    );
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; submitTextCommand(String text) async {
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1000));
+    final response = CommandResponseModel(
+      transcript: text,
+      summary: '텍스트 명령 "$text" 처리 결과입니다.',
+      followUp: '이어서 다음 작업도 진행할까요?',
+    );
+    state = SessionUiState(
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+      isBusy: false,
+      isRecording: false,
+    );
+    return response;
+  }
+}
+
+final sessionControllerProvider =
+    StateNotifierProvider&lt;SessionController, SessionUiState&gt;((ref) {
+  return SessionController();
+});</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 0 완료 기준</h3>
+            <ul>
+              <li>앱이 실행된다.</li>
+              <li>모드 선택 페이지가 뜬다.</li>
+              <li>Riverpod 컨트롤러 3개가 생성되어 있다.</li>
+              <li>설정/세션/듣기 상태를 담을 최소 구조가 준비되어 있다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day1">
+          <div class="hero">
+            <span class="badge">Day 1</span>
+            <h2>테마 기초 만들기</h2>
+            <p class="lead">
+              Day 1의 목표는 앞으로 만들 모든 화면이 같은 스타일을 공유하도록
+              기반을 만드는 것입니다. 핵심 파일은
+              <code>settings_models.dart</code>, <code>colors.dart</code>,
+              <code>typography.dart</code>, <code>app_theme.dart</code>,
+              <code>app_shell.dart</code>입니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 1에서 수정할 파일 먼저 확인하기</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>수정 파일</strong>
+                <ul>
+                  <li><code>lib/shared/models/settings_models.dart</code></li>
+                  <li><code>lib/app/app_shell.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>새로 만들 파일</strong>
+                <ul>
+                  <li><code>lib/app/theme/colors.dart</code></li>
+                  <li><code>lib/app/theme/typography.dart</code></li>
+                  <li><code>lib/app/theme/app_theme.dart</code></li>
+                </ul>
+              </div>
+            </div>
+            <div class="callout">
+              <strong>중요:</strong> Day 1은 파일 의존성이 있습니다.
+              <code>settings_models.dart</code>를 먼저 완성한 뒤,
+              <code>theme</code> 폴더 안의 3개 파일을 만들고, 마지막에
+              <code>app_shell.dart</code>에서 연결해야 에러가 덜 납니다.
+            </div>
+            <ol>
+              <li>먼저 <code>lib/shared/models/settings_models.dart</code>를 수정합니다.</li>
+              <li>그 다음 <code>lib/app/theme/</code> 폴더를 만들고 3파일을 추가합니다.</li>
+              <li>마지막으로 <code>lib/app/app_shell.dart</code>를 교체합니다.</li>
+            </ol>
+          </div>
+
+          <div class="card">
+            <h3>2. settings_models.dart 전체 교체</h3>
+            <div class="file-path">lib/shared/models/settings_models.dart</div>
+            <p>
+              Day 0의 간단한 설정 구조를 Day 1에서 확장합니다. 이 파일은
+              설정값의 <strong>데이터 구조</strong>를 정의하는 파일입니다.
+            </p>
+            <p>
+              지금부터는 <code>AppSettings</code> 하나 안에
+              <code>general</code>, <code>shortcuts</code>,
+              <code>security</code>, <code>display</code> 4개 묶음을 넣습니다.
+            </p>
+            <ol>
+              <li><code>lib/shared/models/settings_models.dart</code>를 엽니다.</li>
+              <li>기존 코드 전체를 모두 선택합니다.</li>
+              <li>아래 최종 코드를 통째로 붙여 넣습니다.</li>
+            </ol>
+            <div class="callout">
+              <strong>왜 먼저 하나요?</strong> Day 1의 테마 파일은
+              <code>DisplaySettings</code>를 import해서 사용합니다. 그래서 이
+              파일이 먼저 완성되어 있어야 <code>app_theme.dart</code>를 만들 수
+              있습니다.
+            </div>
+            <pre><code>class AppSettings {
+  const AppSettings({
+    required this.general,
+    required this.shortcuts,
+    required this.security,
+    required this.display,
+  });
+
+  final GeneralSettings general;
+  final ShortcutSettings shortcuts;
+  final SecuritySettings security;
+  final DisplaySettings display;
+
+  factory AppSettings.defaults() {
+    return const AppSettings(
+      general: GeneralSettings(
+        autoLanguageDetection: true,
+        microphoneSensitivity: 0.72,
+        ttsSpeed: 1.0,
+        voiceType: 'ko-KR-Neural2-A',
+        autoErrorLogUpload: false,
+      ),
+      shortcuts: ShortcutSettings(
+        enabled: true,
+        listenToggle: 'F2',
+        screenRead: 'F3',
+        openSettings: 'F4',
+      ),
+      security: SecuritySettings(
+        secureInputMode: false,
+        sensitiveDomainAlert: true,
+      ),
+      display: DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      ),
+    );
+  }
+
+  AppSettings copyWith({
+    GeneralSettings? general,
+    ShortcutSettings? shortcuts,
+    SecuritySettings? security,
+    DisplaySettings? display,
+  }) {
+    return AppSettings(
+      general: general ?? this.general,
+      shortcuts: shortcuts ?? this.shortcuts,
+      security: security ?? this.security,
+      display: display ?? this.display,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'general': general.toJson(),
+      'shortcuts': shortcuts.toJson(),
+      'security': security.toJson(),
+      'display': display.toJson(),
+    };
+  }
+
+  factory AppSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return AppSettings(
+      general: GeneralSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['general'] ?? const {}),
+      ),
+      shortcuts: ShortcutSettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['shortcuts'] ?? const {}),
+      ),
+      security: SecuritySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['security'] ?? const {}),
+      ),
+      display: DisplaySettings.fromJson(
+        Map&lt;String, dynamic&gt;.from(json['display'] ?? const {}),
+      ),
+    );
+  }
+}
+
+class GeneralSettings {
+  const GeneralSettings({
+    required this.autoLanguageDetection,
+    required this.microphoneSensitivity,
+    required this.ttsSpeed,
+    required this.voiceType,
+    required this.autoErrorLogUpload,
+  });
+
+  final bool autoLanguageDetection;
+  final double microphoneSensitivity;
+  final double ttsSpeed;
+  final String voiceType;
+  final bool autoErrorLogUpload;
+
+  GeneralSettings copyWith({
+    bool? autoLanguageDetection,
+    double? microphoneSensitivity,
+    double? ttsSpeed,
+    String? voiceType,
+    bool? autoErrorLogUpload,
+  }) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          autoLanguageDetection ?? this.autoLanguageDetection,
+      microphoneSensitivity:
+          microphoneSensitivity ?? this.microphoneSensitivity,
+      ttsSpeed: ttsSpeed ?? this.ttsSpeed,
+      voiceType: voiceType ?? this.voiceType,
+      autoErrorLogUpload: autoErrorLogUpload ?? this.autoErrorLogUpload,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'auto_language_detection': autoLanguageDetection,
+      'microphone_sensitivity': microphoneSensitivity,
+      'tts_speed': ttsSpeed,
+      'voice_type': voiceType,
+      'auto_error_log_upload': autoErrorLogUpload,
+    };
+  }
+
+  factory GeneralSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return GeneralSettings(
+      autoLanguageDetection:
+          json['auto_language_detection'] as bool? ?? true,
+      microphoneSensitivity:
+          (json['microphone_sensitivity'] as num?)?.toDouble() ?? 0.72,
+      ttsSpeed: (json['tts_speed'] as num?)?.toDouble() ?? 1.0,
+      voiceType: json['voice_type'] as String? ?? 'ko-KR-Neural2-A',
+      autoErrorLogUpload: json['auto_error_log_upload'] as bool? ?? false,
+    );
+  }
+}
+
+class ShortcutSettings {
+  const ShortcutSettings({
+    required this.enabled,
+    required this.listenToggle,
+    required this.screenRead,
+    required this.openSettings,
+  });
+
+  final bool enabled;
+  final String listenToggle;
+  final String screenRead;
+  final String openSettings;
+
+  ShortcutSettings copyWith({
+    bool? enabled,
+    String? listenToggle,
+    String? screenRead,
+    String? openSettings,
+  }) {
+    return ShortcutSettings(
+      enabled: enabled ?? this.enabled,
+      listenToggle: listenToggle ?? this.listenToggle,
+      screenRead: screenRead ?? this.screenRead,
+      openSettings: openSettings ?? this.openSettings,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'enabled': enabled,
+      'listen_toggle': listenToggle,
+      'screen_read': screenRead,
+      'open_settings': openSettings,
+    };
+  }
+
+  factory ShortcutSettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return ShortcutSettings(
+      enabled: json['enabled'] as bool? ?? true,
+      listenToggle: json['listen_toggle'] as String? ?? 'F2',
+      screenRead: json['screen_read'] as String? ?? 'F3',
+      openSettings: json['open_settings'] as String? ?? 'F4',
+    );
+  }
+}
+
+class SecuritySettings {
+  const SecuritySettings({
+    required this.secureInputMode,
+    required this.sensitiveDomainAlert,
+  });
+
+  final bool secureInputMode;
+  final bool sensitiveDomainAlert;
+
+  SecuritySettings copyWith({
+    bool? secureInputMode,
+    bool? sensitiveDomainAlert,
+  }) {
+    return SecuritySettings(
+      secureInputMode: secureInputMode ?? this.secureInputMode,
+      sensitiveDomainAlert:
+          sensitiveDomainAlert ?? this.sensitiveDomainAlert,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'secure_input_mode': secureInputMode,
+      'sensitive_domain_alert': sensitiveDomainAlert,
+    };
+  }
+
+  factory SecuritySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return SecuritySettings(
+      secureInputMode: json['secure_input_mode'] as bool? ?? false,
+      sensitiveDomainAlert:
+          json['sensitive_domain_alert'] as bool? ?? true,
+    );
+  }
+}
+
+class DisplaySettings {
+  const DisplaySettings({
+    required this.darkTheme,
+    required this.highContrast,
+    required this.largeText,
+  });
+
+  final bool darkTheme;
+  final bool highContrast;
+  final bool largeText;
+
+  DisplaySettings copyWith({
+    bool? darkTheme,
+    bool? highContrast,
+    bool? largeText,
+  }) {
+    return DisplaySettings(
+      darkTheme: darkTheme ?? this.darkTheme,
+      highContrast: highContrast ?? this.highContrast,
+      largeText: largeText ?? this.largeText,
+    );
+  }
+
+  Map&lt;String, dynamic&gt; toJson() {
+    return {
+      'dark_theme': darkTheme,
+      'high_contrast': highContrast,
+      'large_text': largeText,
+    };
+  }
+
+  factory DisplaySettings.fromJson(Map&lt;String, dynamic&gt; json) {
+    return DisplaySettings(
+      darkTheme: json['dark_theme'] as bool? ?? false,
+      highContrast: json['high_contrast'] as bool? ?? false,
+      largeText: json['large_text'] as bool? ?? false,
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. theme 폴더 생성</h3>
+            <p>
+              이제 테마 전용 파일을 넣을 폴더를 만듭니다. 이 폴더 안에
+              색상, 글꼴, 전체 테마를 분리해서 넣습니다.
+            </p>
+            <p>아래 경로가 없으면 직접 생성하세요.</p>
+            <pre><code>lib/app/theme/</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. colors.dart 새로 만들기</h3>
+            <div class="file-path">lib/app/theme/colors.dart</div>
+            <p>
+              이 파일은 앱에서 반복해서 쓰는 색을 모아두는 파일입니다.
+              Day 1에서는 숫자 색상 코드를 화면마다 흩뿌리지 않고,
+              <code>AppColors.accent</code> 같은 이름으로 재사용할 수 있게 만듭니다.
+            </p>
+            <ol>
+              <li><code>lib/app/theme/</code> 안에 <code>colors.dart</code>를 새로 만듭니다.</li>
+              <li>아래 코드를 파일 전체로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+class AppColors {
+  AppColors._();
+
+  static const Color accent = Color(0xFF2563EB);
+  static const Color accentSoft = Color(0xFFEFF6FF);
+
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color shellBackground = Color(0xFFF1F5F9);
+  static const Color surface = Colors.white;
+
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+
+  static const Color border = Color(0xFFE2E8F0);
+
+  static const Color success = Color(0xFF16A34A);
+  static const Color successSoft = Color(0xFFDCFCE7);
+
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
+
+  static const Color error = Color(0xFFDC2626);
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>5. typography.dart 새로 만들기</h3>
+            <div class="file-path">lib/app/theme/typography.dart</div>
+            <p>
+              이 파일은 글자 스타일의 기본 틀입니다. 제목, 본문, 라벨 스타일을
+              한 곳에서 정리해두면 이후 화면을 만들 때 글자 크기와 굵기를 매번
+              새로 고민하지 않아도 됩니다.
+            </p>
+            <ol>
+              <li><code>lib/app/theme/typography.dart</code>를 새로 만듭니다.</li>
+              <li>아래 코드를 그대로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+TextTheme buildTextTheme(TextTheme base) {
+  return base.copyWith(
+    headlineLarge: base.headlineLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w800,
+      fontSize: 32,
+      height: 1.2,
+    ),
+    headlineMedium: base.headlineMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 28,
+      height: 1.25,
+    ),
+    titleLarge: base.titleLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 20,
+      height: 1.3,
+    ),
+    titleMedium: base.titleMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w600,
+      fontSize: 16,
+      height: 1.35,
+    ),
+    bodyLarge: base.bodyLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w500,
+      fontSize: 15,
+      height: 1.5,
+    ),
+    bodyMedium: base.bodyMedium?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w400,
+      fontSize: 14,
+      height: 1.45,
+    ),
+    bodySmall: base.bodySmall?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w400,
+      fontSize: 12,
+      height: 1.4,
+    ),
+    labelLarge: base.labelLarge?.copyWith(
+      fontFamily: 'Pretendard',
+      fontWeight: FontWeight.w700,
+      fontSize: 14,
+      height: 1.2,
+    ),
+  );
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>6. app_theme.dart 새로 만들기</h3>
+            <div class="file-path">lib/app/theme/app_theme.dart</div>
+            <p>
+              이 파일은 Day 1의 핵심입니다. 지금까지 만든
+              <code>DisplaySettings</code>, <code>AppColors</code>,
+              <code>buildTextTheme()</code>를 모두 여기서 조합합니다.
+            </p>
+            <p>
+              즉 이 파일은 “현재 설정값을 받아서 최종 ThemeData를 만드는 파일”입니다.
+            </p>
+            <ol>
+              <li><code>lib/app/theme/app_theme.dart</code>를 새로 만듭니다.</li>
+              <li>아래 코드를 파일 전체로 붙여 넣습니다.</li>
+            </ol>
+            <div class="callout">
+              <strong>읽는 포인트:</strong> 이 파일은 길지만 핵심은 세 가지입니다.
+              <code>buildAppTheme()</code> 함수, <code>_scaleTextTheme()</code>
+              함수, <code>AppSurfaceTheme</code> 확장 클래스입니다.
+            </div>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../../shared/models/settings_models.dart';
+import 'colors.dart';
+import 'typography.dart';
+
+ThemeData buildAppTheme({DisplaySettings? display}) {
+  final activeDisplay = display ??
+      const DisplaySettings(
+        darkTheme: false,
+        highContrast: false,
+        largeText: false,
+      );
+
+  final brightness =
+      activeDisplay.darkTheme ? Brightness.dark : Brightness.light;
+
+  final base = ThemeData(
+    brightness: brightness,
+    useMaterial3: true,
+    fontFamily: 'Pretendard',
+  );
+
+  final isDark = activeDisplay.darkTheme;
+  final isHighContrast = activeDisplay.highContrast;
+
+  final background = isHighContrast
+      ? Colors.black
+      : (isDark ? const Color(0xFF101214) : AppColors.background);
+
+  final surface = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF181B20) : AppColors.surface);
+
+  final scaffold = isHighContrast
+      ? const Color(0xFF000000)
+      : (isDark ? const Color(0xFF0D1117) : AppColors.shellBackground);
+
+  final textPrimary = isHighContrast
+      ? Colors.white
+      : (isDark ? const Color(0xFFF3F4F6) : AppColors.textPrimary);
+
+  final textMuted = isHighContrast
+      ? const Color(0xFFE5E7EB)
+      : (isDark ? const Color(0xFFCBD5E1) : AppColors.textMuted);
+
+  final border = isHighContrast
+      ? const Color(0xFFFFFFFF)
+      : (isDark ? const Color(0xFF3A4250) : AppColors.border);
+
+  final accent = isHighContrast
+      ? const Color(0xFFFFFF00)
+      : (isDark ? const Color(0xFF60A5FA) : AppColors.accent);
+
+  final rawTextTheme = buildTextTheme(base.textTheme).apply(
+    bodyColor: textPrimary,
+    displayColor: textPrimary,
+    fontFamily: 'Pretendard',
+  );
+
+  final textTheme =
+      _scaleTextTheme(rawTextTheme, activeDisplay.largeText ? 1.14 : 1.0);
+
+  return base.copyWith(
+    scaffoldBackgroundColor: scaffold,
+    colorScheme: ColorScheme(
+      brightness: brightness,
+      primary: accent,
+      onPrimary: isHighContrast ? Colors.black : Colors.white,
+      secondary: accent,
+      onSecondary: isHighContrast ? Colors.black : Colors.white,
+      error: AppColors.error,
+      onError: Colors.white,
+      surface: surface,
+      onSurface: textPrimary,
+    ),
+    textTheme: textTheme,
+    dividerColor: border,
+    cardTheme: CardThemeData(
+      color: surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: border),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: background,
+      hintStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textMuted,
+        fontSize: 13,
+      ),
+      labelStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textMuted,
+        fontSize: 13,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: accent, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: border),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: isHighContrast ? Colors.black : Colors.white,
+        minimumSize: const Size.fromHeight(54),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(54),
+        backgroundColor: surface,
+        side: BorderSide(color: border),
+        foregroundColor: textPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        textStyle: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: activeDisplay.largeText ? 15 : 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: surface,
+      contentTextStyle: TextStyle(
+        fontFamily: 'Pretendard',
+        color: textPrimary,
+        fontSize: activeDisplay.largeText ? 14 : 13,
+        fontWeight: FontWeight.w500,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    extensions: &lt;ThemeExtension&lt;dynamic&gt;&gt;[
+      AppSurfaceTheme(
+        shellBackground: scaffold,
+        contentBackground: background,
+        surface: surface,
+        textPrimary: textPrimary,
+        textMuted: textMuted,
+        border: border,
+        accent: accent,
+      ),
+    ],
+  );
+}
+
+TextTheme _scaleTextTheme(TextTheme theme, double factor) {
+  if (factor == 1.0) {
+    return theme;
+  }
+
+  TextStyle? scale(TextStyle? style) =&gt; style?.copyWith(
+        fontSize: style.fontSize == null ? null : style.fontSize! * factor,
+      );
+
+  return theme.copyWith(
+    displayLarge: scale(theme.displayLarge),
+    displayMedium: scale(theme.displayMedium),
+    displaySmall: scale(theme.displaySmall),
+    headlineLarge: scale(theme.headlineLarge),
+    headlineMedium: scale(theme.headlineMedium),
+    headlineSmall: scale(theme.headlineSmall),
+    titleLarge: scale(theme.titleLarge),
+    titleMedium: scale(theme.titleMedium),
+    titleSmall: scale(theme.titleSmall),
+    bodyLarge: scale(theme.bodyLarge),
+    bodyMedium: scale(theme.bodyMedium),
+    bodySmall: scale(theme.bodySmall),
+    labelLarge: scale(theme.labelLarge),
+    labelMedium: scale(theme.labelMedium),
+    labelSmall: scale(theme.labelSmall),
+  );
+}
+
+@immutable
+class AppSurfaceTheme extends ThemeExtension&lt;AppSurfaceTheme&gt; {
+  const AppSurfaceTheme({
+    required this.shellBackground,
+    required this.contentBackground,
+    required this.surface,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.border,
+    required this.accent,
+  });
+
+  final Color shellBackground;
+  final Color contentBackground;
+  final Color surface;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color border;
+  final Color accent;
+
+  @override
+  AppSurfaceTheme copyWith({
+    Color? shellBackground,
+    Color? contentBackground,
+    Color? surface,
+    Color? textPrimary,
+    Color? textMuted,
+    Color? border,
+    Color? accent,
+  }) {
+    return AppSurfaceTheme(
+      shellBackground: shellBackground ?? this.shellBackground,
+      contentBackground: contentBackground ?? this.contentBackground,
+      surface: surface ?? this.surface,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textMuted: textMuted ?? this.textMuted,
+      border: border ?? this.border,
+      accent: accent ?? this.accent,
+    );
+  }
+
+  @override
+  AppSurfaceTheme lerp(ThemeExtension&lt;AppSurfaceTheme&gt;? other, double t) {
+    if (other is! AppSurfaceTheme) {
+      return this;
+    }
+
+    return AppSurfaceTheme(
+      shellBackground: Color.lerp(shellBackground, other.shellBackground, t)!,
+      contentBackground:
+          Color.lerp(contentBackground, other.contentBackground, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>7. app_shell.dart 전체 교체</h3>
+            <div class="file-path">lib/app/app_shell.dart</div>
+            <p>
+              이제 Day 1의 마지막 단계입니다. 지금까지 만든 테마를 실제 앱 시작점에
+              연결합니다.
+            </p>
+            <ol>
+              <li><code>lib/app/app_shell.dart</code>를 엽니다.</li>
+              <li>기존 <code>VoiceNavigatorApp</code> 관련 코드를 전부 지웁니다.</li>
+              <li>아래 최종 코드를 통째로 붙여 넣습니다.</li>
+            </ol>
+            <p>
+              이 파일은 앱 시작 시 설정을 먼저 불러오고, 그 설정의
+              <code>display</code> 값을 이용해 테마를 연결합니다.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../features/settings/application/settings_controller.dart';
+import 'mode_launcher_page.dart';
+import 'theme/app_theme.dart';
+
+class VoiceNavigatorApp extends ConsumerStatefulWidget {
+  const VoiceNavigatorApp({super.key});
+
+  @override
+  ConsumerState&lt;VoiceNavigatorApp&gt; createState() =&gt; _VoiceNavigatorAppState();
+}
+
+class _VoiceNavigatorAppState extends ConsumerState&lt;VoiceNavigatorApp&gt; {
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(settingsControllerProvider.notifier).load();
+      if (mounted) {
+        setState(() =&gt; _loaded = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+
+    return MaterialApp(
+      title: 'Navi: Voice Navigator',
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(display: settings.display),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final scale = settings.display.largeText ? 1.32 : 1.0;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(fontFamily: 'Pretendard'),
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
+      home: _loaded
+          ? const ModeLauncherPage()
+          : const Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.8),
+                ),
+              ),
+            ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 1 완료 기준</h3>
+            <ul>
+              <li><code>lib/app/theme/</code> 폴더가 생겼다.</li>
+              <li><code>MaterialApp(theme: ...)</code>가 연결되었다.</li>
+              <li>다크 테마/고대비/큰 글씨를 담는 DisplaySettings가 생겼다.</li>
+              <li>
+                <code>settings_models.dart</code>,
+                <code>colors.dart</code>, <code>typography.dart</code>,
+                <code>app_theme.dart</code>, <code>app_shell.dart</code> 다섯
+                파일의 최종 코드가 모두 문서 안에 들어 있다.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day2">
+          <div class="hero">
+            <span class="badge">Day 2</span>
+            <h2>모드 선택 화면 만들기</h2>
+            <p class="lead">
+              Day 2의 목표는 단순 버튼 하나짜리 첫 화면을 실제 모드/데모 모드
+              카드 두 개가 있는 모드 선택 화면으로 바꾸는 것입니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 2에서 수정할 파일 먼저 확인하기</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>새로 만들 파일</strong>
+                <ul>
+                  <li><code>lib/demo/demo_home_page.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>수정 파일</strong>
+                <ul>
+                  <li><code>lib/app/mode_launcher_page.dart</code></li>
+                </ul>
+              </div>
+            </div>
+            <div class="callout">
+              <strong>중요:</strong> Day 2는 화면 전환 구조를 먼저 만드는 날입니다.
+              데모 모드 기능은 아직 없으므로 <code>DemoHomePage</code>는
+              플레이스홀더로만 만들어도 괜찮습니다.
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. demo 폴더 만들기</h3>
+            <pre><code>lib/demo/</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. demo_home_page.dart 새로 만들기</h3>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <p>
+              Day 2에서는 아직 데모 로직을 만들지 않습니다. 대신 데모 모드로
+              들어갈 수 있는 진입점만 먼저 만듭니다.
+            </p>
+            <ol>
+              <li><code>lib/demo/demo_home_page.dart</code>를 새로 만듭니다.</li>
+              <li>아래 코드를 파일 전체로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+class DemoHomePage extends StatelessWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('데모 모드'),
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            '데모 모드 화면입니다.\n3일차부터 이 화면에 데모 시나리오 UI를 붙입니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. mode_launcher_page.dart 전체 교체</h3>
+            <div class="file-path">lib/app/mode_launcher_page.dart</div>
+            <p>
+              이제 첫 화면을 모드 카드 2개짜리 화면으로 바꿉니다. 이 파일은
+              실제 모드와 데모 모드로 분기하는 시작점입니다.
+            </p>
+            <ol>
+              <li><code>lib/app/mode_launcher_page.dart</code>를 엽니다.</li>
+              <li>기존 파일 전체를 모두 지웁니다.</li>
+              <li>아래 최종 코드를 그대로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../demo/demo_home_page.dart';
+import '../features/home/presentation/home_page.dart';
+import 'theme/colors.dart';
+
+class ModeLauncherPage extends StatelessWidget {
+  const ModeLauncherPage({super.key});
+
+  void _openRealMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const HomePage(),
+      ),
+    );
+  }
+
+  void _openDemoMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute&lt;void&gt;(
+        builder: (_) =&gt; const DemoHomePage(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Navi: Voice Navigator',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '실행할 모드를 선택하세요.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: '실제 모드',
+                            subtitle: '실제 홈 화면과 연결되는 기본 앱 흐름입니다.',
+                            badge: '서비스',
+                            hint: 'UI 연결',
+                            icon: Icons.link_rounded,
+                            accentColor: AppColors.accent,
+                            background: AppColors.accentSoft,
+                            onTap: () =&gt; _openRealMode(context),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _ModeLaunchCard(
+                            title: '데모 모드',
+                            subtitle: '백엔드 없이 시나리오 화면 흐름을 확인하는 모드입니다.',
+                            badge: '오프라인',
+                            hint: '데모',
+                            icon: Icons.play_circle_outline_rounded,
+                            accentColor: AppColors.warning,
+                            background: AppColors.warningSoft,
+                            onTap: () =&gt; _openDemoMode(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '2일차 목표는 실제 모드와 데모 모드 진입점을 만드는 것입니다.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeLaunchCard extends StatelessWidget {
+  const _ModeLaunchCard({
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    required this.hint,
+    required this.icon,
+    required this.accentColor,
+    required this.background,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badge;
+  final String hint;
+  final IconData icon;
+  final Color accentColor;
+  final Color background;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badge,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: accentColor,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textMuted,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Text(
+                  hint,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: accentColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: accentColor,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 2 완료 기준</h3>
+            <ul>
+              <li>앱 첫 화면에 실제 모드/데모 모드 카드 2개가 보입니다.</li>
+              <li>실제 모드 카드를 누르면 <code>HomePage</code>로 이동합니다.</li>
+              <li>데모 모드 카드를 누르면 플레이스홀더 <code>DemoHomePage</code>로 이동합니다.</li>
+              <li>문서 안에 Day 2에서 손대는 모든 파일의 최종 코드가 들어 있습니다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day3">
+          <div class="hero">
+            <span class="badge">Day 3</span>
+            <h2>데모 모드 본체 만들기</h2>
+            <p class="lead">
+              Day 3의 목표는 플레이스홀더였던 <code>DemoHomePage</code>를
+              실제로 반응하는 시뮬레이션 화면으로 바꾸는 것입니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 3에서 수정할 파일 먼저 확인하기</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>수정 파일</strong>
+                <ul>
+                  <li><code>lib/demo/demo_home_page.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>이미 존재해야 하는 공통 위젯</strong>
+                <ul>
+                  <li><code>widgets/action_panel.dart</code></li>
+                  <li><code>widgets/ready_state.dart</code></li>
+                  <li><code>widgets/status_card.dart</code></li>
+                  <li><code>widgets/title_bar.dart</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. DemoHomePage를 StatefulWidget으로 바꾸기</h3>
+            <p>
+              기존 플레이스홀더 전체를 아래 코드로 교체합니다. 이 파일은 상태값,
+              지연 처리, 결과 요약, 후속 질문을 모두 포함합니다.
+            </p>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <ol>
+              <li><code>lib/demo/demo_home_page.dart</code>를 엽니다.</li>
+              <li>Day 2에서 만든 플레이스홀더 전체를 삭제합니다.</li>
+              <li>아래 최종 코드를 파일 전체로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../features/home/presentation/widgets/action_panel.dart';
+import '../features/home/presentation/widgets/ready_state.dart';
+import '../features/home/presentation/widgets/status_card.dart';
+import '../features/home/presentation/widgets/title_bar.dart';
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  String _micStatus = '대기';
+  bool _isRecording = false;
+  bool _isBusy = false;
+  String? _summary;
+  String? _followUp;
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = '듣는 중';
+      _summary = '음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = '처리중';
+      _isRecording = false;
+      _summary = '명령을 분석하고 실행 계획을 준비하고 있습니다.';
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '유튜브 검색 결과를 준비했습니다.';
+      _followUp = '첫 번째 결과를 재생할까요?';
+    });
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '화면을 읽어드리고 있습니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary =
+          '현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.';
+      _followUp = '다른 화면도 읽어드릴까요?';
+    });
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '텍스트 명령을 처리하고 있습니다.';
+      _followUp = null;
+    });
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '텍스트 명령 "$text" 처리 결과입니다.';
+      _followUp = '이어서 다음 작업도 진행할까요?';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: '마이크 상태',
+                      value: _micStatus,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: '현재 모드',
+                      value: '데모 모드',
+                      icon: Icons.play_circle_outline_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: _isRecording,
+                      onListenPressed: _simulateListen,
+                      onScreenReadPressed: _simulateScreenRead,
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: _summary,
+                      followUp: _followUp,
+                      isBusy: _isBusy,
+                      onSubmitText: _handleTextCommand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 3 완료 기준</h3>
+            <ul>
+              <li>데모 모드가 더 이상 빈 화면이 아닙니다.</li>
+              <li><code>음성 듣기</code> 버튼을 누르면 듣는 중 → 처리중 → 완료 흐름이 보입니다.</li>
+              <li><code>현재 화면 읽기</code>와 텍스트 명령도 결과 요약을 만듭니다.</li>
+              <li>문서 안에 Day 3의 최종 <code>demo_home_page.dart</code> 전체 코드가 있습니다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day4">
+          <div class="hero">
+            <span class="badge">Day 4</span>
+            <h2>설정 모달 고도화</h2>
+            <p class="lead">
+              Day 4의 목표는 단순한 설정 모달을 탭형 설정창으로 바꾸고,
+              설정을 카테고리별로 정리하는 것입니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 4에서 수정할 파일 먼저 확인하기</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>수정 파일</strong>
+                <ul>
+                  <li><code>lib/features/settings/application/settings_controller.dart</code></li>
+                  <li><code>lib/features/settings/presentation/settings_modal.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>왜 이 두 파일을 같이 보나</strong>
+                <ul>
+                  <li>모달은 UI를 담당합니다.</li>
+                  <li>컨트롤러는 UI가 바꾼 값을 state에 반영합니다.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. settings_controller.dart 전체 확인 및 수정</h3>
+            <div class="file-path">lib/features/settings/application/settings_controller.dart</div>
+            <p>
+              Day 4에서는 고대비 설정까지 다룰 것이므로
+              <code>setHighContrast()</code> 메서드가 꼭 필요합니다.
+            </p>
+            <p>
+              가장 안전한 방법은 파일 전체를 아래 코드와 비교해서 맞추는 것입니다.
+            </p>
+            <pre><code>import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/models/settings_models.dart';
+import '../../../shared/services/local_settings_store.dart';
+
+class SettingsController extends StateNotifier&lt;AppSettings&gt; {
+  SettingsController() : super(AppSettings.defaults());
+
+  Future&lt;void&gt; load() async {
+    state = await LocalSettingsStore.instance.load();
+  }
+
+  Future&lt;void&gt; save() async {
+    await LocalSettingsStore.instance.save(state);
+  }
+
+  void setSecureMode(bool value) {
+    state = state.copyWith(
+      security: state.security.copyWith(secureInputMode: value),
+    );
+  }
+
+  void setDarkTheme(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(darkTheme: value),
+    );
+  }
+
+  void setLargeText(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(largeText: value),
+    );
+  }
+
+  void setListenToggleShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(listenToggle: value),
+    );
+  }
+
+  void setScreenReadShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(screenRead: value),
+    );
+  }
+
+  void setOpenSettingsShortcut(String value) {
+    state = state.copyWith(
+      shortcuts: state.shortcuts.copyWith(openSettings: value),
+    );
+  }
+
+  void setHighContrast(bool value) {
+    state = state.copyWith(
+      display: state.display.copyWith(highContrast: value),
+    );
+  }
+}
+
+final settingsControllerProvider =
+    StateNotifierProvider&lt;SettingsController, AppSettings&gt;((ref) {
+  return SettingsController();
+});</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. settings_modal.dart 전체 교체</h3>
+            <div class="file-path">lib/features/settings/presentation/settings_modal.dart</div>
+            <p>
+              이제 설정 모달을 실제 앱처럼 보이는 탭형 설정창으로 바꿉니다.
+            </p>
+            <ol>
+              <li><code>lib/features/settings/presentation/settings_modal.dart</code>를 엽니다.</li>
+              <li>기존 단순 모달 코드를 전부 삭제합니다.</li>
+              <li>아래 최종 코드를 그대로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../shared/models/settings_models.dart';
+import '../application/settings_controller.dart';
+
+class SettingsModal extends ConsumerStatefulWidget {
+  const SettingsModal({
+    super.key,
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState&lt;SettingsModal&gt; createState() =&gt; _SettingsModalState();
+}
+
+class _SettingsModalState extends ConsumerState&lt;SettingsModal&gt; {
+  static const List&lt;String&gt; _tabs = [
+    '기본 설정',
+    '단축키',
+    '보안',
+    '화면 설정',
+  ];
+
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider);
+    final notifier = ref.read(settingsControllerProvider.notifier);
+
+    return Center(
+      child: Container(
+        width: 820,
+        height: 620,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const Divider(height: 1),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSidebar(),
+                  Container(
+                    width: 1,
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildBody(settings, notifier),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildFooter(notifier),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+      child: Row(
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '설정',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '앱 설정과 화면 옵션을 조정합니다.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onClose,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    return SizedBox(
+      width: 190,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _tabs.length,
+        itemBuilder: (context, index) {
+          final selected = _selectedTab == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                setState(() =&gt; _selectedTab = index);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    switch (_selectedTab) {
+      case 0:
+        return _buildGeneralTab(settings);
+      case 1:
+        return _buildShortcutsTab(settings, notifier);
+      case 2:
+        return _buildSecurityTab(settings, notifier);
+      case 3:
+        return _buildDisplayTab(settings, notifier);
+      default:
+        return _buildGeneralTab(settings);
+    }
+  }
+
+  Widget _buildGeneralTab(AppSettings settings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '기본 설정',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '앱의 기본 동작에 관련된 항목입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildInfoTile(
+          title: '자동 언어 감지',
+          description:
+              settings.general.autoLanguageDetection ? '사용 중' : '사용 안 함',
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: '마이크 감도',
+          description:
+              settings.general.microphoneSensitivity.toStringAsFixed(2),
+        ),
+        const SizedBox(height: 12),
+        _buildInfoTile(
+          title: '음성 속도',
+          description: settings.general.ttsSpeed.toStringAsFixed(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShortcutsTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '단축키',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '자주 사용하는 기능의 단축키를 수정합니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.listenToggle,
+          ),
+          decoration: const InputDecoration(
+            labelText: '음성 듣기 단축키',
+          ),
+          onChanged: notifier.setListenToggleShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.screenRead,
+          ),
+          decoration: const InputDecoration(
+            labelText: '화면 읽기 단축키',
+          ),
+          onChanged: notifier.setScreenReadShortcut,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: TextEditingController(
+            text: settings.shortcuts.openSettings,
+          ),
+          decoration: const InputDecoration(
+            labelText: '설정 열기 단축키',
+          ),
+          onChanged: notifier.setOpenSettingsShortcut,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '보안',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '민감한 입력과 안내 관련 옵션입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text('보안 입력 모드'),
+          subtitle: const Text('민감한 입력 상황에서 읽기와 입력을 제한합니다.'),
+          value: settings.security.secureInputMode,
+          onChanged: notifier.setSecureMode,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayTab(
+    AppSettings settings,
+    SettingsController notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '화면 설정',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '테마와 글자 크기 같은 화면 표시 옵션입니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SwitchListTile(
+          title: const Text('다크 테마'),
+          subtitle: const Text('어두운 배경 테마를 사용합니다.'),
+          value: settings.display.darkTheme,
+          onChanged: notifier.setDarkTheme,
+        ),
+        SwitchListTile(
+          title: const Text('큰 글씨'),
+          subtitle: const Text('앱 전체 텍스트를 더 크게 표시합니다.'),
+          value: settings.display.largeText,
+          onChanged: notifier.setLargeText,
+        ),
+        SwitchListTile(
+          title: const Text('고대비'),
+          subtitle: const Text('명암 대비를 높여 가독성을 향상합니다.'),
+          value: settings.display.highContrast,
+          onChanged: notifier.setHighContrast,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(SettingsController notifier) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            '변경 후 저장을 누르면 설정 파일에 반영됩니다.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: widget.onClose,
+            child: const Text('닫기'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () async {
+              await notifier.save();
+              if (mounted) {
+                widget.onClose();
+              }
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoTile({
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 4 완료 기준</h3>
+            <ul>
+              <li>설정 모달에 좌측 탭과 우측 내용 패널이 생깁니다.</li>
+              <li>단축키, 보안, 화면 설정이 카테고리별로 나뉘어 보입니다.</li>
+              <li>다크 테마, 큰 글씨, 고대비 토글이 모두 동작합니다.</li>
+              <li>문서 안에 Day 4에서 수정하는 두 파일의 최종 코드가 들어 있습니다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day5">
+          <div class="hero">
+            <span class="badge">Day 5</span>
+            <h2>실제 모드 UI 다듬기</h2>
+            <p class="lead">
+              Day 5의 목표는 실제 모드 화면을 더 제품답게 보이게 만드는
+              것입니다. title bar, status card, action panel, ready state,
+              home page를 같이 다듬습니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 5에서 수정할 파일</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>화면 조립 파일</strong>
+                <ul>
+                  <li><code>lib/features/home/presentation/home_page.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>공통 위젯 파일</strong>
+                <ul>
+                  <li><code>widgets/title_bar.dart</code></li>
+                  <li><code>widgets/status_card.dart</code></li>
+                  <li><code>widgets/action_panel.dart</code></li>
+                  <li><code>widgets/ready_state.dart</code></li>
+                </ul>
+              </div>
+            </div>
+            <div class="callout">
+              <strong>작업 순서:</strong> Day 5는 작은 위젯부터 먼저 바꾸고 마지막에
+              <code>home_page.dart</code>를 조립하는 순서가 가장 안전합니다.
+              실제 작업은 <code>title_bar → status_card → action_panel →
+              ready_state → home_page</code> 순서로 진행하세요.
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. title_bar.dart 전체 교체</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+            <p>
+              기존 파일을 통째로 교체합니다. 이 파일은 실제 모드 상단의 브랜드
+              영역을 담당합니다. 마이크 아이콘, 앱 이름, 보조 설명, 오른쪽
+              윈도우 느낌의 아이콘 3개가 들어갑니다.
+            </p>
+            <ol>
+              <li><code>title_bar.dart</code>를 엽니다.</li>
+              <li>기존 코드를 전부 선택합니다.</li>
+              <li>아래 최종 코드를 그대로 붙여 넣습니다.</li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: surfaceTheme.surface,
+        border: Border(
+          bottom: BorderSide(color: surfaceTheme.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: surfaceTheme.accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.mic_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Navi: Voice Navigator',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'AI Voice Assistant for Accessibility',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _TitleIconButton(
+            icon: Icons.remove_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.crop_square_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+          const SizedBox(width: 6),
+          _TitleIconButton(
+            icon: Icons.close_rounded,
+            color: surfaceTheme.textMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TitleIconButton extends StatelessWidget {
+  const _TitleIconButton({
+    required this.icon,
+    required this.color,
+  });
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(
+        icon,
+        size: 18,
+        color: color,
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. status_card.dart 전체 교체</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/status_card.dart</div>
+            <p>
+              이 파일은 상단 상태 바 안에 들어가는 카드입니다. Day 5에서는
+              단순 텍스트 줄이 아니라 <strong>아이콘 박스 + 라벨 + 상태값</strong>
+              구조로 읽기 쉽게 바꿉니다.
+            </p>
+            <p>
+              기존 코드를 모두 지우고 아래 최종 코드를 그대로 넣습니다.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: surfaceTheme.border),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: surfaceTheme.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. action_panel.dart 전체 교체</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/action_panel.dart</div>
+            <p>
+              왼쪽 패널은 사용자가 가장 많이 누르는 영역입니다. Day 5에서는
+              버튼을 단순 텍스트 버튼이 아니라 <strong>아이콘 + 제목 + 설명</strong>
+              구조의 액션 카드처럼 보이게 바꿉니다.
+            </p>
+            <p>
+              아래 코드는 파일 전체입니다. 기존 코드를 전부 교체하세요.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+
+class ActionPanel extends StatelessWidget {
+  const ActionPanel({
+    super.key,
+    required this.isRecording,
+    required this.onListenPressed,
+    required this.onScreenReadPressed,
+    required this.onSettingsPressed,
+  });
+
+  final bool isRecording;
+  final VoidCallback onListenPressed;
+  final VoidCallback onScreenReadPressed;
+  final VoidCallback onSettingsPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.surface,
+      child: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          Text(
+            '주요 기능',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const SizedBox(height: 18),
+          _ActionButton(
+            icon: Icons.mic_rounded,
+            title: isRecording ? '듣는 중' : '음성 듣기',
+            description: '음성 명령 인식을 시작하고 중지합니다.',
+            onPressed: onListenPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.visibility_rounded,
+            title: '현재 화면 읽기',
+            description: '현재 화면의 구조와 내용을 요약합니다.',
+            onPressed: onScreenReadPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+          const SizedBox(height: 10),
+          _ActionButton(
+            icon: Icons.settings_rounded,
+            title: '설정',
+            description: '단축키, 보안, 화면 설정을 조정합니다.',
+            onPressed: onSettingsPressed,
+            accentColor: surfaceTheme.accent,
+            surfaceTheme: surfaceTheme,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onPressed,
+    required this.accentColor,
+    required this.surfaceTheme,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onPressed;
+  final Color accentColor;
+  final AppSurfaceTheme surfaceTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(16),
+        side: BorderSide(color: surfaceTheme.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: surfaceTheme.contentBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: accentColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>5. ready_state.dart 전체 교체</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/ready_state.dart</div>
+            <p>
+              중앙 패널은 결과가 없을 때도 어색하지 않아야 하고, 결과가 생겼을
+              때는 요약과 후속 질문이 분리되어 보여야 합니다. 아래 코드로 파일
+              전체를 교체하세요.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import 'text_command_composer.dart';
+
+class ReadyState extends StatelessWidget {
+  const ReadyState({
+    super.key,
+    required this.summary,
+    required this.followUp,
+    required this.isBusy,
+    required this.onSubmitText,
+  });
+
+  final String? summary;
+  final String? followUp;
+  final bool isBusy;
+  final ValueChanged&lt;String&gt; onSubmitText;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      color: surfaceTheme.contentBackground,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    color: surfaceTheme.surface,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: surfaceTheme.border),
+                  ),
+                  child: Icon(
+                    isBusy ? Icons.hourglass_top_rounded : Icons.mic_none_rounded,
+                    size: 48,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Navi: Voice Navigator',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isBusy
+                      ? '명령을 처리하고 있습니다. 잠시만 기다려 주세요.'
+                      : '준비 완료. 왼쪽의 기능을 선택하거나 텍스트 명령을 입력하세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                if (summary != null) ...[
+                  const SizedBox(height: 26),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: surfaceTheme.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '결과 요약',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: surfaceTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          summary!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: surfaceTheme.textPrimary,
+                          ),
+                        ),
+                        if (followUp != null) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: surfaceTheme.contentBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: surfaceTheme.border),
+                            ),
+                            child: Text(
+                              followUp!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: surfaceTheme.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                TextCommandComposer(
+                  isBusy: isBusy,
+                  onSubmit: onSubmitText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>6. home_page.dart 전체 교체</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <p>
+              이제 마지막으로 실제 모드 메인 화면을 조립합니다. 이 파일은 Day 3,
+              Day 4에서 만든 상태 관리와 모달, Day 5에서 다듬은 공통 위젯을 한
+              번에 연결합니다.
+            </p>
+            <ol>
+              <li><code>home_page.dart</code>를 엽니다.</li>
+              <li>기존 파일 전체를 아래 최종 코드로 교체합니다.</li>
+              <li>
+                실행 후 상단 상태 바, 왼쪽 기능 패널, 중앙 결과 영역, 설정 모달이
+                모두 정상 동작하는지 확인합니다.
+              </li>
+            </ol>
+            <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import '../../listening/application/listening_controller.dart';
+import '../../session/application/session_controller.dart';
+import '../../settings/application/settings_controller.dart';
+import '../../settings/presentation/settings_modal.dart';
+import 'widgets/action_panel.dart';
+import 'widgets/ready_state.dart';
+import 'widgets/status_card.dart';
+import 'widgets/title_bar.dart';
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return '대기';
+      case ListeningStatus.listening:
+        return '듣는 중';
+      case ListeningStatus.processing:
+        return '처리중';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: '마이크 상태',
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: '현재 모드',
+                          value: settings.security.secureInputMode
+                              ? '보안 입력 모드'
+                              : '일반 모드',
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() => _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => setState(() => _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() => _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>7. Day 5 완료 기준</h3>
+            <ul>
+              <li>실제 모드 상단 타이틀 바가 더 앱 쉘처럼 보입니다.</li>
+              <li>상태 카드가 아이콘 박스 + 라벨 + 값 구조로 읽기 쉬워집니다.</li>
+              <li>왼쪽 패널이 버튼 목록이 아니라 기능 카드처럼 보입니다.</li>
+              <li>중앙 결과 영역이 비어 있어도 어색하지 않고 결과가 더 선명합니다.</li>
+              <li>이 시점의 <code>home_page.dart</code>에는 아직 토스트 코드가 없습니다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="day6">
+          <div class="hero">
+            <span class="badge">Day 6</span>
+            <h2>앱 내부 토스트 시스템 붙이기</h2>
+            <p class="lead">
+              Day 6의 목표는 사용자가 버튼을 눌렀을 때 실제 모드와 데모 모드
+              모두에서 같은 방식의 앱 내부 피드백을 보여주는 것입니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>1. Day 6에서 수정할 파일 먼저 확인하기</h3>
+            <div class="grid">
+              <div class="mini">
+                <strong>새로 만들 파일</strong>
+                <ul>
+                  <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>수정 파일</strong>
+                <ul>
+                  <li><code>lib/features/home/presentation/home_page.dart</code></li>
+                  <li><code>lib/demo/demo_home_page.dart</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>2. notifications 폴더 생성</h3>
+            <pre><code>lib/features/notifications/presentation/</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>3. app_toast.dart 새로 만들기</h3>
+            <div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+            <p>새 파일을 만들고 아래 코드를 통째로 넣습니다.</p>
+            <pre><code>import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+enum AppToastState {
+  info,
+  listening,
+  processing,
+  success,
+}
+
+void showAppToast(
+  BuildContext context,
+  String message, {
+  String title = 'Navi: Voice Navigator',
+  AppToastState state = AppToastState.info,
+  int durationMs = 2200,
+}) {
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: state,
+    durationMs: durationMs,
+  );
+}
+
+class _ToastOverlay {
+  _ToastOverlay._();
+
+  static final _ToastOverlay instance = _ToastOverlay._();
+
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required int durationMs,
+  }) {
+    _dismissTimer?.cancel();
+    _entry?.remove();
+
+    final overlay = Overlay.of(context);
+    _entry = OverlayEntry(
+      builder: (context) {
+        return _ToastView(
+          title: title,
+          message: message,
+          state: state,
+        );
+      },
+    );
+
+    overlay.insert(_entry!);
+
+    _dismissTimer = Timer(Duration(milliseconds: durationMs), () {
+      _entry?.remove();
+      _entry = null;
+    });
+  }
+}
+
+class _ToastView extends StatelessWidget {
+  const _ToastView({
+    required this.title,
+    required this.message,
+    required this.state,
+  });
+
+  final String title;
+  final String message;
+  final AppToastState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _resolveColors(state);
+    final icon = _resolveIcon(state);
+
+    return Positioned(
+      top: 24,
+      right: 24,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.background,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colors.iconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: colors.iconColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData _resolveIcon(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return Icons.info_outline_rounded;
+    case AppToastState.listening:
+      return Icons.mic_rounded;
+    case AppToastState.processing:
+      return Icons.hourglass_top_rounded;
+    case AppToastState.success:
+      return Icons.check_rounded;
+  }
+}
+
+_ToastColors _resolveColors(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFE2E8F0),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.listening:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFBFDBFE),
+        iconBackground: Color(0xFFEFF6FF),
+        iconColor: Color(0xFF2563EB),
+      );
+    case AppToastState.processing:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFFDE68A),
+        iconBackground: Color(0xFFFEF3C7),
+        iconColor: Color(0xFFF59E0B),
+      );
+    case AppToastState.success:
+      return const _ToastColors(
+        background: Colors.white,
+        border: Color(0xFFBBF7D0),
+        iconBackground: Color(0xFFDCFCE7),
+        iconColor: Color(0xFF16A34A),
+      );
+  }
+}
+
+class _ToastColors {
+  const _ToastColors({
+    required this.background,
+    required this.border,
+    required this.iconBackground,
+    required this.iconColor,
+  });
+
+  final Color background;
+  final Color border;
+  final Color iconBackground;
+  final Color iconColor;
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>4. home_page.dart에 토스트 연결</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <p>먼저 파일 상단 import 영역에 아래 한 줄을 추가합니다.</p>
+            <pre><code>import '../../notifications/presentation/app_toast.dart';</code></pre>
+            <p>
+              그 다음 <code>_handleListen()</code> 메서드를 찾아서, 녹음 시작,
+              처리 시작, 처리 완료 지점에 각각 토스트를 넣습니다.
+            </p>
+            <p><strong>1단계:</strong> <code>await sessionNotifier.startListening();</code> 바로 아래에 추가</p>
+            <pre><code>if (mounted) {
+  showAppToast(
+    context,
+    '음성을 듣고 있습니다. 말씀해주세요.',
+    title: '음성 수신 중',
+    state: AppToastState.listening,
+  );
+}</code></pre>
+            <p><strong>2단계:</strong> <code>listeningNotifier.setProcessing();</code> 바로 아래에 추가</p>
+            <pre><code>if (mounted) {
+  showAppToast(
+    context,
+    '작업을 처리하고 있습니다.',
+    title: '작업 처리 중',
+    state: AppToastState.processing,
+  );
+}</code></pre>
+            <p><strong>3단계:</strong> <code>await sessionNotifier.stopListeningAndProcess();</code>와 <code>listeningNotifier.reset();</code> 이후에 추가</p>
+            <pre><code>if (mounted) {
+  showAppToast(
+    context,
+    '결과를 읽어드립니다.',
+    title: '작업 완료',
+    state: AppToastState.success,
+  );
+}</code></pre>
+            <p>
+              같은 방식으로 <code>_handleScreenRead()</code>와
+              <code>_handleSubmitText()</code>에도 처리 시작/완료 토스트를 넣습니다.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>5. demo_home_page.dart에 토스트 연결</h3>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <p>이 파일도 상단 import 영역에 아래 한 줄을 추가합니다.</p>
+            <pre><code>import '../features/notifications/presentation/app_toast.dart';</code></pre>
+            <p>
+              그 다음 아래 세 메서드에 단계별 토스트를 넣습니다.
+            </p>
+            <ul>
+              <li><code>_simulateListen()</code>: 듣기 시작 → 처리중 → 완료</li>
+              <li><code>_simulateScreenRead()</code>: 처리중 → 완료</li>
+              <li><code>_handleTextCommand()</code>: 처리중 → 완료</li>
+            </ul>
+            <p>
+              가장 안전한 방법은 아래 최종 파일 코드와 통째로 비교하는 것입니다.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+
+import '../features/home/presentation/widgets/action_panel.dart';
+import '../features/notifications/presentation/app_toast.dart';
+import '../features/home/presentation/widgets/ready_state.dart';
+import '../features/home/presentation/widgets/status_card.dart';
+import '../features/home/presentation/widgets/title_bar.dart';
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  String _micStatus = '대기';
+  bool _isRecording = false;
+  bool _isBusy = false;
+  String? _summary;
+  String? _followUp;
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = '듣는 중';
+      _summary = '음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '음성을 듣고 있습니다. 말씀해주세요.',
+      title: '음성 수신 중',
+      state: AppToastState.listening,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = '처리중';
+      _isRecording = false;
+      _summary = '명령을 분석하고 실행 계획을 준비하고 있습니다.';
+    });
+    showAppToast(
+      context,
+      '작업을 처리하고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '유튜브 검색 결과를 준비했습니다.';
+      _followUp = '첫 번째 결과를 재생할까요?';
+    });
+    showAppToast(
+      context,
+      '결과를 읽어드립니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '화면을 읽어드리고 있습니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '화면을 읽어드리고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary =
+          '현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.';
+      _followUp = '다른 화면도 읽어드릴까요?';
+    });
+    showAppToast(
+      context,
+      '화면을 읽어드렸습니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '텍스트 명령을 처리하고 있습니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '텍스트 명령을 처리하고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '텍스트 명령 "$text" 처리 결과입니다.';
+      _followUp = '이어서 다음 작업도 진행할까요?';
+    });
+    showAppToast(
+      context,
+      '텍스트 명령 처리가 완료되었습니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppTitleBar(),
+            Container(
+              height: 88,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StatusCard(
+                      label: '마이크 상태',
+                      value: _micStatus,
+                      icon: Icons.mic_none_rounded,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  const Expanded(
+                    child: StatusCard(
+                      label: '현재 모드',
+                      value: '데모 모드',
+                      icon: Icons.play_circle_outline_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: ActionPanel(
+                      isRecording: _isRecording,
+                      onListenPressed: _simulateListen,
+                      onScreenReadPressed: _simulateScreenRead,
+                      onSettingsPressed: () {},
+                    ),
+                  ),
+                  Expanded(
+                    child: ReadyState(
+                      summary: _summary,
+                      followUp: _followUp,
+                      isBusy: _isBusy,
+                      onSubmitText: _handleTextCommand,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card">
+            <h3>6. Day 6 최종 home_page.dart 전체 비교본</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <p>
+              아래 코드는 Day 6까지 반영된 최종 <code>home_page.dart</code>입니다.
+              중간 삽입 위치가 헷갈리면 아래 전체 코드와 통째로 비교하세요.
+            </p>
+            <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import '../../listening/application/listening_controller.dart';
+import '../../notifications/presentation/app_toast.dart';
+import '../../session/application/session_controller.dart';
+import '../../settings/application/settings_controller.dart';
+import '../../settings/presentation/settings_modal.dart';
+import 'widgets/action_panel.dart';
+import 'widgets/ready_state.dart';
+import 'widgets/status_card.dart';
+import 'widgets/title_bar.dart';
+
+class HomePage extends ConsumerStatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  ConsumerState&lt;HomePage&gt; createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends ConsumerState&lt;HomePage&gt; {
+  bool _showSettings = false;
+
+  Future&lt;void&gt; _handleListen() async {
+    final session = ref.read(sessionControllerProvider);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+
+    if (!session.isRecording) {
+      listeningNotifier.startListening();
+      await sessionNotifier.startListening();
+      if (mounted) {
+        showAppToast(
+          context,
+          '음성을 듣고 있습니다. 말씀해주세요.',
+          title: '음성 수신 중',
+          state: AppToastState.listening,
+        );
+      }
+      return;
+    }
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '작업을 처리하고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.stopListeningAndProcess();
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '결과를 읽어드립니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  Future&lt;void&gt; _handleScreenRead() async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '화면을 읽어드리고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.triggerScreenRead();
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '화면을 읽어드렸습니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  Future&lt;void&gt; _handleSubmitText(String text) async {
+    final listeningNotifier = ref.read(listeningControllerProvider.notifier);
+    final sessionNotifier = ref.read(sessionControllerProvider.notifier);
+
+    listeningNotifier.setProcessing();
+    if (mounted) {
+      showAppToast(
+        context,
+        '텍스트 명령을 처리하고 있습니다.',
+        title: '작업 처리 중',
+        state: AppToastState.processing,
+      );
+    }
+    await sessionNotifier.submitTextCommand(text);
+    listeningNotifier.reset();
+    if (mounted) {
+      showAppToast(
+        context,
+        '텍스트 명령 처리가 완료되었습니다.',
+        title: '작업 완료',
+        state: AppToastState.success,
+      );
+    }
+  }
+
+  String _micLabel(ListeningState state) {
+    switch (state.status) {
+      case ListeningStatus.idle:
+        return '대기';
+      case ListeningStatus.listening:
+        return '듣는 중';
+      case ListeningStatus.processing:
+        return '처리중';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final listeningState = ref.watch(listeningControllerProvider);
+    final sessionState = ref.watch(sessionControllerProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Scaffold(
+      backgroundColor: surfaceTheme.shellBackground,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const AppTitleBar(),
+                Container(
+                  height: 92,
+                  color: surfaceTheme.surface,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: '마이크 상태',
+                          value: _micLabel(listeningState),
+                          icon: Icons.mic_none_rounded,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: surfaceTheme.border,
+                      ),
+                      Expanded(
+                        child: StatusCard(
+                          label: '현재 모드',
+                          value: settings.security.secureInputMode
+                              ? '보안 입력 모드'
+                              : '일반 모드',
+                          icon: settings.security.secureInputMode
+                              ? Icons.lock_outline_rounded
+                              : Icons.volume_up_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 290,
+                        child: ActionPanel(
+                          isRecording: sessionState.isRecording,
+                          onListenPressed: _handleListen,
+                          onScreenReadPressed: _handleScreenRead,
+                          onSettingsPressed: () {
+                            setState(() =&gt; _showSettings = true);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ReadyState(
+                          summary: sessionState.lastSummary,
+                          followUp: sessionState.lastFollowUp,
+                          isBusy: sessionState.isBusy,
+                          onSubmitText: _handleSubmitText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_showSettings) ...[
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () =&gt; setState(() =&gt; _showSettings = false),
+                  child: Container(
+                    color: const Color(0x66000000),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: SettingsModal(
+                  onClose: () {
+                    setState(() =&gt; _showSettings = false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}</code></pre>
+          </div>
+
+          <div class="card success">
+            <h3>Day 6 완료 기준</h3>
+            <ul>
+              <li>실제 모드에서 듣기/처리/완료 토스트가 뜬다.</li>
+              <li>데모 모드에서도 같은 방식으로 토스트가 뜬다.</li>
+              <li>토스트는 일정 시간 뒤 자동으로 사라진다.</li>
+              <li>문서 안에 Day 6의 최종 <code>app_toast.dart</code>, <code>demo_home_page.dart</code>, <code>home_page.dart</code> 비교 기준이 모두 들어 있다.</li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const buttons = document.querySelectorAll(".nav button");
+      const panels = document.querySelectorAll(".panel");
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const target = button.dataset.target;
+
+          buttons.forEach((b) => b.classList.remove("active"));
+          panels.forEach((panel) => panel.classList.remove("active"));
+
+          button.classList.add("active");
+          document.getElementById(target).classList.add("active");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    </script>
+  </body>
+</html>
