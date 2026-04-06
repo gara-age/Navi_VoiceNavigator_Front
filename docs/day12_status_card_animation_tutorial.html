@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 12 - Status Card Animation Tutorial</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ef;
+      --soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Pretendard, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+    h1, h2, h3 { line-height: 1.3; }
+    h1 { font-size: 32px; margin: 0 0 12px; }
+    h2 {
+      margin-top: 40px;
+      font-size: 24px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin-top: 24px; font-size: 18px; }
+    p, li { color: var(--muted); }
+    ul { padding-left: 20px; }
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: #eef2ff;
+      color: #1e3a8a;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      border: 1px solid #1e293b;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    .callout {
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--soft);
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+    .step {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-top: 18px;
+      background: #fcfdff;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Day 12 튜토리얼</h1>
+    <p>상단 상태 카드를 더 풍부하게 만들어 실제 모드와 데모 모드의 상단 UI를 목표 프로젝트에 가깝게 만듭니다. 이번 단계에서는 <code>듣는 중</code> 상태에 wave animation을 붙이고, 현재 모드 카드에는 점 표시를 추가합니다.</p>
+
+    <div class="callout">
+      오늘 완료되면:
+      <br />1. 마이크 상태 카드에 wave 애니메이션이 생깁니다.
+      <br />2. 현재 모드 카드에 dot 표시가 붙습니다.
+      <br />3. 실제 모드와 데모 모드가 같은 상태 카드 시스템을 공유합니다.
+    </div>
+
+    <h2>수정 파일</h2>
+    <ul>
+      <li><code>lib/features/home/presentation/widgets/status_card.dart</code></li>
+      <li><code>lib/features/home/presentation/home_page.dart</code></li>
+      <li><code>lib/demo/demo_home_page.dart</code></li>
+    </ul>
+
+    <h2>1. StatusCard 전체 교체</h2>
+    <div class="step">
+      <h3>1-1. 왜 전체 교체하나</h3>
+      <p>기존 <code>StatusCard</code>는 정적인 아이콘 + 텍스트 카드입니다. 이번에는 색상 주입, wave 표시, dot 표시가 추가되므로 파일 전체를 교체하는 방식이 가장 안전합니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>1-2. 파일 열기</h3>
+      <p><code>lib/features/home/presentation/widgets/status_card.dart</code>를 열고 파일 전체를 아래 코드로 교체합니다.</p>
+      <pre><code class="language-dart">import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/colors.dart';
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
+    this.showWave = false,
+    this.showDot = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color iconBackground;
+  final Color iconColor;
+  final bool showWave;
+  final bool showDot;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconBackground,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: iconColor,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showWave)
+            _WaveBars(active: value == '듣는 중')
+          else if (showDot)
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: iconColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WaveBars extends StatefulWidget {
+  const _WaveBars({required this.active});
+
+  final bool active;
+
+  @override
+  State&lt;_WaveBars&gt; createState() =&gt; _WaveBarsState();
+}
+
+class _WaveBarsState extends State&lt;_WaveBars&gt;
+    with SingleTickerProviderStateMixin {
+  static const List&lt;int&gt; _delaySteps = [0, 80, 160, 240, 320];
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    if (widget.active) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _WaveBars oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.active == widget.active) {
+      return;
+    }
+    if (widget.active) {
+      _controller.repeat();
+    } else {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.active) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(
+          5,
+          (_) =&gt; Container(
+            width: 4,
+            height: 4,
+            margin: const EdgeInsets.only(left: 2),
+            decoration: BoxDecoration(
+              color: AppColors.success,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(_delaySteps.length, (index) {
+            final delayedValue =
+                (_controller.value - (_delaySteps[index] / 1000)) % 1.0;
+            final curveValue = Curves.easeInOut.transform(
+              delayedValue &lt;= 0.5 ? delayedValue * 2 : (1 - delayedValue) * 2,
+            );
+            final height = 4.0 + (10.0 * curveValue);
+            return Container(
+              width: 4,
+              height: height,
+              margin: const EdgeInsets.only(left: 2),
+              decoration: BoxDecoration(
+                color: AppColors.success,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}</code></pre>
+    </div>
+
+    <h2>2. HomePage 연결</h2>
+    <div class="step">
+      <h3>2-1. import 추가</h3>
+      <p><code>lib/features/home/presentation/home_page.dart</code> 상단 import에 아래를 추가합니다.</p>
+      <pre><code class="language-dart">import '../../../../app/theme/colors.dart';</code></pre>
+    </div>
+
+    <div class="step">
+      <h3>2-2. 마이크 상태 카드 교체</h3>
+      <p>기존 마이크 상태 <code>StatusCard(...)</code>를 아래 코드로 교체합니다.</p>
+      <pre><code class="language-dart">StatusCard(
+  label: '마이크 상태',
+  value: _micLabel(listeningState),
+  icon: Icons.mic_none_rounded,
+  iconBackground: listeningState.status == ListeningStatus.listening
+      ? AppColors.successSoft
+      : surfaceTheme.contentBackground,
+  iconColor: listeningState.status == ListeningStatus.listening
+      ? AppColors.success
+      : surfaceTheme.textMuted,
+  showWave: true,
+),</code></pre>
+      <p>이제 마이크 상태 카드는 항상 wave 영역을 갖고, 실제로 <code>듣는 중</code>일 때만 움직입니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>2-3. 현재 모드 카드 교체</h3>
+      <p>기존 현재 모드 카드도 아래처럼 교체합니다.</p>
+      <pre><code class="language-dart">StatusCard(
+  label: '현재 모드',
+  value: settings.security.secureInputMode
+      ? '보안 입력 모드'
+      : '일반 모드',
+  icon: settings.security.secureInputMode
+      ? Icons.lock_outline_rounded
+      : Icons.volume_up_outlined,
+  iconBackground: settings.security.secureInputMode
+      ? AppColors.warningSoft
+      : surfaceTheme.contentBackground,
+  iconColor: settings.security.secureInputMode
+      ? AppColors.warning
+      : surfaceTheme.textMuted,
+  showDot: true,
+),</code></pre>
+    </div>
+
+    <h2>3. DemoHomePage 연결</h2>
+    <div class="step">
+      <h3>3-1. import 추가</h3>
+      <p><code>lib/demo/demo_home_page.dart</code> 상단 import에 아래를 추가합니다.</p>
+      <pre><code class="language-dart">import '../app/theme/colors.dart';</code></pre>
+    </div>
+
+    <div class="step">
+      <h3>3-2. 마이크 상태 카드 교체</h3>
+      <pre><code class="language-dart">StatusCard(
+  label: '마이크 상태',
+  value: _micStatus,
+  icon: Icons.mic_none_rounded,
+  iconBackground: _micStatus == '듣는 중'
+      ? AppColors.successSoft
+      : surfaceTheme.contentBackground,
+  iconColor: _micStatus == '듣는 중'
+      ? AppColors.success
+      : surfaceTheme.textMuted,
+  showWave: true,
+),</code></pre>
+    </div>
+
+    <div class="step">
+      <h3>3-3. 현재 모드 카드 교체</h3>
+      <p>기존 <code>const StatusCard(...)</code>는 더 이상 <code>const</code>일 수 없으므로 제거하고 아래처럼 바꿉니다.</p>
+      <pre><code class="language-dart">StatusCard(
+  label: '현재 모드',
+  value: '데모 모드',
+  icon: Icons.play_circle_outline_rounded,
+  iconBackground: surfaceTheme.contentBackground,
+  iconColor: surfaceTheme.accent,
+  showDot: true,
+),</code></pre>
+    </div>
+
+    <h2>4. 오늘 꼭 이해해야 하는 것</h2>
+    <ul>
+      <li><code>StatusCard</code>는 공통 위젯이므로 실제 모드와 데모 모드 호출부를 둘 다 수정해야 합니다.</li>
+      <li><code>showWave</code>와 <code>active</code>를 분리했기 때문에 wave 자리와 움직임 제어를 따로 할 수 있습니다.</li>
+      <li>색상은 카드 내부에서 하드코딩하지 않고 부모에서 내려주는 구조가 더 재사용성이 좋습니다.</li>
+      <li>dot는 현재 모드 같은 정적 상태 표시용, wave는 마이크처럼 동적인 상태 표시용입니다.</li>
+    </ul>
+
+    <h2>5. 완료 기준</h2>
+    <ul>
+      <li>실제 모드 상단 카드에서 <code>듣는 중</code>일 때 wave가 움직입니다.</li>
+      <li>데모 모드도 같은 방식으로 마이크 상태를 표시합니다.</li>
+      <li>현재 모드 카드 오른쪽에 dot가 표시됩니다.</li>
+      <li>두 모드 모두 새 <code>StatusCard</code> 생성자에 맞게 정상 빌드됩니다.</li>
+    </ul>
+  </main>
+</body>
+</html>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/theme/app_theme.dart';
+import '../app/theme/colors.dart';
 import 'demo_settings_modal.dart';
 import '../features/home/presentation/widgets/action_panel.dart';
 import '../features/home/presentation/widgets/ready_state.dart';
@@ -287,6 +288,13 @@ class _DemoHomePageState extends State<DemoHomePage> {
                             label: '마이크 상태',
                             value: _micStatus,
                             icon: Icons.mic_none_rounded,
+                            iconBackground: _micStatus == '듣는 중'
+                                ? AppColors.successSoft
+                                : surfaceTheme.contentBackground,
+                            iconColor: _micStatus == '듣는 중'
+                                ? AppColors.success
+                                : surfaceTheme.textMuted,
+                            showWave: true,
                           ),
                         ),
                         VerticalDivider(
@@ -294,11 +302,14 @@ class _DemoHomePageState extends State<DemoHomePage> {
                           thickness: 1,
                           color: surfaceTheme.border,
                         ),
-                        const Expanded(
+                        Expanded(
                           child: StatusCard(
                             label: '현재 모드',
                             value: '데모 모드',
                             icon: Icons.play_circle_outline_rounded,
+                            iconBackground: surfaceTheme.contentBackground,
+                            iconColor: surfaceTheme.accent,
+                            showDot: true,
                           ),
                         ),
                       ],

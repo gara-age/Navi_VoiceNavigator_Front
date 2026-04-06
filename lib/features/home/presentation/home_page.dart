@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/colors.dart';
 import '../../listening/application/listening_controller.dart';
 import '../../notifications/presentation/app_toast.dart';
 import '../../session/application/session_controller.dart';
@@ -153,6 +154,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                           label: '마이크 상태',
                           value: _micLabel(listeningState),
                           icon: Icons.mic_none_rounded,
+                          iconBackground:
+                              listeningState.status == ListeningStatus.listening
+                              ? AppColors.successSoft
+                              : surfaceTheme.contentBackground,
+                          iconColor:
+                              listeningState.status == ListeningStatus.listening
+                              ? AppColors.success
+                              : surfaceTheme.textMuted,
+                          showWave: true,
                         ),
                       ),
                       VerticalDivider(
@@ -169,6 +179,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                           icon: settings.security.secureInputMode
                               ? Icons.lock_outline_rounded
                               : Icons.volume_up_outlined,
+                          iconBackground: settings.security.secureInputMode
+                              ? AppColors.warningSoft
+                              : surfaceTheme.contentBackground,
+                          iconColor: settings.security.secureInputMode
+                              ? AppColors.warning
+                              : surfaceTheme.textMuted,
+                          showDot: true,
                         ),
                       ),
                     ],
