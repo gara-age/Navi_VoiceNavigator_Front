@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Day 7 Tutorial - Demo Settings and Shortcuts</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #e2e8f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --success: #16a34a;
+        --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 32px 20px 80px;
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        color: var(--text);
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+          sans-serif;
+        line-height: 1.65;
+      }
+
+      .page {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      .hero,
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+
+      .section {
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 12px;
+        line-height: 1.3;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 24px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 20px;
+      }
+
+      h3 {
+        font-size: 18px;
+        margin-top: 28px;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+      }
+
+      strong {
+        color: var(--text);
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px 20px;
+        padding: 0;
+        color: var(--muted);
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+
+      .callout {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .callout strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .path {
+        display: inline-block;
+        margin: 8px 0 14px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .step {
+        margin: 14px 0;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fcfdff;
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 14px 0 18px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .toc a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      .mini-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <div class="badge">Day 7</div>
+        <h1>데모 모드 설정 모달과 단축키 캡처 구현</h1>
+        <p>
+          이 문서는 <strong>Day 6이 끝난 프로젝트 상태</strong>에서 시작합니다.
+          오늘 목표는 데모 모드 안에 독립적인 설정 모달을 추가하고,
+          <strong>단축키를 직접 눌러서 저장하는 캡처 UI</strong>를 만드는 것입니다.
+        </p>
+        <p>
+          아래 설명은 실제 튜토리얼처럼
+          <strong>어떤 파일을 새로 만들고, 어느 부분에 어떤 코드를 넣는지</strong>
+          순서대로 안내합니다. 문서 마지막에는
+          <strong>최종 전체 코드</strong>를 세 파일 모두 제공합니다.
+        </p>
+      </section>
+
+      <section class="section toc">
+        <h2>오늘 수정할 파일</h2>
+        <div class="grid">
+          <div class="card">
+            <strong>새 파일 1</strong>
+            <div class="path">lib/shared/utils/shortcut_utils.dart</div>
+            <p>단축키 문자열 정규화, 키 이벤트 캡처, 매칭 비교를 담당합니다.</p>
+          </div>
+          <div class="card">
+            <strong>새 파일 2</strong>
+            <div class="path">lib/demo/demo_settings_modal.dart</div>
+            <p>데모 모드 전용 설정 모달을 담당합니다.</p>
+          </div>
+          <div class="card">
+            <strong>수정 파일</strong>
+            <div class="path">lib/demo/demo_home_page.dart</div>
+            <p>설정 버튼 연결, 단축키 처리, 모달 열기/닫기를 담당합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1. 오늘 구현할 기능 먼저 이해하기</h2>
+        <ul>
+          <li>데모 모드에서 설정 버튼을 누르면 <strong>전용 설정 모달</strong>이 열립니다.</li>
+          <li>설정 모달 안에서 <strong>단축키 탭</strong>을 볼 수 있습니다.</li>
+          <li><strong>변경</strong> 버튼을 누른 뒤 키를 직접 입력하면 단축키가 저장됩니다.</li>
+          <li><strong>Escape</strong>는 캡처 취소, <strong>Delete / Backspace</strong>는 단축키 해제입니다.</li>
+          <li>저장 전에도 데모 화면에 임시 반영되고, 저장 버튼을 누르면 최종 반영됩니다.</li>
+        </ul>
+        <div class="callout">
+          <strong>오늘 핵심 구조</strong>
+          <div>
+            <code>DemoHomePage</code>는 데모 전용 설정 상태를 들고 있고,
+            <code>DemoSettingsModal</code>는 그 상태를 편집합니다.
+            단축키 비교/정규화는 <code>ShortcutUtils</code>가 담당합니다.
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2. 새 파일 만들기: shortcut_utils.dart</h2>
+        <div class="path">lib/shared/utils/shortcut_utils.dart</div>
+        <p>
+          먼저 <code>lib/shared/utils</code> 폴더가 없으면 만듭니다.
+          그리고 새 파일 <code>shortcut_utils.dart</code>를 생성합니다.
+        </p>
+
+        <h3>이 파일이 필요한 이유</h3>
+        <ul>
+          <li><code>meta+shift+k</code> 같은 단축키 문자열을 항상 같은 형식으로 맞추기 위해서</li>
+          <li>실제 키보드 이벤트를 읽어서 단축키 문자열로 바꾸기 위해서</li>
+          <li>입력받은 이벤트와 저장된 단축키가 일치하는지 비교하기 위해서</li>
+          <li>사용자에게 보여줄 라벨을 보기 좋게 바꾸기 위해서</li>
+        </ul>
+
+        <div class="step">
+          <strong>추가할 코드</strong>
+          <p>아래 코드를 파일 전체에 그대로 넣습니다.</p>
+        </div>
+
+        <pre><code>import 'package:flutter/services.dart';
+
+class ShortcutUtils {
+  ShortcutUtils._();
+
+  static String normalize(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+
+    final parts = trimmed
+        .split('+')
+        .map((part) => part.trim().toLowerCase())
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) {
+      return '';
+    }
+
+    const modifierOrder = ['meta', 'control', 'alt', 'shift'];
+    final modifiers = &lt;String&gt;[];
+    String? key;
+
+    for (final part in parts) {
+      if (modifierOrder.contains(part)) {
+        if (!modifiers.contains(part)) {
+          modifiers.add(part);
+        }
+      } else {
+        key = part;
+      }
+    }
+
+    modifiers.sort(
+      (a, b) =&gt; modifierOrder.indexOf(a).compareTo(modifierOrder.indexOf(b)),
+    );
+
+    final ordered = [...modifiers];
+    if (key != null) {
+      ordered.add(key);
+    }
+
+    return ordered.join('+');
+  }
+
+  static String? captureFromEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return null;
+    }
+
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    final parts = &lt;String&gt;[];
+
+    if (pressed.contains(LogicalKeyboardKey.metaLeft) ||
+        pressed.contains(LogicalKeyboardKey.metaRight)) {
+      parts.add('meta');
+    }
+    if (pressed.contains(LogicalKeyboardKey.controlLeft) ||
+        pressed.contains(LogicalKeyboardKey.controlRight)) {
+      parts.add('control');
+    }
+    if (pressed.contains(LogicalKeyboardKey.altLeft) ||
+        pressed.contains(LogicalKeyboardKey.altRight)) {
+      parts.add('alt');
+    }
+    if (pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+        pressed.contains(LogicalKeyboardKey.shiftRight)) {
+      parts.add('shift');
+    }
+
+    final key = _keyLabel(event.logicalKey);
+    if (key == null || key.isEmpty) {
+      return null;
+    }
+
+    parts.add(key.toLowerCase());
+    return normalize(parts.join('+'));
+  }
+
+  static bool matches(KeyEvent event, String shortcut) {
+    final normalized = normalize(shortcut);
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final captured = captureFromEvent(event);
+    if (captured == null || captured.isEmpty) {
+      return false;
+    }
+
+    return captured == normalized;
+  }
+
+  static String displayLabel(String shortcut) {
+    final normalized = normalize(shortcut);
+    if (normalized.isEmpty) {
+      return '미설정';
+    }
+
+    return normalized
+        .split('+')
+        .map((part) {
+          switch (part) {
+            case 'meta':
+              return 'Cmd';
+            case 'control':
+              return 'Ctrl';
+            case 'alt':
+              return 'Alt';
+            case 'shift':
+              return 'Shift';
+            default:
+              return part.toUpperCase();
+          }
+        })
+        .join(' + ');
+  }
+
+  static String? _keyLabel(LogicalKeyboardKey key) {
+    final label = key.keyLabel.trim();
+    if (label.isNotEmpty) {
+      return label;
+    }
+
+    if (key == LogicalKeyboardKey.space) {
+      return 'space';
+    }
+
+    final debugName = key.debugName;
+    if (debugName == null || debugName.isEmpty) {
+      return null;
+    }
+
+    if (debugName.startsWith('Key ')) {
+      return debugName.replaceFirst('Key ', '');
+    }
+
+    if (debugName.startsWith('Digit ')) {
+      return debugName.replaceFirst('Digit ', '');
+    }
+
+    if (debugName.startsWith('Numpad ')) {
+      return debugName.replaceFirst('Numpad ', 'num');
+    }
+
+    return debugName.toLowerCase().replaceAll(' ', '_');
+  }
+}</code></pre>
+
+        <h3>이 코드의 핵심 메서드</h3>
+        <ul>
+          <li><code>normalize()</code>: 단축키 문자열을 항상 같은 순서로 정리합니다.</li>
+          <li><code>captureFromEvent()</code>: 키보드 이벤트를 단축키 문자열로 바꿉니다.</li>
+          <li><code>matches()</code>: 현재 눌린 키가 저장된 단축키와 같은지 비교합니다.</li>
+          <li><code>displayLabel()</code>: 저장값을 사용자에게 보기 좋게 바꿉니다.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>3. 새 파일 만들기: demo_settings_modal.dart</h2>
+        <div class="path">lib/demo/demo_settings_modal.dart</div>
+        <p>
+          이 파일은 데모 모드 전용 설정 모달입니다. 목표는 일반 설정 모달을 그대로 복사하는 것이 아니라,
+          <strong>데모 모드에서만 쓰는 설정 UX</strong>를 별도로 제공하는 것입니다.
+        </p>
+
+        <h3>이 파일이 담당하는 일</h3>
+        <ul>
+          <li>데모 모드 설정 표시</li>
+          <li>좌측 탭 메뉴 전환</li>
+          <li>단축키 캡처</li>
+          <li>토글과 슬라이더로 설정 변경</li>
+          <li>저장 시 부모에게 새 설정 전달</li>
+        </ul>
+
+        <div class="step">
+          <strong>중요</strong>
+          <p>
+            이 파일은 새로 만드는 파일입니다. 따라서 기존 코드 수정이 아니라
+            <strong>파일 전체를 아래 코드로 생성</strong>하면 됩니다.
+          </p>
+        </div>
+
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../app/theme/app_theme.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/utils/shortcut_utils.dart';
+
+class DemoSettingsModal extends StatefulWidget {
+  const DemoSettingsModal({
+    super.key,
+    required this.initialSettings,
+    required this.onClose,
+    required this.onSaved,
+    this.onChanged,
+  });
+
+  final AppSettings initialSettings;
+  final VoidCallback onClose;
+  final ValueChanged&lt;AppSettings&gt; onSaved;
+  final ValueChanged&lt;AppSettings&gt;? onChanged;
+
+  @override
+  State&lt;DemoSettingsModal&gt; createState() =&gt; _DemoSettingsModalState();
+}
+
+class _DemoSettingsModalState extends State&lt;DemoSettingsModal&gt; {
+  static const _tabs = ['기본 설정', '단축키', '보안', '화면 설정'];
+
+  final FocusNode _focusNode = FocusNode(debugLabel: 'demo_settings_modal_focus');
+  final ScrollController _bodyScrollController = ScrollController();
+
+  late AppSettings _settings;
+  int _selectedTab = 0;
+  String? _capturingField;
+
+  @override
+  void initState() {
+    super.initState();
+    _settings = widget.initialSettings;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bodyScrollController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    if (_capturingField != null) {
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        setState(() =&gt; _capturingField = null);
+        return KeyEventResult.handled;
+      }
+
+      if (event.logicalKey == LogicalKeyboardKey.backspace ||
+          event.logicalKey == LogicalKeyboardKey.delete) {
+        _setShortcut(_capturingField!, '');
+        setState(() =&gt; _capturingField = null);
+        return KeyEventResult.handled;
+      }
+
+      final shortcut = ShortcutUtils.captureFromEvent(event);
+      if (shortcut == null || shortcut.isEmpty) {
+        return KeyEventResult.handled;
+      }
+
+      _setShortcut(_capturingField!, shortcut);
+      setState(() =&gt; _capturingField = null);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _update(AppSettings next) {
+    setState(() =&gt; _settings = next);
+    widget.onChanged?.call(next);
+  }
+
+  void _selectTab(int value) {
+    setState(() =&gt; _selectedTab = value);
+    if (_bodyScrollController.hasClients) {
+      _bodyScrollController.jumpTo(0);
+    }
+  }
+
+  void _setShortcut(String field, String value) {
+    final normalized = ShortcutUtils.normalize(value);
+    var shortcuts = _settings.shortcuts;
+
+    if (normalized.isNotEmpty) {
+      if (field != 'listen' &amp;&amp;
+          ShortcutUtils.normalize(shortcuts.listenToggle) == normalized) {
+        shortcuts = shortcuts.copyWith(listenToggle: '');
+      }
+      if (field != 'screen' &amp;&amp;
+          ShortcutUtils.normalize(shortcuts.screenRead) == normalized) {
+        shortcuts = shortcuts.copyWith(screenRead: '');
+      }
+      if (field != 'settings' &amp;&amp;
+          ShortcutUtils.normalize(shortcuts.openSettings) == normalized) {
+        shortcuts = shortcuts.copyWith(openSettings: '');
+      }
+    }
+
+    switch (field) {
+      case 'listen':
+        shortcuts = shortcuts.copyWith(listenToggle: normalized);
+        break;
+      case 'screen':
+        shortcuts = shortcuts.copyWith(screenRead: normalized);
+        break;
+      case 'settings':
+        shortcuts = shortcuts.copyWith(openSettings: normalized);
+        break;
+    }
+
+    _update(_settings.copyWith(shortcuts: shortcuts));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Center(
+        child: Container(
+          width: 780,
+          height: 620,
+          decoration: BoxDecoration(
+            color: surfaceTheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: surfaceTheme.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 28,
+                offset: Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _ModalHeader(
+                title: '설정',
+                subtitle: '데모 모드 설정과 화면 표시 옵션을 조정합니다.',
+                onClose: widget.onClose,
+              ),
+              Divider(height: 1, color: surfaceTheme.border),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Sidebar(
+                      items: _tabs,
+                      selectedTab: _selectedTab,
+                      onSelect: _selectTab,
+                    ),
+                    Container(width: 1, color: surfaceTheme.border),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            controller: _bodyScrollController,
+                            padding: const EdgeInsets.all(20),
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth,
+                                ),
+                                child: _buildBody(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                decoration: BoxDecoration(
+                  color: surfaceTheme.contentBackground,
+                  border: Border(top: BorderSide(color: surfaceTheme.border)),
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(24)),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      _capturingField == null
+                          ? '변경 내용은 저장 전에도 바로 데모 화면에 반영됩니다.'
+                          : '원하는 키를 누르세요. Delete는 해제, Esc는 취소입니다.',
+                      style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontSize: 12,
+                        color: surfaceTheme.textMuted,
+                      ),
+                    ),
+                    const Spacer(),
+                    _ModalButton(
+                      label: '취소',
+                      primary: false,
+                      onTap: widget.onClose,
+                    ),
+                    const SizedBox(width: 10),
+                    _ModalButton(
+                      label: '저장',
+                      primary: true,
+                      onTap: () =&gt; widget.onSaved(_settings),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_selectedTab) {
+      case 0:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _SectionTitle('기본 설정'),
+            _ToggleCard(
+              title: '자동 언어 감지',
+              description: '데모 음성 명령의 언어 감지 상태를 표시합니다.',
+              value: _settings.general.autoLanguageDetection,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  general: _settings.general.copyWith(
+                    autoLanguageDetection: value,
+                  ),
+                ),
+              ),
+            ),
+            _SliderCard(
+              title: '마이크 감도',
+              description: '데모 시나리오의 음성 반응 강도를 조절합니다.',
+              value: _settings.general.microphoneSensitivity,
+              min: 0.0,
+              max: 1.0,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  general: _settings.general.copyWith(
+                    microphoneSensitivity: value,
+                  ),
+                ),
+              ),
+            ),
+            _SliderCard(
+              title: '음성 속도',
+              description: '안내 음성 재생 속도를 조절합니다.',
+              value: _settings.general.ttsSpeed,
+              min: 0.5,
+              max: 1.5,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  general: _settings.general.copyWith(
+                    ttsSpeed: value,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      case 1:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _SectionTitle('단축키'),
+            _ShortcutCard(
+              title: '음성 듣기',
+              value: _settings.shortcuts.listenToggle,
+              capturing: _capturingField == 'listen',
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'listen'),
+            ),
+            _ShortcutCard(
+              title: '현재 화면 읽기',
+              value: _settings.shortcuts.screenRead,
+              capturing: _capturingField == 'screen',
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'screen'),
+            ),
+            _ShortcutCard(
+              title: '설정 열기',
+              value: _settings.shortcuts.openSettings,
+              capturing: _capturingField == 'settings',
+              onCapture: () =&gt; setState(() =&gt; _capturingField = 'settings'),
+            ),
+          ],
+        );
+      case 2:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _SectionTitle('보안'),
+            _ToggleCard(
+              title: '보안 입력 모드',
+              description: '민감한 입력 상황에서 읽기와 입력을 제한합니다.',
+              value: _settings.security.secureInputMode,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  security: _settings.security.copyWith(
+                    secureInputMode: value,
+                  ),
+                ),
+              ),
+            ),
+            _ToggleCard(
+              title: '민감한 도메인 경고',
+              description: '데모 중 민감한 입력 페이지를 만났을 때 경고를 표시합니다.',
+              value: _settings.security.sensitiveDomainAlert,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  security: _settings.security.copyWith(
+                    sensitiveDomainAlert: value,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      case 3:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _SectionTitle('화면 설정'),
+            _ToggleCard(
+              title: '다크 테마',
+              description: '어두운 테마를 사용합니다.',
+              value: _settings.display.darkTheme,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  display: _settings.display.copyWith(darkTheme: value),
+                ),
+              ),
+            ),
+            _ToggleCard(
+              title: '큰 글씨',
+              description: '앱 전체 텍스트를 더 크게 표시합니다.',
+              value: _settings.display.largeText,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  display: _settings.display.copyWith(largeText: value),
+                ),
+              ),
+            ),
+            _ToggleCard(
+              title: '고대비',
+              description: '명암 대비를 높여 가독성을 향상합니다.',
+              value: _settings.display.highContrast,
+              onChanged: (value) =&gt; _update(
+                _settings.copyWith(
+                  display: _settings.display.copyWith(highContrast: value),
+                ),
+              ),
+            ),
+          ],
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+class _ModalHeader extends StatelessWidget {
+  const _ModalHeader({
+    required this.title,
+    required this.subtitle,
+    required this.onClose,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: surfaceTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 13,
+                  color: surfaceTheme.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: onClose,
+            icon: Icon(Icons.close, color: surfaceTheme.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({
+    required this.items,
+    required this.selectedTab,
+    required this.onSelect,
+  });
+
+  final List&lt;String&gt; items;
+  final int selectedTab;
+  final ValueChanged&lt;int&gt; onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return SizedBox(
+      width: 190,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final selected = selectedTab == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () =&gt; onSelect(index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: selected ? surfaceTheme.contentBackground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? surfaceTheme.accent : surfaceTheme.border,
+                  ),
+                ),
+                child: Text(
+                  items[index],
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color:
+                        selected ? surfaceTheme.accent : surfaceTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: surfaceTheme.textPrimary,
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleCard extends StatelessWidget {
+  const _ToggleCard({
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String description;
+  final bool value;
+  final ValueChanged&lt;bool&gt; onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceTheme.contentBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: surfaceTheme.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 13,
+                    height: 1.5,
+                    color: surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliderCard extends StatelessWidget {
+  const _SliderCard({
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String description;
+  final double value;
+  final double min;
+  final double max;
+  final ValueChanged&lt;double&gt; onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceTheme.contentBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: surfaceTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: surfaceTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 13,
+              height: 1.5,
+              color: surfaceTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              value.toStringAsFixed(2),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 12,
+                color: surfaceTheme.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortcutCard extends StatelessWidget {
+  const _ShortcutCard({
+    required this.title,
+    required this.value,
+    required this.capturing,
+    required this.onCapture,
+  });
+
+  final String title;
+  final String value;
+  final bool capturing;
+  final VoidCallback onCapture;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceTheme.contentBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: capturing ? surfaceTheme.accent : surfaceTheme.border,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: surfaceTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  capturing
+                      ? '원하는 키를 누르세요. Delete는 해제, Esc는 취소입니다.'
+                      : ShortcutUtils.displayLabel(value),
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 13,
+                    height: 1.5,
+                    color:
+                        capturing ? surfaceTheme.accent : surfaceTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          OutlinedButton(
+            onPressed: onCapture,
+            child: Text(capturing ? '입력 중' : '변경'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModalButton extends StatelessWidget {
+  const _ModalButton({
+    required this.label,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool primary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (primary) {
+      return ElevatedButton(
+        onPressed: onTap,
+        child: Text(label),
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: onTap,
+      child: Text(label),
+    );
+  }
+}</code></pre>
+
+        <h3>반드시 이해해야 하는 상태값</h3>
+        <ul>
+          <li><code>_selectedTab</code>: 현재 오른쪽 본문에 어떤 탭을 보여줄지 결정합니다.</li>
+          <li><code>_capturingField</code>: 지금 어떤 단축키 필드가 입력 대기 중인지 나타냅니다.</li>
+          <li><code>_settings</code>: 모달 안에서 편집 중인 임시 설정입니다.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>4. 기존 파일 수정하기: demo_home_page.dart</h2>
+        <div class="path">lib/demo/demo_home_page.dart</div>
+        <p>
+          이제 데모 홈 화면에서 설정 모달을 열고, 저장된 단축키로 기능을 실행하도록 바꿉니다.
+        </p>
+
+        <h3>수정 포인트 1: import 추가</h3>
+        <p>
+          파일 맨 위 import 영역에서 아래 항목이 들어가 있는지 확인합니다.
+          없다면 추가합니다.
+        </p>
+        <pre><code>import 'package:flutter/services.dart';
+
+import '../app/theme/app_theme.dart';
+import 'demo_settings_modal.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/utils/shortcut_utils.dart';</code></pre>
+
+        <h3>수정 포인트 2: 상태 필드 추가</h3>
+        <p>
+          <code>class _DemoHomePageState extends State&lt;DemoHomePage&gt;</code>
+          바로 아래 필드 선언 구역에 아래 코드를 추가합니다.
+        </p>
+        <pre><code>final FocusNode _focusNode = FocusNode(debugLabel: 'demo_home_focus');
+
+late AppSettings _settings;
+bool _showSettingsModal = false;</code></pre>
+
+        <p>이 상태들의 역할은 아래와 같습니다.</p>
+        <ul>
+          <li><code>_focusNode</code>: 데모 홈이 키 입력을 받을 수 있게 합니다.</li>
+          <li><code>_settings</code>: 데모 모드에서 독립적으로 쓰는 현재 설정입니다.</li>
+          <li><code>_showSettingsModal</code>: 설정 모달 열림/닫힘 상태입니다.</li>
+        </ul>
+
+        <h3>수정 포인트 3: initState 추가</h3>
+        <p>
+          기존 <code>initState()</code>가 없다면 새로 만들고, 있다면 아래 내용을 반영합니다.
+        </p>
+        <pre><code>@override
+void initState() {
+  super.initState();
+  _settings = AppSettings.defaults();
+
+  HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      _focusNode.requestFocus();
+    }
+  });
+}</code></pre>
+
+        <h3>수정 포인트 4: dispose 추가</h3>
+        <p>
+          클래스 하단에 <code>dispose()</code>가 없다면 추가합니다.
+          있으면 기존 코드에 아래 내용을 반영합니다.
+        </p>
+        <pre><code>@override
+void dispose() {
+  HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+  _focusNode.dispose();
+  super.dispose();
+}</code></pre>
+
+        <h3>수정 포인트 5: 키 입력 처리 메서드 추가</h3>
+        <p>
+          <code>_simulateListen()</code> 같은 메서드들 위쪽에 아래 메서드를 추가합니다.
+        </p>
+        <pre><code>bool _handleKeyEvent(KeyEvent event) {
+  if (ModalRoute.of(context)?.isCurrent != true || event is! KeyDownEvent) {
+    return false;
+  }
+
+  if (_showSettingsModal) {
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _closeSettings();
+      return true;
+    }
+    return false;
+  }
+
+  if (!_settings.shortcuts.enabled) {
+    return false;
+  }
+
+  if (ShortcutUtils.matches(event, _settings.shortcuts.listenToggle)) {
+    _simulateListen();
+    return true;
+  }
+
+  if (ShortcutUtils.matches(event, _settings.shortcuts.screenRead)) {
+    _simulateScreenRead();
+    return true;
+  }
+
+  if (ShortcutUtils.matches(event, _settings.shortcuts.openSettings)) {
+    _openSettings();
+    return true;
+  }
+
+  return false;
+}</code></pre>
+
+        <h3>수정 포인트 6: 설정 모달 열기/닫기 메서드 추가</h3>
+        <p><code>_handleKeyEvent()</code> 아래에 바로 이어서 넣으면 정리가 좋습니다.</p>
+        <pre><code>void _openSettings() {
+  if (_showSettingsModal) {
+    return;
+  }
+  setState(() =&gt; _showSettingsModal = true);
+}
+
+void _closeSettings() {
+  if (!_showSettingsModal) {
+    return;
+  }
+  setState(() =&gt; _showSettingsModal = false);
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      _focusNode.requestFocus();
+    }
+  });
+}</code></pre>
+
+        <h3>수정 포인트 7: ActionPanel 설정 버튼 연결</h3>
+        <p>
+          기존 <code>ActionPanel</code> 생성 부분에서
+          <code>onSettingsPressed: () {}</code> 또는 비어 있는 콜백을
+          아래 코드로 바꿉니다.
+        </p>
+        <pre><code>onSettingsPressed: _openSettings,</code></pre>
+
+        <h3>수정 포인트 8: build 전체를 Focus + Stack 구조로 바꾸기</h3>
+        <p>
+          이번 Day 7의 핵심 연결 단계입니다. 기존 <code>build()</code> 메서드 전체를
+          아래 코드와 동일한 구조로 바꿉니다.
+        </p>
+
+        <pre><code>import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../app/theme/app_theme.dart';
+import 'demo_settings_modal.dart';
+import '../features/home/presentation/widgets/action_panel.dart';
+import '../features/home/presentation/widgets/ready_state.dart';
+import '../features/home/presentation/widgets/status_card.dart';
+import '../features/home/presentation/widgets/title_bar.dart';
+import '../features/notifications/presentation/app_toast.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/utils/shortcut_utils.dart';
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State&lt;DemoHomePage&gt; createState() =&gt; _DemoHomePageState();
+}
+
+class _DemoHomePageState extends State&lt;DemoHomePage&gt; {
+  final FocusNode _focusNode = FocusNode(debugLabel: 'demo_home_focus');
+
+  late AppSettings _settings;
+  String _micStatus = '대기';
+  bool _isRecording = false;
+  bool _isBusy = false;
+  bool _showSettingsModal = false;
+  String? _summary;
+  String? _followUp;
+
+  @override
+  void initState() {
+    super.initState();
+    _settings = AppSettings.defaults();
+
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (ModalRoute.of(context)?.isCurrent != true || event is! KeyDownEvent) {
+      return false;
+    }
+
+    if (_showSettingsModal) {
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        _closeSettings();
+        return true;
+      }
+      return false;
+    }
+
+    if (!_settings.shortcuts.enabled) {
+      return false;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.listenToggle)) {
+      _simulateListen();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.screenRead)) {
+      _simulateScreenRead();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.openSettings)) {
+      _openSettings();
+      return true;
+    }
+
+    return false;
+  }
+
+  void _openSettings() {
+    if (_showSettingsModal) {
+      return;
+    }
+    setState(() =&gt; _showSettingsModal = true);
+  }
+
+  void _closeSettings() {
+    if (!_showSettingsModal) {
+      return;
+    }
+    setState(() =&gt; _showSettingsModal = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  Future&lt;void&gt; _simulateListen() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _isRecording = true;
+      _micStatus = '듣는 중';
+      _summary = '음성을 듣고 있습니다. 잠시 후 자동으로 처리 단계로 넘어갑니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '음성을 듣고 있습니다. 말씀해주세요.',
+      title: '음성 수신 중',
+      state: AppToastState.listening,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _micStatus = '처리중';
+      _isRecording = false;
+      _summary = '명령을 분석하고 실행 계획을 준비하고 있습니다.';
+    });
+    showAppToast(
+      context,
+      '작업을 처리하고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '유튜브 검색 결과를 준비했습니다.';
+      _followUp = '첫 번째 결과를 재생할까요?';
+    });
+    showAppToast(
+      context,
+      '결과를 읽어드립니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _simulateScreenRead() async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '화면을 읽어드리고 있습니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '화면을 읽어드리고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1300));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary =
+          '현재 화면은 Navi: Voice Navigator 데모 화면입니다. 왼쪽에는 주요 기능 버튼이 있고 가운데에는 준비 상태와 결과 요약이 표시됩니다.';
+      _followUp = '다른 화면도 읽어드릴까요?';
+    });
+    showAppToast(
+      context,
+      '화면을 읽어드렸습니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  Future&lt;void&gt; _handleTextCommand(String text) async {
+    if (_isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+      _micStatus = '처리중';
+      _summary = '텍스트 명령을 처리하고 있습니다.';
+      _followUp = null;
+    });
+    showAppToast(
+      context,
+      '텍스트 명령을 처리하고 있습니다.',
+      title: '작업 처리 중',
+      state: AppToastState.processing,
+    );
+
+    await Future&lt;void&gt;.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = false;
+      _micStatus = '대기';
+      _summary = '텍스트 명령 "$text" 처리 결과입니다.';
+      _followUp = '이어서 다음 작업도 진행할까요?';
+    });
+    showAppToast(
+      context,
+      '텍스트 명령 처리가 완료되었습니다.',
+      title: '작업 완료',
+      state: AppToastState.success,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: surfaceTheme.shellBackground,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const AppTitleBar(),
+                  Container(
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      border: Border(
+                        bottom: BorderSide(color: surfaceTheme.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatusCard(
+                            label: '마이크 상태',
+                            value: _micStatus,
+                            icon: Icons.mic_none_rounded,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: surfaceTheme.border,
+                        ),
+                        const Expanded(
+                          child: StatusCard(
+                            label: '현재 모드',
+                            value: '데모 모드',
+                            icon: Icons.play_circle_outline_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 260,
+                          child: ActionPanel(
+                            isRecording: _isRecording,
+                            onListenPressed: _simulateListen,
+                            onScreenReadPressed: _simulateScreenRead,
+                            onSettingsPressed: _openSettings,
+                          ),
+                        ),
+                        Expanded(
+                          child: ReadyState(
+                            summary: _summary,
+                            followUp: _followUp,
+                            isBusy: _isBusy,
+                            onSubmitText: _handleTextCommand,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_showSettingsModal) ...[
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeSettings,
+                    child: Container(
+                      color: const Color(0x66000000),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DemoSettingsModal(
+                    initialSettings: _settings,
+                    onClose: _closeSettings,
+                    onSaved: (next) {
+                      setState(() {
+                        _settings = next;
+                        _showSettingsModal = false;
+                      });
+                    },
+                    onChanged: (next) {
+                      setState(() =&gt; _settings = next);
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>5. 실행 후 꼭 확인할 것</h2>
+        <ol>
+          <li>데모 모드로 진입합니다.</li>
+          <li>왼쪽 <strong>설정</strong> 버튼을 누릅니다.</li>
+          <li>설정 모달이 열리고 탭 전환이 되는지 확인합니다.</li>
+          <li><strong>단축키</strong> 탭에서 <strong>변경</strong>을 누릅니다.</li>
+          <li><code>Cmd + K</code> 같은 조합을 입력해 캡처되는지 확인합니다.</li>
+          <li><strong>Esc</strong>를 눌러 캡처가 취소되는지 확인합니다.</li>
+          <li><strong>Delete</strong>를 눌러 단축키가 해제되는지 확인합니다.</li>
+          <li>저장 후 데모 홈에서 새 단축키가 실제로 동작하는지 확인합니다.</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>6. 오늘 자주 나오는 질문</h2>
+
+        <h3>왜 DemoSettingsModal을 별도 파일로 만들었나요?</h3>
+        <p>
+          데모 모드 설정은 일반 설정 모달과 구조는 비슷하지만 역할이 다릅니다.
+          분리해두면 데모용 단축키 캡처, 포커스 처리, 즉시 반영 흐름을
+          독립적으로 다루기 쉬워집니다.
+        </p>
+
+        <h3>왜 _capturingField가 필요한가요?</h3>
+        <p>
+          지금 어떤 필드가 키 입력을 받고 있는지 알아야 하기 때문입니다.
+          이 값이 있어야 모달이
+          <strong>음성 듣기 단축키 입력 중</strong>인지,
+          <strong>설정 열기 단축키 입력 중</strong>인지 구분할 수 있습니다.
+        </p>
+
+        <h3>왜 Focus와 onKeyEvent를 쓰나요?</h3>
+        <p>
+          일반 <code>TextField</code>로는 <code>Cmd + K</code> 같은 조합을
+          온전히 단축키처럼 다루기 어렵습니다.
+          그래서 모달 자체가 포커스를 받고 키 이벤트를 직접 읽는 구조를 사용합니다.
+        </p>
+
+        <h3>왜 데모 홈에서 _settings를 직접 들고 있나요?</h3>
+        <p>
+          Day 7 목표는 데모 모드 안에서 독립적인 UX를 완성하는 것입니다.
+          아직 OS 전역 단축키나 별도 서비스 계층은 붙이지 않았기 때문에,
+          지금 단계에서는 로컬 상태로 유지하는 것이 가장 안전하고 이해하기 쉽습니다.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>7. Day 7 완료 기준</h2>
+        <ul>
+          <li>데모 모드에서 설정 모달이 열린다.</li>
+          <li>설정 모달에서 탭 전환이 된다.</li>
+          <li>단축키를 직접 눌러 저장할 수 있다.</li>
+          <li><code>Escape</code>로 캡처 취소가 된다.</li>
+          <li><code>Delete / Backspace</code>로 단축키 해제가 된다.</li>
+          <li>저장 후 데모 홈에서 단축키가 실제로 동작한다.</li>
+          <li>프로젝트가 분석 기준으로 오류 없이 통과한다.</li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

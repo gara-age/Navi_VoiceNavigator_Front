@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../app/theme/app_theme.dart';
+import 'demo_settings_modal.dart';
 import '../features/home/presentation/widgets/action_panel.dart';
-import '../features/notifications/presentation/app_toast.dart';
 import '../features/home/presentation/widgets/ready_state.dart';
 import '../features/home/presentation/widgets/status_card.dart';
 import '../features/home/presentation/widgets/title_bar.dart';
+import '../features/notifications/presentation/app_toast.dart';
+import '../shared/models/settings_models.dart';
+import '../shared/utils/shortcut_utils.dart';
 
 class DemoHomePage extends StatefulWidget {
   const DemoHomePage({super.key});
@@ -14,11 +19,90 @@ class DemoHomePage extends StatefulWidget {
 }
 
 class _DemoHomePageState extends State<DemoHomePage> {
+  final FocusNode _focusNode = FocusNode(debugLabel: 'demo_home_focus');
+
+  late AppSettings _settings;
   String _micStatus = '대기';
   bool _isRecording = false;
   bool _isBusy = false;
+  bool _showSettingsModal = false;
   String? _summary;
   String? _followUp;
+
+  @override
+  void initState() {
+    super.initState();
+    _settings = AppSettings.defaults();
+
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (ModalRoute.of(context)?.isCurrent != true || event is! KeyDownEvent) {
+      return false;
+    }
+
+    if (_showSettingsModal) {
+      if (event.logicalKey == LogicalKeyboardKey.escape) {
+        _closeSettings();
+        return true;
+      }
+      return false;
+    }
+
+    if (!_settings.shortcuts.enabled) {
+      return false;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.listenToggle)) {
+      _simulateListen();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.screenRead)) {
+      _simulateScreenRead();
+      return true;
+    }
+
+    if (ShortcutUtils.matches(event, _settings.shortcuts.openSettings)) {
+      _openSettings();
+      return true;
+    }
+
+    return false;
+  }
+
+  void _openSettings() {
+    if (_showSettingsModal) {
+      return;
+    }
+    setState(() => _showSettingsModal = true);
+  }
+
+  void _closeSettings() {
+    if (!_showSettingsModal) {
+      return;
+    }
+    setState(() => _showSettingsModal = false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
 
   Future<void> _simulateListen() async {
     if (_isBusy) {
@@ -156,62 +240,103 @@ class _DemoHomePageState extends State<DemoHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const AppTitleBar(),
-            Container(
-              height: 88,
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
+    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: surfaceTheme.shellBackground,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const AppTitleBar(),
+                  Container(
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      border: Border(
+                        bottom: BorderSide(color: surfaceTheme.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: StatusCard(
+                            label: '마이크 상태',
+                            value: _micStatus,
+                            icon: Icons.mic_none_rounded,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: surfaceTheme.border,
+                        ),
+                        const Expanded(
+                          child: StatusCard(
+                            label: '현재 모드',
+                            value: '데모 모드',
+                            icon: Icons.play_circle_outline_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 260,
+                          child: ActionPanel(
+                            isRecording: _isRecording,
+                            onListenPressed: _simulateListen,
+                            onScreenReadPressed: _simulateScreenRead,
+                            onSettingsPressed: _openSettings,
+                          ),
+                        ),
+                        Expanded(
+                          child: ReadyState(
+                            summary: _summary,
+                            followUp: _followUp,
+                            isBusy: _isBusy,
+                            onSubmitText: _handleTextCommand,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_showSettingsModal) ...[
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeSettings,
+                    child: Container(
+                      color: const Color(0x66000000),
+                    ),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: StatusCard(
-                      label: '마이크 상태',
-                      value: _micStatus,
-                      icon: Icons.mic_none_rounded,
-                    ),
+                Positioned.fill(
+                  child: DemoSettingsModal(
+                    initialSettings: _settings,
+                    onClose: _closeSettings,
+                    onSaved: (next) {
+                      setState(() {
+                        _settings = next;
+                        _showSettingsModal = false;
+                      });
+                    },
+                    onChanged: (next) {
+                      setState(() => _settings = next);
+                    },
                   ),
-                  const VerticalDivider(width: 1, thickness: 1),
-                  const Expanded(
-                    child: StatusCard(
-                      label: '현재 모드',
-                      value: '데모 모드',
-                      icon: Icons.play_circle_outline_rounded,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 260,
-                    child: ActionPanel(
-                      isRecording: _isRecording,
-                      onListenPressed: _simulateListen,
-                      onScreenReadPressed: _simulateScreenRead,
-                      onSettingsPressed: () {},
-                    ),
-                  ),
-                  Expanded(
-                    child: ReadyState(
-                      summary: _summary,
-                      followUp: _followUp,
-                      isBusy: _isBusy,
-                      onSubmitText: _handleTextCommand,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
