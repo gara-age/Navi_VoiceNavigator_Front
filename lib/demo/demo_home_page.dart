@@ -113,6 +113,16 @@ class _DemoHomePageState extends State<DemoHomePage> {
     });
   }
 
+  void _handleToggleMode(bool secureEnabled) {
+    setState(() {
+      _settings = _settings.copyWith(
+        security: _settings.security.copyWith(
+          secureInputMode: secureEnabled,
+        ),
+      );
+    });
+  }
+
   Future<void> _simulateListen() async {
     if (_isBusy) {
       return;
@@ -300,10 +310,15 @@ class _DemoHomePageState extends State<DemoHomePage> {
                         SizedBox(
                           width: 260,
                           child: ActionPanel(
+                            secureModeEnabled: _settings.security.secureInputMode,
                             isRecording: _isRecording,
+                            listenShortcut: _settings.shortcuts.listenToggle,
+                            screenReadShortcut: _settings.shortcuts.screenRead,
+                            settingsShortcut: _settings.shortcuts.openSettings,
                             onListenPressed: _simulateListen,
                             onScreenReadPressed: _simulateScreenRead,
                             onSettingsPressed: _openSettings,
+                            onToggleMode: _handleToggleMode,
                           ),
                         ),
                         Expanded(

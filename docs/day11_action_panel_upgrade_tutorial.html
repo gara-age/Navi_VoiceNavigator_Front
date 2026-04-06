@@ -1,4 +1,115 @@
-import 'package:flutter/material.dart';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 11 - Action Panel Upgrade Tutorial</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ef;
+      --accent: #2563eb;
+      --soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Pretendard, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+    h1, h2, h3 { line-height: 1.3; }
+    h1 { font-size: 32px; margin: 0 0 12px; }
+    h2 {
+      margin-top: 40px;
+      font-size: 24px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin-top: 24px; font-size: 18px; }
+    p, li { color: var(--muted); }
+    ul { padding-left: 20px; }
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      background: #eef2ff;
+      color: #1e3a8a;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      border: 1px solid #1e293b;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    .callout {
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--soft);
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+    .step {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-top: 18px;
+      background: #fcfdff;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Day 11 튜토리얼 최종판</h1>
+    <p>실제 모드의 <code>ActionPanel</code>을 목표 프로젝트에 더 가깝게 고도화합니다. 이번 최종판은 실제 모드뿐 아니라 데모 모드에서 공통 패널 생성자가 바뀐 부분까지 모두 반영한 문서입니다.</p>
+
+    <div class="callout">
+      오늘 완료되면:
+      <br />1. 액션 버튼 옆에 단축키 배지가 표시됩니다.
+      <br />2. 왼쪽 패널 하단에 일반 모드 / 보안 입력 모드 카드가 생깁니다.
+      <br />3. 실제 모드와 데모 모드 둘 다 새 <code>ActionPanel</code> 생성자에 맞게 동작합니다.
+    </div>
+
+    <h2>수정 파일</h2>
+    <ul>
+      <li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li>
+      <li><code>lib/features/home/presentation/home_page.dart</code></li>
+      <li><code>lib/demo/demo_home_page.dart</code></li>
+    </ul>
+
+    <h2>1. ActionPanel 전체 교체</h2>
+    <div class="step">
+      <h3>1-1. 왜 전체 교체하나</h3>
+      <p>기존 <code>ActionPanel</code>은 버튼 3개만 표시합니다. 이번에는 단축키 배지, 활성 상태 강조, 모드 전환 카드까지 들어가므로 부분 수정보다 전체 교체가 더 안전합니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>1-2. 파일 열기</h3>
+      <p><code>lib/features/home/presentation/widgets/action_panel.dart</code>를 열고, 파일 전체를 아래 코드로 교체합니다.</p>
+      <pre><code class="language-dart">import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/colors.dart';
@@ -26,11 +137,11 @@ class ActionPanel extends StatelessWidget {
   final VoidCallback onListenPressed;
   final VoidCallback onScreenReadPressed;
   final VoidCallback onSettingsPressed;
-  final ValueChanged<bool> onToggleMode;
+  final ValueChanged&lt;bool&gt; onToggleMode;
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return Container(
       color: surfaceTheme.surface,
@@ -97,7 +208,7 @@ class ActionPanel extends StatelessWidget {
               description: '기본 자동화와 안내를 수행합니다.',
               selected: !secureModeEnabled,
               secure: false,
-              onTap: () => onToggleMode(false),
+              onTap: () =&gt; onToggleMode(false),
             ),
             const SizedBox(height: 6),
             _ModeOption(
@@ -105,7 +216,7 @@ class ActionPanel extends StatelessWidget {
               description: '민감한 입력과 읽기를 더 엄격하게 제한합니다.',
               selected: secureModeEnabled,
               secure: true,
-              onTap: () => onToggleMode(true),
+              onTap: () =&gt; onToggleMode(true),
             ),
           ],
         ),
@@ -133,7 +244,7 @@ class _CommandButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     return OutlinedButton(
       onPressed: onPressed,
@@ -232,7 +343,7 @@ class _ModeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
 
     final accent = secure ? AppColors.warning : surfaceTheme.accent;
     final background =
@@ -304,4 +415,90 @@ class _ModeOption extends StatelessWidget {
       ),
     );
   }
-}
+}</code></pre>
+    </div>
+
+    <h2>2. HomePage 연결</h2>
+    <div class="step">
+      <h3>2-1. 메서드 추가</h3>
+      <p><code>lib/features/home/presentation/home_page.dart</code>에서 <code>bool _showSettings = false;</code> 바로 아래에 아래 메서드를 추가합니다.</p>
+      <pre><code class="language-dart">void _handleToggleMode(bool secureEnabled) {
+  final notifier = ref.read(settingsControllerProvider.notifier);
+  notifier.setSecureMode(secureEnabled);
+}</code></pre>
+      <p>이 메서드는 왼쪽 패널에서 선택된 모드를 실제 설정 상태에 반영합니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>2-2. ActionPanel 호출부 수정</h3>
+      <p><code>build()</code> 안에서 <code>ActionPanel(...)</code>을 아래처럼 바꿉니다.</p>
+      <pre><code class="language-dart">child: ActionPanel(
+  secureModeEnabled: settings.security.secureInputMode,
+  isRecording: sessionState.isRecording,
+  listenShortcut: settings.shortcuts.listenToggle,
+  screenReadShortcut: settings.shortcuts.screenRead,
+  settingsShortcut: settings.shortcuts.openSettings,
+  onListenPressed: _handleListen,
+  onScreenReadPressed: _handleScreenRead,
+  onSettingsPressed: () {
+    setState(() =&gt; _showSettings = true);
+  },
+  onToggleMode: _handleToggleMode,
+),</code></pre>
+    </div>
+
+    <h2>3. DemoHomePage 호출부도 반드시 수정</h2>
+    <div class="step">
+      <h3>3-1. 왜 필요한가</h3>
+      <p><code>ActionPanel</code>은 실제 모드와 데모 모드가 공통으로 쓰는 위젯입니다. 그래서 생성자가 바뀌면 <code>DemoHomePage</code>의 호출부도 반드시 같이 수정해야 합니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>3-2. 데모 모드용 토글 메서드 추가</h3>
+      <p><code>lib/demo/demo_home_page.dart</code>에서 <code>_closeSettings()</code> 아래에 아래 메서드를 추가합니다.</p>
+      <pre><code class="language-dart">void _handleToggleMode(bool secureEnabled) {
+  setState(() {
+    _settings = _settings.copyWith(
+      security: _settings.security.copyWith(
+        secureInputMode: secureEnabled,
+      ),
+    );
+  });
+}</code></pre>
+      <p>데모 모드는 Riverpod 컨트롤러가 아니라 화면 내부의 <code>_settings</code> draft를 직접 들고 있으므로, 이 방식으로 상태를 바꿉니다.</p>
+    </div>
+
+    <div class="step">
+      <h3>3-3. DemoHomePage의 ActionPanel 호출부 교체</h3>
+      <p><code>build()</code> 안에서 <code>ActionPanel(...)</code>을 아래처럼 바꿉니다.</p>
+      <pre><code class="language-dart">child: ActionPanel(
+  secureModeEnabled: _settings.security.secureInputMode,
+  isRecording: _isRecording,
+  listenShortcut: _settings.shortcuts.listenToggle,
+  screenReadShortcut: _settings.shortcuts.screenRead,
+  settingsShortcut: _settings.shortcuts.openSettings,
+  onListenPressed: _simulateListen,
+  onScreenReadPressed: _simulateScreenRead,
+  onSettingsPressed: _openSettings,
+  onToggleMode: _handleToggleMode,
+),</code></pre>
+    </div>
+
+    <h2>4. 오늘 꼭 이해해야 하는 것</h2>
+    <ul>
+      <li><code>ActionPanel</code>이 공통 위젯이기 때문에 생성자 변경 시 실제 모드와 데모 모드 둘 다 호출부를 고쳐야 합니다.</li>
+      <li>단축키 배지는 <code>ShortcutUtils.displayLabel(...)</code>로 출력해야 사람이 읽기 좋은 문자열이 됩니다.</li>
+      <li>실제 모드는 전역 설정 컨트롤러를 갱신하고, 데모 모드는 화면 내부 설정 상태를 갱신합니다.</li>
+      <li>선택 카드 UI는 단순 스위치보다 “현재 어떤 모드인지”를 더 분명하게 보여줍니다.</li>
+    </ul>
+
+    <h2>5. 완료 기준</h2>
+    <ul>
+      <li>실제 모드 패널에 단축키 배지가 보입니다.</li>
+      <li>데모 모드도 동일한 새 패널을 정상 렌더링합니다.</li>
+      <li>일반 모드 / 보안 입력 모드 카드가 두 모드 모두에서 보입니다.</li>
+      <li><code>flutter analyze</code> 기준으로 생성자 누락 오류가 없습니다.</li>
+    </ul>
+  </main>
+</body>
+</html>

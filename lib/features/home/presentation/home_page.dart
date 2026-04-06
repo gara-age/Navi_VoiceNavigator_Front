@@ -22,6 +22,11 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   bool _showSettings = false;
 
+  void _handleToggleMode(bool secureEnabled) {
+    final notifier = ref.read(settingsControllerProvider.notifier);
+    notifier.setSecureMode(secureEnabled);
+  }
+
   Future<void> _handleListen() async {
     final session = ref.read(sessionControllerProvider);
     final sessionNotifier = ref.read(sessionControllerProvider.notifier);
@@ -175,12 +180,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                       SizedBox(
                         width: 290,
                         child: ActionPanel(
+                          secureModeEnabled: settings.security.secureInputMode,
                           isRecording: sessionState.isRecording,
+                          listenShortcut: settings.shortcuts.listenToggle,
+                          screenReadShortcut: settings.shortcuts.screenRead,
+                          settingsShortcut: settings.shortcuts.openSettings,
                           onListenPressed: _handleListen,
                           onScreenReadPressed: _handleScreenRead,
                           onSettingsPressed: () {
                             setState(() => _showSettings = true);
                           },
+                          onToggleMode: _handleToggleMode,
                         ),
                       ),
                       Expanded(
