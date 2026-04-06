@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 20 Widget Exact Sync Tutorial</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d8dfec;
+      --ink: #18212f;
+      --muted: #5f6b81;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code: #0f172a;
+      --code-text: #e5eefb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    .hero, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.3; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 24px; }
+    h3 { font-size: 18px; margin-top: 18px; }
+    p, li { color: var(--muted); }
+    ul { padding-left: 20px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #eef2ff;
+      color: #312e81;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    pre {
+      margin: 14px 0;
+      padding: 16px;
+      border-radius: 16px;
+      overflow-x: auto;
+      background: var(--code);
+      color: var(--code-text);
+    }
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 14px 16px;
+      border-radius: 14px;
+      color: #1d4ed8;
+    }
+    .path {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Day 20. Widget Exact Sync</h1>
+      <p>20일차는 공통 위젯을 목표 프로젝트와 더 정확히 맞추는 단계입니다. 이번 정리는 초기에 적용한 구조 변경만이 아니라, 이후 스크린샷 비교 과정에서 발견된 보정 사항까지 포함한 <strong>최종 상태 기준</strong> 문서입니다.</p>
+      <div class="callout">
+        이번 문서는 <code>title_bar</code>, <code>ready_state</code>, <code>action_panel</code>, <code>status_card</code>뿐 아니라, macOS 시스템 타이틀바 숨김과 좌측 패널 stretch 보정까지 함께 정리합니다.
+      </div>
+    </div>
+
+    <section>
+      <h2>오늘 수정한 파일</h2>
+      <ul>
+        <li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/ready_state.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/action_panel.dart</code></li>
+        <li><code>lib/features/home/presentation/widgets/status_card.dart</code></li>
+        <li><code>lib/features/home/presentation/home_page.dart</code></li>
+        <li><code>lib/demo/demo_home_page.dart</code></li>
+        <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>실제 변경 파일 기준으로 다시 보기</h2>
+      <p>20일차는 초기에 위젯 exact sync를 적용한 뒤, 스크린샷 비교 과정에서 후속 보정이 추가된 상태입니다. 그래서 실제 변경 파일을 코드 레벨로 다시 정리하면 아래와 같습니다.</p>
+      <ul>
+        <li><code>lib/features/home/presentation/widgets/title_bar.dart</code>: <code>dart:io</code> import 추가, <code>Platform.isMacOS</code> 분기 추가</li>
+        <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code>: 새 파일 생성</li>
+        <li><code>lib/features/home/presentation/widgets/ready_state.dart</code>: 배경을 <code>surface</code> 기준으로 변경, scroll-safe 구조 채택, busy 아이콘 accent 처리, summary bold 처리</li>
+        <li><code>lib/features/home/presentation/widgets/action_panel.dart</code>: 카피를 목표형으로 복귀, shortcut 칩 radius 변경, 모드 전환 카드를 작은 점 기반 구조로 복귀</li>
+        <li><code>lib/features/home/presentation/widgets/status_card.dart</code>: 목표형 표현으로 미세 정리</li>
+        <li><code>lib/features/home/presentation/home_page.dart</code>: 상단 상태 바 하단선 복구, 본문 Row stretch 추가</li>
+        <li><code>lib/demo/demo_home_page.dart</code>: 본문 Row stretch 추가</li>
+        <li><code>macos/Runner/MainFlutterWindow.swift</code>: macOS 시스템 title bar 숨김 설정 추가</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>1. title_bar.dart: 플랫폼 분기</h2>
+      <div class="path">lib/features/home/presentation/widgets/title_bar.dart</div>
+      <p>Windows 스타일과 macOS 스타일은 의도적으로 다르게 가져갑니다. 따라서 이 파일은 “하나의 디자인으로 통일”하는 대신, 플랫폼에 따라 다른 위젯을 반환하는 분기용 셸이 됩니다.</p>
+      <pre><code>import 'dart:io';
+
+class AppTitleBar extends StatelessWidget {
+  const AppTitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (Platform.isMacOS) {
+      return const AppTitleBarMacos();
+    }
+
+    return Container(
+      height: 64,
+      ...
+    );
+  }
+}</code></pre>
+      <p>즉 Windows에서는 기존 인앱 타이틀바를 쓰고, macOS에서는 별도 파일의 macOS 스타일 타이틀바를 씁니다.</p>
+    </section>
+
+    <section>
+      <h2>2. title_bar_macos.dart: macOS 전용 타이틀바</h2>
+      <div class="path">lib/features/home/presentation/widgets/title_bar_macos.dart</div>
+      <p>목표 프로젝트의 macOS 빌드처럼, 우측 정렬 텍스트와 우측 마이크 아이콘을 사용하는 미니멀한 구조를 별도 파일로 구현합니다.</p>
+      <pre><code>class AppTitleBarMacos extends StatelessWidget {
+  const AppTitleBarMacos({super.key, this.onOpenHelp});
+
+  final VoidCallback? onOpenHelp;
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceTheme = Theme.of(context).extension&lt;AppSurfaceTheme&gt;()!;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: surfaceTheme.surface,
+            border: Border(
+              bottom: BorderSide(color: surfaceTheme.border),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Navi: Voice Navigator', textAlign: TextAlign.right),
+                    Text(
+                      'AI Voice Assistant for PC Accessibility',
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 36,
+                height: 36,
+                child: const Icon(Icons.mic_rounded),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}</code></pre>
+    </section>
+
+    <section>
+      <h2>3. macOS 시스템 타이틀바 숨기기</h2>
+      <div class="path">macos/Runner/MainFlutterWindow.swift</div>
+      <p>Flutter 위젯 안의 macOS 전용 타이틀바를 보여주려면, 시스템 기본 title bar를 숨겨야 합니다. 이 보정은 Day 20 초기 문서에는 없었지만 실제 구현에서는 중요합니다.</p>
+      <pre><code>override func awakeFromNib() {
+  let flutterViewController = FlutterViewController()
+  let windowFrame = self.frame
+  self.contentViewController = flutterViewController
+  self.setFrame(windowFrame, display: true)
+  self.titleVisibility = .hidden
+  self.titlebarAppearsTransparent = true
+  self.isMovableByWindowBackground = true
+  self.styleMask.insert(.fullSizeContentView)
+  self.toolbar = nil
+
+  RegisterGeneratedPlugins(registry: flutterViewController)
+
+  super.awakeFromNib()
+}</code></pre>
+      <p>이 설정으로 macOS에서는 시스템 title 영역이 사라지고, 앱 내부의 <code>AppTitleBarMacos</code>만 보이게 됩니다.</p>
+    </section>
+
+    <section>
+      <h2>4. ready_state.dart: 목표형 scroll-safe 구조 채택</h2>
+      <div class="path">lib/features/home/presentation/widgets/ready_state.dart</div>
+      <p>문구는 현재 버전을 유지하되, 레이아웃은 목표 파일의 <code>LayoutBuilder + SingleChildScrollView + ConstrainedBox</code> 구조를 채택합니다. 덕분에 창 높이가 작아졌을 때 overflow가 줄고, 중앙 정렬 느낌도 유지됩니다.</p>
+      <pre><code>return Container(
+  color: surfaceTheme.surface,
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ...
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+);</code></pre>
+      <p>이번 보정에서는 구조만 바뀐 것이 아닙니다. 실제 코드 기준으로는 아래 세 가지도 함께 바뀌었습니다.</p>
+      <ul>
+        <li>바깥 배경이 <code>surfaceTheme.contentBackground</code>가 아니라 <code>surfaceTheme.surface</code>로 바뀌었습니다.</li>
+        <li>busy 상태 아이콘 색이 기본 muted가 아니라 <code>surfaceTheme.accent</code>를 쓰도록 바뀌었습니다.</li>
+        <li>요약 본문이 <code>fontWeight: FontWeight.w700</code>로 강화됐습니다.</li>
+      </ul>
+      <p>그리고 스크린샷 보정으로, <code>결과 요약</code> 아래 실제 요약 본문은 bold로 표시되도록 정리했습니다.</p>
+      <pre><code>Text(
+  summary!,
+  style: TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    height: 1.6,
+    color: surfaceTheme.textPrimary,
+  ),
+)</code></pre>
+      <p><code>다음 제안</code> 라벨과 현재 제품형 문구는 그대로 유지합니다.</p>
+    </section>
+
+    <section>
+      <h2>5. action_panel.dart: 목표 화면형으로 다시 정렬</h2>
+      <div class="path">lib/features/home/presentation/widgets/action_panel.dart</div>
+      <p>Day 19에서 공통 제품 톤으로 다듬었던 일부 카피는, 목표 프로젝트와 완전 동일하게 맞추는 기준에서는 다시 목표형으로 되돌릴 필요가 있었습니다. 따라서 이번 단계에서는 버튼 설명, shortcut 칩 모양, 모드 전환 카드의 형태를 목표 화면 기준으로 다시 맞춥니다.</p>
+      <pre><code>_CommandButton(
+  icon: Icons.mic_rounded,
+  title: isRecording ? '듣는 중' : '음성 듣기',
+  description: '음성 명령 인식을 시작합니다.',
+  shortcut: ShortcutUtils.displayLabel(listenShortcut),
+  ...
+)</code></pre>
+      <pre><code>_CommandButton(
+  icon: Icons.visibility_rounded,
+  title: '현재 화면 읽기',
+  description: '현재 화면 요약과 읽기를 시작합니다.',
+  ...
+)</code></pre>
+      <pre><code>_CommandButton(
+  icon: Icons.settings_rounded,
+  title: '설정',
+  description: '기본 설정, 단축키, 보안, 화면 모드',
+  ...
+)</code></pre>
+      <p>shortcut 칩 radius도 목표처럼 작은 pill이 아니라 각진 짧은 칩으로 정리합니다.</p>
+      <pre><code>borderRadius: BorderRadius.circular(6)</code></pre>
+      <p>그리고 <code>모드 전환</code>은 큰 선택 카드 대신, 작은 점 표시 중심의 목표형 구조로 되돌립니다. 여기에는 아래 변경도 포함됩니다.</p>
+      <ul>
+        <li>선택 아이콘 check 제거</li>
+        <li>좌측 작은 dot 표시 복귀</li>
+        <li><code>selected</code> 배경색과 border 색을 목표형으로 조정</li>
+        <li>설명 문구를 Day 19 공통 UX 버전에서 목표 버전으로 되돌림</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>6. status_card.dart: 목표형 표현 유지</h2>
+      <div class="path">lib/features/home/presentation/widgets/status_card.dart</div>
+      <p>이 파일은 이미 목표 프로젝트와 큰 방향이 비슷했기 때문에, Day 20에서는 wave, dot, 아이콘 박스, spacing을 목표형 표현에 맞춰 정리하는 수준으로 마무리합니다.</p>
+      <pre><code>Container(
+  width: 40,
+  height: 40,
+  decoration: BoxDecoration(
+    color: iconBackground,
+    borderRadius: BorderRadius.circular(10),
+  ),
+  child: Icon(icon, size: 20, color: iconColor),
+)</code></pre>
+      <p>현재 워크트리 기준 diff는 대부분 포맷 정리에 가깝지만, 문서에는 이 파일이 이번 exact sync 범위에 포함된다는 점을 명확히 남겨둡니다. 즉 <code>StatusCard</code>는 기능 추가보다 목표형 표현 유지와 정렬이 목적입니다.</p>
+    </section>
+
+    <section>
+      <h2>7. 좌측 ActionPanel stretch 보정</h2>
+      <div class="path">lib/features/home/presentation/home_page.dart</div>
+      <div class="path">lib/demo/demo_home_page.dart</div>
+      <p>스크린샷 비교 과정에서, 좌측 패널 위아래에 회색 공간이 비치는 문제가 발견됐습니다. 원인은 본문 <code>Row</code>가 세로로 stretch되지 않아서 왼쪽 패널이 내용 높이만큼만 렌더링되던 점이었습니다.</p>
+      <pre><code>Expanded(
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      ...
+    ],
+  ),
+)</code></pre>
+      <p>이 보정으로 실제 모드와 데모 모드 모두 왼쪽 패널이 본문 높이를 안정적으로 채우게 됩니다.</p>
+    </section>
+
+    <section>
+      <h2>8. 상단 Status Bar 하단선 복구</h2>
+      <div class="path">lib/features/home/presentation/home_page.dart</div>
+      <p>상단 상태 카드 영역 아래 구분선이 보이지 않는 문제도 함께 보정했습니다. 상태 바 컨테이너의 단순 <code>color</code> 지정이 아니라, <code>BoxDecoration</code>에 bottom border를 다시 넣어서 목표 화면처럼 상단과 본문이 명확히 구분되도록 했습니다.</p>
+      <pre><code>Container(
+  height: 92,
+  decoration: BoxDecoration(
+    color: surfaceTheme.surface,
+    border: Border(
+      bottom: BorderSide(color: surfaceTheme.border),
+    ),
+  ),
+  child: Row(...),
+)</code></pre>
+    </section>
+
+    <section>
+      <h2>이번 단계에서 꼭 이해해야 하는 것</h2>
+      <ul>
+        <li><code>title_bar</code>는 완전 동일화보다 플랫폼 분기가 맞는 영역입니다.</li>
+        <li>macOS 인앱 타이틀바를 제대로 쓰려면 Swift 쪽 시스템 title bar 숨김도 함께 필요합니다.</li>
+        <li><code>ready_state</code>는 카피와 레이아웃을 분리해서 다루는 것이 안전합니다.</li>
+        <li><code>action_panel</code>은 공통 UX 개선보다 목표 화면 exact sync를 우선해야 합니다.</li>
+        <li>스크린샷 비교 후 발견된 stretch, 구분선, bold 처리 같은 후속 보정도 최종 문서에 포함해야 실제 상태와 맞습니다.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Day 20 완료 기준</h2>
+      <ul>
+        <li>Windows/macOS에서 인앱 title bar가 의도대로 분기된다.</li>
+        <li>macOS에서 시스템 title bar가 숨겨지고 앱 내부 title bar만 사용된다.</li>
+        <li><code>ready_state.dart</code>가 목표형 scroll-safe 구조를 가진다.</li>
+        <li><code>결과 요약</code> 본문이 더 명확하게 보이도록 bold 처리되었다.</li>
+        <li><code>action_panel.dart</code>가 목표 화면형 구조와 카피에 더 가까워졌다.</li>
+        <li>좌측 패널 stretch와 상단 상태 바 하단선까지 포함해 화면 보정이 완료되었다.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

@@ -26,7 +26,6 @@ class StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -38,11 +37,7 @@ class StatusCard extends StatelessWidget {
               color: iconBackground,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: iconColor,
-            ),
+            child: Icon(icon, size: 20, color: iconColor),
           ),
           const SizedBox(width: 14),
           Expanded(

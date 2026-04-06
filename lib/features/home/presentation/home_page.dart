@@ -287,7 +287,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   const AppTitleBar(),
                   Container(
                     height: 92,
-                    color: surfaceTheme.surface,
+                    decoration: BoxDecoration(
+                      color: surfaceTheme.surface,
+                      border: Border(
+                        bottom: BorderSide(color: surfaceTheme.border),
+                      ),
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -336,6 +341,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   Expanded(
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         SizedBox(
                           width: 290,

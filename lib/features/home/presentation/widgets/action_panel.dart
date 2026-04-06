@@ -55,7 +55,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.mic_rounded,
               title: isRecording ? '듣는 중' : '음성 듣기',
-              description: '음성 명령을 듣고 다음 작업을 준비합니다.',
+              description: '음성 명령 인식을 시작합니다.',
               shortcut: ShortcutUtils.displayLabel(listenShortcut),
               isActive: isRecording,
               onPressed: onListenPressed,
@@ -64,7 +64,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.visibility_rounded,
               title: '현재 화면 읽기',
-              description: '현재 화면을 요약하고 핵심 내용을 읽어드립니다.',
+              description: '현재 화면 요약과 읽기를 시작합니다.',
               shortcut: ShortcutUtils.displayLabel(screenReadShortcut),
               onPressed: onScreenReadPressed,
             ),
@@ -72,7 +72,7 @@ class ActionPanel extends StatelessWidget {
             _CommandButton(
               icon: Icons.settings_rounded,
               title: '설정',
-              description: '단축키, 보안, 화면 표시 옵션을 조정합니다.',
+              description: '기본 설정, 단축키, 보안, 화면 모드',
               shortcut: ShortcutUtils.displayLabel(settingsShortcut),
               onPressed: onSettingsPressed,
             ),
@@ -94,7 +94,7 @@ class ActionPanel extends StatelessWidget {
             ),
             _ModeOption(
               label: '일반 모드',
-              description: '일반적인 탐색과 안내 작업에 적합한 기본 모드입니다.',
+              description: '기본 자동화와 안내를 수행합니다.',
               selected: !secureModeEnabled,
               secure: false,
               onTap: () => onToggleMode(false),
@@ -102,7 +102,7 @@ class ActionPanel extends StatelessWidget {
             const SizedBox(height: 6),
             _ModeOption(
               label: '보안 입력 모드',
-              description: '민감한 입력과 읽기 동작을 더 신중하게 다루는 모드입니다.',
+              description: '민감한 입력과 읽기를 더 엄격하게 제한합니다.',
               selected: secureModeEnabled,
               secure: true,
               onTap: () => onToggleMode(true),
@@ -134,7 +134,6 @@ class _CommandButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
-
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
@@ -144,9 +143,7 @@ class _CommandButton extends StatelessWidget {
         ),
         backgroundColor:
             isActive ? AppColors.successSoft : surfaceTheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontFamily: 'Pretendard'),
       ),
       child: Row(
@@ -158,11 +155,7 @@ class _CommandButton extends StatelessWidget {
               color: surfaceTheme.contentBackground,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: surfaceTheme.textMuted,
-            ),
+            child: Icon(icon, size: 18, color: surfaceTheme.textMuted),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -196,7 +189,7 @@ class _CommandButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: surfaceTheme.contentBackground,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: surfaceTheme.border),
               ),
               child: Text(
@@ -234,40 +227,37 @@ class _ModeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
 
-    final accent = secure ? AppColors.warning : surfaceTheme.accent;
-    final background =
-        selected ? surfaceTheme.contentBackground : surfaceTheme.surface;
-
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
+      borderRadius: BorderRadius.circular(10),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(12),
+          color: selected
+              ? (secure ? AppColors.warningSoft : AppColors.accentSoft)
+              : surfaceTheme.surface,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? accent : surfaceTheme.border,
+            color: selected
+                ? (secure ? const Color(0x66D97706) : const Color(0x662563EB))
+                : surfaceTheme.border,
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(top: 6),
               decoration: BoxDecoration(
                 color: selected
-                    ? accent.withValues(alpha: 0.12)
-                    : surfaceTheme.contentBackground,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                secure ? Icons.lock_outline_rounded : Icons.volume_up_outlined,
-                size: 18,
-                color: selected ? accent : surfaceTheme.textMuted,
+                    ? (secure ? AppColors.warning : AppColors.accent)
+                    : surfaceTheme.border,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,9 +266,11 @@ class _ModeOption extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontFamily: 'Pretendard',
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: surfaceTheme.textPrimary,
+                      color: secure && selected
+                          ? AppColors.warning
+                          : surfaceTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -287,18 +279,13 @@ class _ModeOption extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 11,
+                      fontWeight: FontWeight.w500,
                       color: surfaceTheme.textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-            if (selected)
-              Icon(
-                Icons.check_rounded,
-                size: 18,
-                color: accent,
-              ),
           ],
         ),
       ),

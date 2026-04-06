@@ -1,12 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import 'title_bar_macos.dart';
 
 class AppTitleBar extends StatelessWidget {
   const AppTitleBar({super.key});
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isMacOS) {
+      return const AppTitleBarMacos();
+    }
+
     final surfaceTheme = Theme.of(context).extension<AppSurfaceTheme>()!;
 
     return Container(

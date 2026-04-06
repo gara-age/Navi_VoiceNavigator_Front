@@ -468,6 +468,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
                   ),
                   Expanded(
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         SizedBox(
                           width: 260,
