@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 22 Commit 2 - Windows Popup Renderer</title>
+  <style>
+    :root {
+      --bg: #f3f7fc; --panel: #ffffff; --soft: #f8fafc; --text: #0f172a;
+      --muted: #64748b; --line: #dbe4f0; --accent: #2563eb; --accent-soft: #eff6ff;
+      --code-bg: #0f172a; --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%); color: var(--text); line-height: 1.7; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 18px 72px; }
+    .hero, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); margin-bottom: 22px; }
+    .hero { padding: 30px; } .card { padding: 24px; }
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 800; }
+    h1, h2 { line-height: 1.3; margin: 0 0 14px; } h1 { font-size: 34px; } h2 { font-size: 26px; margin-top: 6px; }
+    p { margin: 0 0 14px; color: var(--muted); } ul, ol { margin: 0 0 14px 22px; color: var(--muted); } li { margin-bottom: 8px; }
+    .path { display: inline-block; margin: 8px 0 14px; padding: 8px 12px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .callout, .success { padding: 16px 18px; border-radius: 16px; margin-top: 16px; }
+    .callout { background: #fff8e8; border: 1px solid #f6d482; color: #92400e; }
+    .success { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 18px; border-radius: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Commit 2</span>
+      <h1>Windows Popup Renderer And Assets</h1>
+      <p>이 문서는 <code>feat: add windows taskbar popup renderer assets</code> 커밋을 따라가기 위한 문서입니다. 역할은 Windows WPF 팝업이 실제로 보이는 카드 UI와 아이콘 자산을 완성하는 것입니다.</p>
+      <div class="callout"><strong>핵심:</strong> 표시 방식은 목표 프로젝트처럼 PowerShell + WPF를 쓰되, 카드 디자인은 현재 프로젝트 <code>app_toast.dart</code>의 카드형 스타일을 그대로 반영합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>수정 파일</h2>
+      <ul>
+        <li><code>scripts/show_taskbar_popup.ps1</code></li>
+        <li><code>scripts/popup_icons/mic.svg</code></li>
+        <li><code>scripts/popup_icons/hourglass.svg</code></li>
+        <li><code>scripts/popup_icons/check.svg</code></li>
+        <li><code>scripts/popup_icons/warning.svg</code></li>
+        <li><code>scripts/popup_icons/error.svg</code></li>
+        <li><code>scripts/popup_icons/info.svg</code></li>
+        <li><code>scripts/popup_icons/x.svg</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1. WPF 창 기본 구조</h2>
+      <div class="path">scripts/show_taskbar_popup.ps1</div>
+      <pre><code>param(
+  [string]$Title = "Navi: Voice Navigator",
+  [string]$Message = "알림",
+  [int]$DurationMs = 5000,
+  [string]$State = "info",
+  [string]$ThemeMode = "light",
+  [string]$LargeText = "0"
+)
+
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase</code></pre>
+      <p>Flutter가 넘겨준 상태, 테마, 큰 글씨 여부를 이 스크립트가 실제 Windows 팝업으로 렌더링합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. no-activate 윈도우 처리</h2>
+      <pre><code>public static class PopupWindowInterop {
+  public const int GWL_EXSTYLE = -20;
+  public const int WS_EX_TOOLWINDOW = 0x00000080;
+  public const int WS_EX_NOACTIVATE = 0x08000000;
+}</code></pre>
+      <pre><code>$window.Add_SourceInitialized({
+  $helper = New-Object System.Windows.Interop.WindowInteropHelper($window)
+  $extendedStyle = [PopupWindowInterop]::GetWindowLong($helper.Handle, [PopupWindowInterop]::GWL_EXSTYLE)
+  $extendedStyle = $extendedStyle -bor [PopupWindowInterop]::WS_EX_TOOLWINDOW -bor [PopupWindowInterop]::WS_EX_NOACTIVATE
+  [PopupWindowInterop]::SetWindowLong($helper.Handle, [PopupWindowInterop]::GWL_EXSTYLE, $extendedStyle) | Out-Null
+  ...
+})</code></pre>
+      <p>이 처리가 있어야 Windows에서 팝업이 뜨는 타이밍에 창 포커스를 심하게 뺏는 문제를 줄일 수 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. Pretendard 폰트와 SVG 아이콘 사용</h2>
+      <pre><code>function Get-PretendardFontFamily {
+  $fontCandidates = @(
+    (Join-Path $PSScriptRoot '..\data\flutter_assets\assets\fonts'),
+    (Join-Path $PSScriptRoot '..\..\data\flutter_assets\assets\fonts'),
+    (Join-Path $PSScriptRoot '..\..\..\assets\fonts'),
+    (Join-Path (Get-Location) 'assets\fonts')
+  )
+  ...
+}</code></pre>
+      <pre><code>function Get-IconPath {
+  param([string]$PopupState)
+
+  $name = switch ($PopupState.ToLowerInvariant()) {
+    'listening' { 'mic.svg' }
+    'processing' { 'hourglass.svg' }
+    'success' { 'check.svg' }
+    'warning' { 'warning.svg' }
+    'error' { 'error.svg' }
+    default { 'info.svg' }
+  }
+
+  return Get-ScriptAssetPath "popup_icons\$name"
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>4. 현재 프로젝트 카드 팔레트 반영</h2>
+      <pre><code>function Build-ThemePalette {
+  param(
+    [string]$PopupState,
+    [string]$PopupTheme
+  )
+
+  if ($PopupTheme -eq 'contrast') {
+    ...
+  }
+
+  if ($PopupTheme -eq 'dark') {
+    ...
+  }
+
+  switch ($PopupState.ToLowerInvariant()) {
+    'listening' { return @{ Bg='#FFFFFF'; Border='#BFDBFE'; IconBg='#DBEAFE'; ... } }
+    'processing' { return @{ Bg='#FFFFFF'; Border='#FDE68A'; IconBg='#FEF3C7'; ... } }
+    'success' { return @{ Bg='#FFFFFF'; Border='#BBF7D0'; IconBg='#DCFCE7'; ... } }
+    ...
+  }
+}</code></pre>
+      <p>즉 목표 프로젝트의 표시 방식은 따르되, 색감과 카드 구성은 현재 프로젝트 토스트와 같게 맞춥니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>5. 카드 레이아웃</h2>
+      <pre><code>&lt;Window
+  AllowsTransparency="True"
+  Background="Transparent"
+  WindowStyle="None"
+  ResizeMode="NoResize"
+  UseLayoutRounding="True"
+  SnapsToDevicePixels="True"
+  ShowInTaskbar="False"
+  ShowActivated="False"
+  Topmost="True"&gt;
+  &lt;Grid&gt;
+    &lt;Border x:Name="CardBorder"
+            CornerRadius="18"
+            Padding="16,8,16,8"&gt;
+      ...
+    &lt;/Border&gt;
+  &lt;/Grid&gt;
+&lt;/Window&gt;</code></pre>
+      <p>최근 보정에서 닫기 버튼은 카드 바깥으로 빼지 않고, 카드 내부 우상단에 고정해 Windows에서 UI가 틀어지는 문제를 줄였습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>6. 큰 글씨와 컴팩트 높이</h2>
+      <ul>
+        <li>기본 카드: <code>320 x 96</code></li>
+        <li>큰 글씨 카드: <code>372 x 118</code></li>
+        <li>기본 글씨: 제목 <code>14</code>, 본문 <code>13</code></li>
+        <li>큰 글씨: 제목 <code>17</code>, 본문 <code>15</code></li>
+        <li>기본 세로 패딩: <code>8</code></li>
+        <li>큰 글씨 세로 패딩: <code>10</code></li>
+      </ul>
+      <pre><code>$popupWidth = if ($isLargeText) { 372 } else { 320 }
+$popupHeight = if ($isLargeText) { 118 } else { 96 }
+$titleFontSize = if ($isLargeText) { 17 } else { 14 }
+$messageFontSize = if ($isLargeText) { 15 } else { 13 }</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>7. 최종 동작</h2>
+      <ol>
+        <li>Flutter가 PowerShell을 호출한다.</li>
+        <li>PowerShell이 WPF 무테두리 창을 만든다.</li>
+        <li>Pretendard 폰트와 SVG 아이콘을 적용한다.</li>
+        <li>우하단에 no-activate popup을 띄운다.</li>
+        <li>닫기 버튼 또는 타이머로 종료한다.</li>
+      </ol>
+      <div class="success"><strong>정리:</strong> 이 커밋은 Windows에서 실제로 보이는 팝업의 렌더링 품질을 완성하는 단계입니다.</div>
+    </section>
+  </div>
+</body>
+</html>
