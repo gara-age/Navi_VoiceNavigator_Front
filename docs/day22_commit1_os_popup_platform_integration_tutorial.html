@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 22 Commit 1 - OS Popup Platform Integration</title>
+  <style>
+    :root {
+      --bg: #f3f7fc; --panel: #ffffff; --soft: #f8fafc; --text: #0f172a;
+      --muted: #64748b; --line: #dbe4f0; --accent: #2563eb; --accent-soft: #eff6ff;
+      --code-bg: #0f172a; --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%); color: var(--text); line-height: 1.7; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 18px 72px; }
+    .hero, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); margin-bottom: 22px; }
+    .hero { padding: 30px; } .card { padding: 24px; }
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 800; }
+    h1, h2 { line-height: 1.3; margin: 0 0 14px; } h1 { font-size: 34px; } h2 { font-size: 26px; margin-top: 6px; }
+    p { margin: 0 0 14px; color: var(--muted); } ul, ol { margin: 0 0 14px 22px; color: var(--muted); } li { margin-bottom: 8px; }
+    .path { display: inline-block; margin: 8px 0 14px; padding: 8px 12px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .callout, .success { padding: 16px 18px; border-radius: 16px; margin-top: 16px; }
+    .callout { background: #fff8e8; border: 1px solid #f6d482; color: #92400e; }
+    .success { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 18px; border-radius: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Commit 1</span>
+      <h1>OS Popup Platform Integration</h1>
+      <p>이 문서는 <code>feat: add os-level popup integration for macos and windows</code> 커밋을 따라가기 위한 문서입니다. 역할은 플랫폼 연결과 배포 구조를 잡는 것입니다.</p>
+      <div class="callout"><strong>중요:</strong> Windows에서는 taskbar popup이 목표이므로 앱 내부 fallback을 막고, Release 폴더에 <code>scripts/</code> 폴더 전체를 복사해야 합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>수정 파일</h2>
+      <ul>
+        <li><code>lib/shared/services/taskbar_popup_service.dart</code></li>
+        <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+        <li><code>macos/Runner/AppDelegate.swift</code></li>
+        <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+        <li><code>macos/Runner.xcodeproj/project.pbxproj</code></li>
+        <li><code>windows/CMakeLists.txt</code></li>
+        <li><code>build_windows.bat</code></li>
+        <li><code>required.txt</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1. 공통 서비스 추가</h2>
+      <div class="path">lib/shared/services/taskbar_popup_service.dart</div>
+      <pre><code>class TaskbarPopupService {
+  ...
+
+  Future&lt;bool&gt; show(...) async {
+    if (Platform.isMacOS) {
+      ...
+    }
+
+    if (!Platform.isWindows) {
+      return false;
+    }
+
+    final scriptPath = _findScriptPath();
+    if (scriptPath == null) {
+      return false;
+    }
+
+    await Process.start(
+      executable,
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-WindowStyle', 'Hidden',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', scriptPath,
+        ...
+      ],
+    );
+  }
+}</code></pre>
+      <p>여기서 macOS는 MethodChannel, Windows는 PowerShell 호출로 분기합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. 스크립트 경로를 Release 실행 기준으로 찾기</h2>
+      <div class="path">lib/shared/services/taskbar_popup_service.dart</div>
+      <pre><code>addAncestors(Directory.current.path);
+addAncestors(File(Platform.resolvedExecutable).parent.path);</code></pre>
+      <p>이 로직이 있어야 Windows Release 폴더에서 <code>.exe</code>를 직접 실행해도 <code>scripts/show_taskbar_popup.ps1</code>를 찾을 수 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. app_toast.dart를 OS 우선 구조로 바꾸기</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <pre><code>void showAppToast(...) {
+  unawaited(
+    _showTaskbarPopupOrFallback(...),
+  );
+}</code></pre>
+      <pre><code>if (!shown && !Platform.isWindows && context.mounted) {
+  _ToastOverlay.instance.show(...);
+}</code></pre>
+      <p>Windows에서는 fallback을 막아야 “실패했을 때 앱 안에 토스트가 뜨는 문제”를 피할 수 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. macOS 채널 연결</h2>
+      <div class="path">macos/Runner/AppDelegate.swift</div>
+      <pre><code>func configureToastChannel(messenger: FlutterBinaryMessenger) {
+  let channel = FlutterMethodChannel(
+    name: "voice_navigator/taskbar_popup",
+    binaryMessenger: messenger
+  )
+  ...
+}</code></pre>
+      <div class="path">macos/Runner/MainFlutterWindow.swift</div>
+      <pre><code>if let appDelegate = NSApp.delegate as? AppDelegate {
+  appDelegate.configureToastChannel(messenger: flutterViewController.engine.binaryMessenger)
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>5. macOS 11 타깃 상향</h2>
+      <div class="path">macos/Runner.xcodeproj/project.pbxproj</div>
+      <pre><code>MACOSX_DEPLOYMENT_TARGET = 11.0;</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>6. Windows Release에 scripts 폴더 전체 복사</h2>
+      <div class="path">windows/CMakeLists.txt</div>
+      <pre><code>install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/scripts"
+  COMPONENT Runtime
+  FILES_MATCHING
+    PATTERN "*.ps1"
+    PATTERN "*.svg"
+)</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>7. Windows 빌드 도우미</h2>
+      <div class="path">build_windows.bat</div>
+      <p>Windows 빌드를 한 번에 수행하는 배치 파일입니다.</p>
+      <div class="path">required.txt</div>
+      <p>Flutter, Visual Studio C++, PowerShell 등 사전 요구사항을 정리한 문서입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>완료 기준</h2>
+      <ul>
+        <li>macOS는 MethodChannel 기반 네이티브 팝업을 먼저 시도한다.</li>
+        <li>Windows는 PowerShell 스크립트를 먼저 시도한다.</li>
+        <li>Windows에서는 앱 내부 fallback을 쓰지 않는다.</li>
+        <li>Release 폴더에 <code>scripts/</code> 폴더가 통째로 복사된다.</li>
+      </ul>
+      <div class="success"><strong>정리:</strong> 이 커밋은 연결과 배포 준비입니다. 실제 Windows 카드 렌더링은 다음 문서의 두 번째 커밋에서 완성합니다.</div>
+    </section>
+  </div>
+</body>
+</html>

@@ -13,6 +13,10 @@ class MainFlutterWindow: NSWindow {
     self.styleMask.insert(.fullSizeContentView)
     self.toolbar = nil
 
+    if let appDelegate = NSApp.delegate as? AppDelegate {
+      appDelegate.configureToastChannel(messenger: flutterViewController.engine.binaryMessenger)
+    }
+
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()

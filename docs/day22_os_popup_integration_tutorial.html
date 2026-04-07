@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 22 OS Popup Integration Tutorial</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 18px 72px; }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 30px; }
+    .card { padding: 24px; }
+    .badge { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; }
+    h1,h2,h3 { line-height:1.3; margin:0 0 14px; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; margin-top: 6px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .callout, .success {
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-top: 16px;
+    }
+    .callout { background: #fff8e8; border: 1px solid #f6d482; color: #92400e; }
+    .success { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; }
+    .path { display:inline-block; margin:8px 0 14px; padding:8px 12px; border-radius:10px; background:var(--soft); border:1px solid var(--line); color:var(--muted); font-size:14px; }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 18px; border-radius: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 22</span>
+      <h1>OS Popup Integration</h1>
+      <p>22일차는 기존 앱 내부 토스트 구조를 유지하되, 표시 우선순위를 운영체제 팝업 쪽으로 바꾸는 작업입니다. 현재 최종 구조는 macOS는 MethodChannel + NSPanel, Windows는 PowerShell + WPF, 그리고 Flutter fallback은 비-Windows 환경에서만 쓰는 형태입니다.</p>
+      <div class="callout"><strong>핵심:</strong> Windows는 taskbar popup처럼 보여야 하므로 앱 내부 fallback을 막고, Release 폴더에 <code>scripts/</code>와 SVG 아이콘이 실제로 복사되게 만들어야 합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>현재 최종 구조</h2>
+      <ol>
+        <li><code>showAppToast(...)</code> 호출</li>
+        <li><code>TaskbarPopupService.instance.show(...)</code>로 OS 팝업 시도</li>
+        <li>macOS면 <code>voice_navigator/taskbar_popup</code> MethodChannel 호출</li>
+        <li>Windows면 <code>scripts/show_taskbar_popup.ps1</code> 실행</li>
+        <li>OS 팝업 실패 시 Flutter fallback은 <strong>비-Windows에서만</strong> 사용</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>수정 파일</h2>
+      <ul>
+        <li><code>lib/shared/services/taskbar_popup_service.dart</code></li>
+        <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+        <li><code>macos/Runner/AppDelegate.swift</code></li>
+        <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+        <li><code>macos/Runner.xcodeproj/project.pbxproj</code></li>
+        <li><code>windows/CMakeLists.txt</code></li>
+        <li><code>build_windows.bat</code></li>
+        <li><code>required.txt</code></li>
+        <li><code>scripts/show_taskbar_popup.ps1</code></li>
+        <li><code>scripts/popup_icons/*.svg</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1. Flutter 쪽 공통 서비스</h2>
+      <div class="path">lib/shared/services/taskbar_popup_service.dart</div>
+      <pre><code>Future&lt;bool&gt; show({
+  required String title,
+  required String message,
+  required TaskbarPopupState state,
+  required TaskbarPopupThemeMode themeMode,
+  required bool largeText,
+  int durationMs = 5000,
+}) async {
+  if (Platform.isMacOS) {
+    ...
+  }
+
+  if (!Platform.isWindows) {
+    return false;
+  }
+
+  final scriptPath = _findScriptPath();
+  if (scriptPath == null) {
+    return false;
+  }
+
+  await Process.start(
+    executable,
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-WindowStyle', 'Hidden',
+      '-ExecutionPolicy', 'Bypass',
+      '-File', scriptPath,
+      ...
+    ],
+  );
+}</code></pre>
+      <p>여기서 중요한 부분은 PowerShell 콘솔 창이 튀지 않도록 숨김 옵션을 넣는 것과, 스크립트 경로를 현재 폴더뿐 아니라 실행 파일 상위 디렉터리까지 찾는 것입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Windows fallback 차단</h2>
+      <div class="path">lib/features/notifications/presentation/app_toast.dart</div>
+      <pre><code>if (!shown && !Platform.isWindows && context.mounted) {
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: state,
+    displaySettings: displaySettings,
+    durationMs: durationMs,
+  );
+}</code></pre>
+      <p>이 조건이 핵심입니다. Windows에서 taskbar popup 호출이 실패해도 앱 안쪽 토스트가 뜨면 목표 프로젝트와 다른 동작이 되기 때문에, Windows에서는 fallback을 막습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. macOS 네이티브 팝업</h2>
+      <div class="path">macos/Runner/AppDelegate.swift</div>
+      <p>AppDelegate에 MethodChannel을 추가하고, <code>NSPanel</code>을 우상단에 띄워 현재 카드형 디자인의 SwiftUI 뷰를 보여줍니다.</p>
+      <pre><code>func configureToastChannel(messenger: FlutterBinaryMessenger) {
+  let channel = FlutterMethodChannel(
+    name: "voice_navigator/taskbar_popup",
+    binaryMessenger: messenger
+  )
+  ...
+}</code></pre>
+      <pre><code>let width: CGFloat = largeText ? 372 : 320
+let height: CGFloat = largeText ? 118 : 96</code></pre>
+      <p>최종 보정에서 macOS 팝업 높이도 조금 줄여 카드가 덜 두툼하게 보이도록 맞췄습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. MainFlutterWindow 연결 및 macOS 11 타깃</h2>
+      <div class="path">macos/Runner/MainFlutterWindow.swift</div>
+      <pre><code>if let appDelegate = NSApp.delegate as? AppDelegate {
+  appDelegate.configureToastChannel(messenger: flutterViewController.engine.binaryMessenger)
+}</code></pre>
+      <div class="path">macos/Runner.xcodeproj/project.pbxproj</div>
+      <pre><code>MACOSX_DEPLOYMENT_TARGET = 11.0;</code></pre>
+      <p>SwiftUI에서 SF Symbols를 쓰기 위해 배포 타깃을 11.0으로 올린 상태입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>5. Windows Release에 scripts 폴더 전체 복사</h2>
+      <div class="path">windows/CMakeLists.txt</div>
+      <pre><code>install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/scripts"
+  COMPONENT Runtime
+  FILES_MATCHING
+    PATTERN "*.ps1"
+    PATTERN "*.svg"
+)</code></pre>
+      <p>지금 구조에서는 <code>show_taskbar_popup.ps1</code>뿐 아니라 <code>popup_icons/*.svg</code>도 필요하기 때문에, <code>scripts</code> 전체를 복사해야 합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>6. Windows 빌드 보조 파일</h2>
+      <div class="path">build_windows.bat</div>
+      <p>Windows에서 바로 빌드할 수 있도록 Flutter 설정, <code>pub get</code>, Release 빌드까지 묶었습니다.</p>
+      <div class="path">required.txt</div>
+      <p>Visual Studio C++ workload, Flutter, PowerShell, PATH 등 실행 전 필요한 항목을 정리했습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>7. 최종 크기와 보정값</h2>
+      <ul>
+        <li>기본 카드: <code>320 x 96</code></li>
+        <li>큰 글씨 카드: <code>372 x 118</code></li>
+        <li>큰 글씨 제목/본문: <code>17 / 15</code></li>
+        <li>Flutter fallback 세로 패딩: 기본 <code>10</code>, 큰 글씨 <code>12</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>완료 기준</h2>
+      <ul>
+        <li>macOS는 MethodChannel 기반 네이티브 팝업이 먼저 시도된다.</li>
+        <li>Windows는 PowerShell + WPF 팝업이 우하단에 뜬다.</li>
+        <li>Windows에서는 앱 내부 fallback을 띄우지 않는다.</li>
+        <li>Release 폴더에 <code>scripts/show_taskbar_popup.ps1</code>와 <code>scripts/popup_icons/*.svg</code>가 함께 복사된다.</li>
+      </ul>
+      <div class="success"><strong>정리:</strong> 지금 Day 22는 “플랫폼 연결 + Windows 렌더러 + 배포 구조 + 카드 크기 보정”까지 모두 포함한 최신 상태로 정리되어 있습니다.</div>
+    </section>
+  </div>
+</body>
+</html>

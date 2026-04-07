@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import '../../../shared/models/settings_models.dart';
+import '../../../shared/services/taskbar_popup_service.dart';
 
 enum AppToastState {
   info,
@@ -23,14 +25,45 @@ void showAppToast(
 }) {
   final resolvedState = state ?? _inferToastState(title, message);
 
-  _ToastOverlay.instance.show(
-    context,
-    title: title,
-    message: message,
-    state: resolvedState,
-    displaySettings: displaySettings,
-    durationMs: durationMs,
+  unawaited(
+    _showTaskbarPopupOrFallback(
+      context,
+      title: title,
+      message: message,
+      state: resolvedState,
+      displaySettings: displaySettings,
+      durationMs: durationMs,
+    ),
   );
+}
+
+Future<void> _showTaskbarPopupOrFallback(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required AppToastState state,
+  DisplaySettings? displaySettings,
+  required int durationMs,
+}) async {
+  final shown = await TaskbarPopupService.instance.show(
+    title: title,
+    message: message.trim(),
+    durationMs: durationMs,
+    state: _mapToastState(state),
+    themeMode: _resolveThemeModeFromDisplay(displaySettings),
+    largeText: displaySettings?.largeText ?? false,
+  );
+
+  if (!shown && !Platform.isWindows && context.mounted) {
+    _ToastOverlay.instance.show(
+      context,
+      title: title,
+      message: message,
+      state: state,
+      displaySettings: displaySettings,
+      durationMs: durationMs,
+    );
+  }
 }
 
 AppToastState _inferToastState(String title, String message) {
@@ -67,6 +100,35 @@ AppToastState _inferToastState(String title, String message) {
   }
 
   return AppToastState.info;
+}
+
+TaskbarPopupState _mapToastState(AppToastState state) {
+  switch (state) {
+    case AppToastState.info:
+      return TaskbarPopupState.info;
+    case AppToastState.listening:
+      return TaskbarPopupState.listening;
+    case AppToastState.processing:
+      return TaskbarPopupState.processing;
+    case AppToastState.success:
+      return TaskbarPopupState.success;
+    case AppToastState.error:
+      return TaskbarPopupState.error;
+    case AppToastState.warning:
+      return TaskbarPopupState.warning;
+  }
+}
+
+TaskbarPopupThemeMode _resolveThemeModeFromDisplay(
+  DisplaySettings? displaySettings,
+) {
+  if (displaySettings?.highContrast ?? false) {
+    return TaskbarPopupThemeMode.contrast;
+  }
+  if (displaySettings?.darkTheme ?? false) {
+    return TaskbarPopupThemeMode.dark;
+  }
+  return TaskbarPopupThemeMode.light;
 }
 
 class _ToastOverlay {
@@ -143,8 +205,11 @@ class _ToastView extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: largeText ? 360 : 320,
-          padding: EdgeInsets.all(largeText ? 18 : 16),
+          width: largeText ? 372 : 320,
+          padding: EdgeInsets.symmetric(
+            horizontal: largeText ? 18 : 16,
+            vertical: largeText ? 12 : 10,
+          ),
           decoration: BoxDecoration(
             color: palette.background,
             borderRadius: BorderRadius.circular(18),
@@ -193,7 +258,7 @@ class _ToastView extends StatelessWidget {
                           Text(
                             title,
                             style: TextStyle(
-                              fontSize: largeText ? 15 : 14,
+                              fontSize: largeText ? 17 : 14,
                               fontWeight: highContrast
                                   ? FontWeight.w900
                                   : FontWeight.w800,
@@ -204,7 +269,7 @@ class _ToastView extends StatelessWidget {
                           Text(
                             message,
                             style: TextStyle(
-                              fontSize: largeText ? 14 : 13,
+                              fontSize: largeText ? 15 : 13,
                               height: 1.45,
                               fontWeight: highContrast
                                   ? FontWeight.w800

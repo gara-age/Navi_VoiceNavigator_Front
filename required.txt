@@ -1,0 +1,67 @@
+Navi Voice Navigator Windows build requirements
+===============================================
+
+This file lists what must be installed or prepared on a Windows machine
+before running `build_windows.bat`.
+
+Required build environment
+--------------------------
+1. Windows 10 or Windows 11
+2. Flutter SDK installed on Windows
+3. Flutter added to PATH so `flutter` works in Command Prompt or PowerShell
+4. Visual Studio 2022 or Visual Studio 2022 Build Tools
+   - Required workload: Desktop development with C++
+5. MSVC C++ toolchain installed through Visual Studio
+6. CMake installed
+   - Usually included when the C++ desktop workload is installed
+7. Ninja installed
+   - Usually bundled with Flutter or Visual Studio setup used by Flutter
+8. Git installed
+   - Needed for Flutter toolchain and plugin dependency workflows
+9. PowerShell 5.1 or later
+   - Required because Windows toast popup uses `scripts/show_taskbar_popup.ps1`
+
+Required Flutter setup
+----------------------
+1. `flutter doctor` should pass for Windows desktop development
+2. `flutter config --enable-windows-desktop` must be enabled
+3. Project dependencies must be restorable with `flutter pub get`
+
+Project-specific runtime requirements
+-------------------------------------
+1. `VOICE_NAVIGATOR_ROOT`
+   - Optional environment variable
+   - If not set, `build_windows.bat` sets it automatically to the project root
+   - Used to help the app locate local runtime/scripts files such as:
+     - `scripts/show_taskbar_popup.ps1`
+
+2. `AGENT_API_BASE_URL`
+   - Optional environment variable
+   - Needed only if you want the connected mode HTTP Agent flow to talk to a real backend
+   - If not set, the app can still build and run, but connected mode will show missing-server guidance
+
+Files used by Windows popup flow
+--------------------------------
+1. `scripts/show_taskbar_popup.ps1`
+   - OS-level popup script used on Windows
+2. `windows/`
+   - Flutter Windows runner project
+
+How to build on Windows
+-----------------------
+1. Open Command Prompt or PowerShell in the project root
+2. Run:
+   build_windows.bat
+
+Expected output
+---------------
+The built executable should be created at:
+
+build\windows\x64\runner\Release\navi_front.exe
+
+Recommended pre-check commands
+------------------------------
+1. `flutter --version`
+2. `flutter doctor`
+3. `flutter config --enable-windows-desktop`
+4. `flutter pub get`
