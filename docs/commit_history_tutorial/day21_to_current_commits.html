@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navi Voice Navigator Day 21 to Current Commit Tutorial</title>
+    <style>
+      :root {
+        --bg: #f3f7fc;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #dbe4f0;
+        --accent: #2563eb;
+        --accent-soft: #eff6ff;
+        --code-bg: #0f172a;
+        --code-text: #e2e8f0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        padding: 24px 18px 48px;
+        background: rgba(255,255,255,0.92);
+        border-right: 1px solid var(--border);
+        backdrop-filter: blur(16px);
+      }
+      .content { padding: 32px 28px 80px; }
+      .badge {
+        display:inline-block;
+        padding:6px 12px;
+        border-radius:999px;
+        background:var(--accent-soft);
+        color:var(--accent);
+        font-size:12px;
+        font-weight:800;
+      }
+      .brand h1 { margin:10px 0 8px; font-size:26px; line-height:1.2; }
+      .brand p { margin:0; color:var(--muted); font-size:14px; }
+      .nav-title {
+        margin:24px 0 10px;
+        color:var(--muted);
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+      }
+      .nav { display:grid; gap:8px; }
+      .nav button {
+        width:100%;
+        text-align:left;
+        border:1px solid var(--border);
+        background:var(--surface);
+        color:var(--text);
+        padding:12px 14px;
+        border-radius:14px;
+        cursor:pointer;
+        font:inherit;
+      }
+      .nav button.active {
+        border-color:#bfdbfe;
+        background:var(--accent-soft);
+        color:var(--accent);
+        font-weight:700;
+      }
+      .panel { display:none; max-width:1160px; }
+      .panel.active { display:block; }
+      .hero, .card {
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:24px;
+        box-shadow:0 18px 40px rgba(15,23,42,.06);
+      }
+      .hero { padding:32px; margin-bottom:24px; }
+      .card { padding:24px; margin-bottom:20px; }
+      h2, h3 { line-height:1.25; margin:0 0 16px; }
+      h2 { font-size:34px; }
+      h3 { font-size:24px; margin-top:8px; }
+      p { margin:0 0 14px; }
+      ul, ol { margin:0 0 14px 22px; }
+      li { margin-bottom:8px; }
+      .lead { font-size:18px; color:var(--muted); }
+      .file-path {
+        display:inline-block;
+        margin:8px 0 14px;
+        padding:8px 12px;
+        border-radius:10px;
+        background:var(--surface-2);
+        border:1px solid var(--border);
+        color:var(--muted);
+        font-size:14px;
+      }
+      .callout {
+        padding:16px 18px;
+        border-radius:16px;
+        background:#fff8e8;
+        border:1px solid #f7d78c;
+        margin:18px 0;
+      }
+      .success {
+        background:#ecfdf5;
+        border-color:#bbf7d0;
+      }
+      pre {
+        margin:0 0 16px;
+        padding:18px;
+        border-radius:16px;
+        overflow:auto;
+        background:var(--code-bg);
+        color:var(--code-text);
+        font-size:13px;
+        line-height:1.6;
+      }
+      code { font-family:"SFMono-Regular", Consolas, Monaco, monospace; }
+      @media (max-width:980px) {
+        .layout { grid-template-columns:1fr; }
+        .sidebar { position:relative; height:auto; }
+        .content { padding:24px 16px 48px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="badge">Commit Tutorial</span>
+          <h1>Day 21 ~ 현재 커밋 튜토리얼</h1>
+          <p>이 문서는 21일차 접근성 팝업 보정부터 현재 OS 레벨 팝업 통합까지의 실제 커밋을 이어서 정리합니다. 이 HTML만 봐도 같은 구조를 다시 구현할 수 있도록 파일별 최종 코드 흐름을 함께 설명합니다.</p>
+        </div>
+        <div class="nav-title">탭 이동</div>
+        <div class="nav">
+          <button class="active" data-target="overview">개요</button>
+          <button data-target="day21">Day 21 473091f</button>
+          <button data-target="appendix">Appendix 62ea51a</button>
+          <button data-target="day22a">Day 22-1 ea0758f</button>
+          <button data-target="day22b">Day 22-2 65dddb9</button>
+          <button data-target="final">최종 상태</button>
+        </div>
+      </aside>
+      <main class="content">
+        <section class="panel active" id="overview">
+          <div class="hero">
+            <span class="badge">Overview</span>
+            <h2>Day 21부터 현재까지</h2>
+            <p class="lead">이 구간에서는 앱 내부 토스트를 접근성 중심으로 다듬고, 그 다음 Windows/macOS에서 OS 레벨 팝업을 띄우도록 구조를 확장합니다. 마지막에는 Windows용 PowerShell + WPF 렌더러 자산까지 별도 커밋으로 분리됩니다.</p>
+            <div class="callout"><strong>읽는 방법:</strong> Day 21은 Flutter 카드형 팝업과 고대비/다크/큰 글씨 대응입니다. Day 22-1은 플랫폼 통합과 배포 경로입니다. Day 22-2는 Windows WPF 렌더러와 아이콘 자산입니다.</div>
+          </div>
+          <div class="card">
+            <h3>포함 범위</h3>
+            <ul>
+              <li>Day 21: 접근성 중심 팝업 디자인, 고대비 색상 팔레트, title bar 고대비 보정</li>
+              <li>Appendix: 설정 모달 하단 안내 문구 정리</li>
+              <li>Day 22-1: Flutter에서 macOS / Windows OS 팝업을 호출하는 공통 구조</li>
+              <li>Day 22-2: Windows PowerShell + WPF 팝업 렌더러와 SVG 자산</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>이 문서만 보고 진행하는 권장 순서</h3>
+            <ol>
+              <li>먼저 Day 21 탭에서 Flutter 토스트 카드와 고대비/title bar 보정을 적용합니다.</li>
+              <li>Appendix 탭은 선택 사항이지만, 설정 모달 footer를 같이 정리하려면 이어서 반영합니다.</li>
+              <li>Day 22-1 탭에서 플랫폼 통합을 적용합니다. 이 단계에서는 macOS 채널 연결, Windows 스크립트 경로 탐색, build helper 파일을 추가합니다.</li>
+              <li>Day 22-2 탭에서 Windows WPF 렌더러와 <code>scripts/popup_icons/*.svg</code> 자산을 추가합니다.</li>
+              <li>마지막으로 최종 상태 탭의 체크리스트대로 파일 구조와 동작을 검증합니다.</li>
+            </ol>
+          </div>
+          <div class="card success">
+            <h3>선행 문서</h3>
+            <p>이 문서는 <code>docs/commit_history_tutorial/day14_to_day21_commits.html</code> 바로 다음 후속편입니다.</p>
+            <p>즉 1일차부터 21일차까지는 앞 문서를 먼저 따라가고, 여기서는 21일차 커밋 이후부터 현재 상태까지를 이어서 적용하면 됩니다.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="day21">
+          <div class="hero">
+            <span class="badge">Day 21</span>
+            <h2>473091f Accessible Themed Toast Variants</h2>
+            <p class="lead">기존 Flutter 토스트를 라이트/다크/고대비/큰 글씨 모드에 반응하도록 확장하고, 수동 닫기 버튼과 프리뷰 문서를 추가한 커밋입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+              <li><code>lib/features/home/presentation/home_page.dart</code></li>
+              <li><code>lib/demo/demo_home_page.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/title_bar.dart</code></li>
+              <li><code>lib/features/home/presentation/widgets/title_bar_macos.dart</code></li>
+              <li><code>docs/current_popup_ui_preview.html</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Day 21 작업 순서</h3>
+            <ol>
+              <li><code>app_toast.dart</code>에서 <code>_ToastOverlay.dismiss()</code>, <code>_ToastView(onClose: ...)</code>, 상태별 팔레트 구조를 먼저 넣습니다.</li>
+              <li>같은 파일에서 큰 글씨/다크/고대비에 따라 카드 크기, 테두리 두께, 텍스트 weight가 달라지도록 정리합니다.</li>
+              <li><code>home_page.dart</code>, <code>demo_home_page.dart</code>에서 토스트 호출부에 <code>displaySettings</code>를 넘깁니다.</li>
+              <li><code>title_bar.dart</code>, <code>title_bar_macos.dart</code>에서 고대비일 때 마이크 아이콘을 검정색으로 바꿉니다.</li>
+              <li>마지막으로 <code>docs/current_popup_ui_preview.html</code>을 만들어 라이트/다크/고대비/큰 글씨를 눈으로 확인합니다.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>1. 공통 토스트 진입점은 그대로 두고 시각 상태를 확장</h3>
+            <div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+            <p>Day 21 시점의 핵심은 <code>AppToastState</code>를 유지하면서, 각 상태가 표시 설정에 따라 다른 팔레트를 갖도록 바꾸는 것입니다.</p>
+            <pre><code>enum AppToastState {
+  info,
+  listening,
+  processing,
+  success,
+  error,
+  warning,
+}
+
+void showAppToast(
+  BuildContext context,
+  String message, {
+  String title = 'Navi: Voice Navigator',
+  AppToastState? state,
+  DisplaySettings? displaySettings,
+  int durationMs = 2400,
+}) {
+  final resolvedState = state ?? _inferToastState(title, message);
+
+  _ToastOverlay.instance.show(
+    context,
+    title: title,
+    message: message,
+    state: resolvedState,
+    displaySettings: displaySettings,
+    durationMs: durationMs,
+  );
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. 수동 닫기와 표시 설정 반영</h3>
+            <p>토스트는 자동으로 닫히는 것만으로 끝나지 않습니다. 사용자가 직접 닫을 수 있는 <code>X</code> 버튼과, 설정 모달의 <code>DisplaySettings</code>에 따른 큰 글씨/다크/고대비 대응이 함께 들어갑니다.</p>
+            <pre><code>class _ToastOverlay {
+  OverlayEntry? _entry;
+  Timer? _dismissTimer;
+
+  void dismiss() {
+    _dismissTimer?.cancel();
+    _dismissTimer = null;
+    _entry?.remove();
+    _entry = null;
+  }
+
+  void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required AppToastState state,
+    required DisplaySettings? displaySettings,
+    required int durationMs,
+  }) {
+    dismiss();
+    _entry = OverlayEntry(
+      builder: (context) => _ToastView(
+        title: title,
+        message: message,
+        state: state,
+        displaySettings: displaySettings,
+        onClose: dismiss,
+      ),
+    );
+    Overlay.of(context).insert(_entry!);
+    _dismissTimer = Timer(Duration(milliseconds: durationMs), dismiss);
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. 최종 카드형 토스트 구조</h3>
+            <p>현재 프로젝트 토스트는 좌측 아이콘 박스, 우상단 닫기 버튼, 상태별 테두리와 배경, 큰 글씨 전용 크기까지 포함한 카드형 구조입니다.</p>
+            <pre><code>return Positioned(
+  top: 24,
+  right: 24,
+  child: Material(
+    color: Colors.transparent,
+    child: Container(
+      width: largeText ? 372 : 320,
+      padding: EdgeInsets.symmetric(
+        horizontal: largeText ? 18 : 16,
+        vertical: largeText ? 12 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: palette.background,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: palette.border,
+          width: palette.borderWidth,
+        ),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 28),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: palette.iconBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: TextStyle(fontSize: largeText ? 17 : 14)),
+                      const SizedBox(height: 4),
+                      Text(message, style: TextStyle(fontSize: largeText ? 15 : 13)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: -2,
+            right: -2,
+            child: InkWell(
+              onTap: onClose,
+              child: Container(width: 28, height: 28),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);</code></pre>
+          </div>
+          <div class="card">
+            <h3>4. 고대비 팔레트는 상태별로 분리</h3>
+            <p>Day 21의 중요한 포인트는 고대비에서 모든 상태를 같은 색으로 처리하지 않고, 상태별 배경/텍스트/강조색을 분리한다는 점입니다.</p>
+            <pre><code>info / listening
+background: #DBEAFE;
+text:       #1E3A8A;
+accent:     #1E3A8A;
+
+warning
+background: #FFEDD5;
+text:       #7C2D12;
+accent:     #7C2D12;
+
+processing
+background: #FEF9C3;
+text:       #713F12;
+accent:     #713F12;
+
+success
+background: #DCFCE7;
+text:       #14532D;
+accent:     #14532D;
+
+error
+background: #FEE2E2;
+text:       #7F1D1D;
+accent:     #7F1D1D;</code></pre>
+            <p>고대비에서는 제목/본문 둘 다 굵게 보이고, 아이콘 박스와 닫기 버튼도 테두리를 가져서 색상만으로 상태를 구분하지 않도록 설계합니다.</p>
+          </div>
+          <div class="card">
+            <h3>5. 실제/데모 화면에서 displaySettings를 토스트로 넘기기</h3>
+            <div class="file-path">lib/features/home/presentation/home_page.dart</div>
+            <div class="file-path">lib/demo/demo_home_page.dart</div>
+            <pre><code>showAppToast(
+  context,
+  response.summary,
+  title: '작업 완료',
+  state: AppToastState.success,
+  displaySettings: settings.display,
+);</code></pre>
+            <p>핵심은 호출부가 토스트 내부 구현을 몰라도, 현재 화면 설정을 그대로 전달해주기만 하면 된다는 점입니다.</p>
+          </div>
+          <div class="card">
+            <h3>6. title bar 고대비 보정</h3>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar.dart</div>
+            <div class="file-path">lib/features/home/presentation/widgets/title_bar_macos.dart</div>
+            <p>고대비 모드에서는 title bar의 마이크 아이콘도 검정색으로 바뀌도록 따로 보정합니다. 이렇게 해야 강한 노란색/고대비 배경과 아이콘이 충돌하지 않습니다.</p>
+          </div>
+          <div class="card">
+            <h3>Day 21 적용 후 바로 확인할 것</h3>
+            <ul>
+              <li>기본 모드에서 토스트 카드 폭이 <code>320</code>, 큰 글씨에서 <code>372</code>인지</li>
+              <li>기본 본문 글자 크기가 <code>13</code>, 큰 글씨 본문이 <code>15</code>인지</li>
+              <li>고대비 모드에서 제목/본문이 둘 다 bold 계열인지</li>
+              <li><code>X</code> 버튼이 잘리지 않고 수동 닫기가 되는지</li>
+              <li>title bar 마이크 아이콘이 고대비에서 검정색으로 보이는지</li>
+            </ul>
+          </div>
+          <div class="card success">
+            <h3>Day 21 완료 기준</h3>
+            <ul>
+              <li>토스트를 수동으로 닫을 수 있다.</li>
+              <li>다크/고대비/큰 글씨에서 토스트 카드가 다르게 보인다.</li>
+              <li>고대비에서는 모든 텍스트가 더 굵고 또렷하다.</li>
+              <li>title bar의 마이크 아이콘도 고대비에 맞게 바뀐다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="appendix">
+          <div class="hero">
+            <span class="badge">Appendix</span>
+            <h2>62ea51a Simplify Settings Modal Footer Hints</h2>
+            <p class="lead">이 커밋은 기능 추가가 아니라 설정 모달 하단의 안내 문구를 정리한 작은 후처리입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/features/settings/presentation/settings_modal.dart</code></li>
+              <li><code>lib/demo/demo_settings_modal.dart</code></li>
+            </ul>
+            <p>핵심은 설정 모달 footer 문구를 간단하게 정리해, 이미 상단 설명에서 충분히 안내하는 내용을 아래에서 반복하지 않도록 만드는 것입니다.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="day22a">
+          <div class="hero">
+            <span class="badge">Day 22-1</span>
+            <h2>ea0758f OS Popup Platform Integration</h2>
+            <p class="lead">이 커밋부터 토스트는 앱 내부 Flutter overlay만 쓰지 않고, macOS와 Windows에서 OS 레벨 팝업을 우선 시도합니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>lib/shared/services/taskbar_popup_service.dart</code></li>
+              <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+              <li><code>macos/Runner/AppDelegate.swift</code></li>
+              <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+              <li><code>macos/Runner.xcodeproj/project.pbxproj</code></li>
+              <li><code>build_windows.bat</code></li>
+              <li><code>required.txt</code></li>
+              <li><code>docs/day22_os_popup_integration_tutorial.html</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Day 22-1 작업 순서</h3>
+            <ol>
+              <li>새 파일 <code>lib/shared/services/taskbar_popup_service.dart</code>를 먼저 만듭니다.</li>
+              <li><code>app_toast.dart</code>를 열고, 기존 직접 overlay 표시 흐름을 <code>_showTaskbarPopupOrFallback(...)</code> 구조로 바꿉니다.</li>
+              <li>같은 파일에서 Windows는 fallback overlay를 막도록 <code>!Platform.isWindows</code> 조건을 넣습니다.</li>
+              <li><code>macos/Runner/AppDelegate.swift</code>에 MethodChannel과 <code>NSPanel</code> 기반 네이티브 토스트를 추가합니다.</li>
+              <li><code>macos/Runner/MainFlutterWindow.swift</code>에서 <code>configureToastChannel(...)</code>를 연결합니다.</li>
+              <li><code>project.pbxproj</code>에서 <code>MACOSX_DEPLOYMENT_TARGET = 11.0</code>로 올립니다.</li>
+              <li><code>build_windows.bat</code>, <code>required.txt</code>를 추가해 Windows 빌드 절차를 문서화합니다.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>1. Flutter에서 플랫폼 팝업을 호출하는 공통 서비스 추가</h3>
+            <div class="file-path">lib/shared/services/taskbar_popup_service.dart</div>
+            <pre><code>enum TaskbarPopupState {
+  info,
+  listening,
+  processing,
+  success,
+  warning,
+  error,
+}
+
+enum TaskbarPopupThemeMode {
+  light,
+  dark,
+  contrast,
+}</code></pre>
+            <pre><code>class TaskbarPopupService {
+  static const MethodChannel _macToastChannel =
+      MethodChannel('voice_navigator/taskbar_popup');
+
+  Future&lt;bool&gt; show({
+    required String title,
+    required String message,
+    required TaskbarPopupState state,
+    required TaskbarPopupThemeMode themeMode,
+    required bool largeText,
+    int durationMs = 5000,
+  }) async {
+    if (Platform.isMacOS) {
+      final shown = await _macToastChannel.invokeMethod&lt;bool&gt;(
+        'showMacToast',
+        {
+          'title': title,
+          'message': message,
+          'durationMs': durationMs,
+          'state': state.name,
+          'themeMode': themeMode.name,
+          'largeText': largeText,
+        },
+      );
+      return shown ?? true;
+    }
+
+    if (!Platform.isWindows) {
+      return false;
+    }
+
+    final scriptPath = _findScriptPath();
+    if (scriptPath == null) {
+      return false;
+    }
+
+    await Process.start(
+      'powershell',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-WindowStyle', 'Hidden',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', scriptPath,
+        '-Title', title,
+        '-Message', message,
+        '-DurationMs', durationMs.toString(),
+        '-State', state.name,
+        '-ThemeMode', themeMode.name,
+        '-LargeText', largeText ? '1' : '0',
+      ],
+    );
+
+    return true;
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. Windows에서는 fallback 토스트를 막고, 다른 플랫폼만 Flutter fallback 허용</h3>
+            <div class="file-path">lib/features/notifications/presentation/app_toast.dart</div>
+            <p>이 부분이 중요합니다. Windows에서는 taskbar popup이 목적이므로, 스크립트 호출에 실패했다고 해서 다시 앱 내부 토스트를 띄우지 않습니다.</p>
+            <pre><code>Future&lt;void&gt; _showTaskbarPopupOrFallback(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required AppToastState state,
+  DisplaySettings? displaySettings,
+  required int durationMs,
+}) async {
+  final shown = await TaskbarPopupService.instance.show(
+    title: title,
+    message: message.trim(),
+    durationMs: durationMs,
+    state: _mapToastState(state),
+    themeMode: _resolveThemeModeFromDisplay(displaySettings),
+    largeText: displaySettings?.largeText ?? false,
+  );
+
+  if (!shown && !Platform.isWindows && context.mounted) {
+    _ToastOverlay.instance.show(
+      context,
+      title: title,
+      message: message,
+      state: state,
+      displaySettings: displaySettings,
+      durationMs: durationMs,
+    );
+  }
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>3. Windows 실행 파일 옆에서도 스크립트를 찾도록 경로 탐색 강화</h3>
+            <div class="file-path">lib/shared/services/taskbar_popup_service.dart</div>
+            <p><code>VOICE_NAVIGATOR_ROOT</code>만 믿으면 Release 폴더에서 <code>.exe</code> 직접 실행 시 스크립트를 못 찾습니다. 그래서 현재 작업 디렉터리와 실행 파일 기준 상위 폴더까지 모두 탐색합니다.</p>
+            <pre><code>String? _findScriptPath() {
+  final envRoot = Platform.environment['VOICE_NAVIGATOR_ROOT'];
+  if (envRoot != null && envRoot.isNotEmpty) {
+    final fromEnv =
+        '$envRoot${Platform.pathSeparator}scripts${Platform.pathSeparator}show_taskbar_popup.ps1';
+    if (File(fromEnv).existsSync()) {
+      return fromEnv;
+    }
+  }
+
+  final roots = &lt;String&gt;{};
+
+  void addAncestors(String startPath) {
+    var dir = Directory(startPath);
+    for (var i = 0; i &lt; 8; i++) {
+      roots.add(dir.path);
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+  }
+
+  addAncestors(Directory.current.path);
+  addAncestors(File(Platform.resolvedExecutable).parent.path);
+
+  for (final root in roots) {
+    final candidate =
+        '$root${Platform.pathSeparator}scripts${Platform.pathSeparator}show_taskbar_popup.ps1';
+    if (File(candidate).existsSync()) {
+      return candidate;
+    }
+  }
+
+  return null;
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>4. macOS에서는 MethodChannel + NSPanel</h3>
+            <div class="file-path">macos/Runner/AppDelegate.swift</div>
+            <pre><code>func configureToastChannel(messenger: FlutterBinaryMessenger) {
+  let channel = FlutterMethodChannel(
+    name: "voice_navigator/taskbar_popup",
+    binaryMessenger: messenger
+  )
+
+  channel.setMethodCallHandler { [weak self] call, result in
+    guard call.method == "showMacToast" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+
+    guard let args = call.arguments as? [String: Any] else {
+      result(false)
+      return
+    }
+
+    self?.showMacToast(args: args)
+    result(true)
+  }
+}</code></pre>
+            <pre><code>private func showMacToast(args: [String: Any]) {
+  let largeText = args["largeText"] as? Bool ?? false
+  let width: CGFloat = largeText ? 372 : 320
+  let height: CGFloat = largeText ? 118 : 96
+
+  let panel = NSPanel(
+    contentRect: NSRect(x: x, y: y, width: width, height: height),
+    styleMask: [.nonactivatingPanel, .borderless],
+    backing: .buffered,
+    defer: false
+  )
+  panel.isFloatingPanel = true
+  panel.level = .statusBar
+  panel.backgroundColor = .clear
+  panel.isOpaque = false
+  panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+}</code></pre>
+            <p>macOS는 SwiftUI 카드형 뷰를 패널에 얹어 현재 프로젝트 카드 디자인을 그대로 유지합니다.</p>
+          </div>
+          <div class="card">
+            <h3>5. MainFlutterWindow에서 채널 연결</h3>
+            <div class="file-path">macos/Runner/MainFlutterWindow.swift</div>
+            <pre><code>if let appDelegate = NSApp.delegate as? AppDelegate {
+  appDelegate.configureToastChannel(
+    messenger: flutterViewController.engine.binaryMessenger
+  )
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>6. macOS는 11.0 이상 타깃으로 상향</h3>
+            <div class="file-path">macos/Runner.xcodeproj/project.pbxproj</div>
+            <pre><code>MACOSX_DEPLOYMENT_TARGET = 11.0;</code></pre>
+            <p>SwiftUI와 네이티브 패널 팝업을 안정적으로 쓰기 위해 macOS 배포 타깃을 올립니다.</p>
+          </div>
+          <div class="card">
+            <h3>7. Windows 빌드 보조 파일 추가</h3>
+            <div class="file-path">build_windows.bat</div>
+            <div class="file-path">required.txt</div>
+            <p><code>build_windows.bat</code>는 Windows에서 바로 <code>flutter build windows --release</code>를 실행하도록 돕고, <code>required.txt</code>는 Visual Studio C++ workload, PowerShell, Flutter PATH 같은 사전 요구사항을 정리합니다.</p>
+          </div>
+          <div class="card">
+            <h3>Day 22-1 적용 후 검증 명령</h3>
+            <pre><code>flutter analyze lib/shared/services/taskbar_popup_service.dart \
+lib/features/notifications/presentation/app_toast.dart
+
+flutter run -d macos</code></pre>
+            <p>Windows는 이 환경에서 직접 빌드할 수 없으므로, macOS 채널 연결은 macOS 실행으로 확인하고 Windows 쪽은 다음 커밋 적용 후 Release 폴더 구조를 확인합니다.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="day22b">
+          <div class="hero">
+            <span class="badge">Day 22-2</span>
+            <h2>65dddb9 Windows Taskbar Popup Renderer Assets</h2>
+            <p class="lead">Windows에서는 Flutter가 직접 그리지 않고, PowerShell이 WPF 창을 띄워 taskbar popup처럼 보이게 렌더링합니다. 이 커밋은 그 렌더러와 자산을 추가한 단계입니다.</p>
+          </div>
+          <div class="card">
+            <h3>변경 파일</h3>
+            <ul>
+              <li><code>windows/CMakeLists.txt</code></li>
+              <li><code>scripts/show_taskbar_popup.ps1</code></li>
+              <li><code>scripts/popup_icons/mic.svg</code></li>
+              <li><code>scripts/popup_icons/hourglass.svg</code></li>
+              <li><code>scripts/popup_icons/check.svg</code></li>
+              <li><code>scripts/popup_icons/warning.svg</code></li>
+              <li><code>scripts/popup_icons/error.svg</code></li>
+              <li><code>scripts/popup_icons/info.svg</code></li>
+              <li><code>scripts/popup_icons/x.svg</code></li>
+              <li><code>docs/day22_commit2_windows_popup_renderer_tutorial.html</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Day 22-2 작업 순서</h3>
+            <ol>
+              <li><code>scripts/</code> 폴더를 새로 만들고 그 안에 <code>show_taskbar_popup.ps1</code>를 추가합니다.</li>
+              <li><code>scripts/popup_icons/</code> 폴더를 만들고 <code>mic.svg</code>, <code>hourglass.svg</code>, <code>check.svg</code>, <code>warning.svg</code>, <code>error.svg</code>, <code>info.svg</code>, <code>x.svg</code>를 넣습니다.</li>
+              <li><code>windows/CMakeLists.txt</code>에서 Release 폴더로 <code>scripts/</code> 전체가 복사되도록 install 규칙을 추가합니다.</li>
+              <li>PowerShell 스크립트 안에서 no-activate 창, Pretendard 폰트 탐색, SVG 렌더링, 상태별 팔레트, 카드 레이아웃을 완성합니다.</li>
+              <li>Windows 빌드 후 Release 폴더에 스크립트와 SVG가 실제로 생기는지 확인합니다.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>1. Release 폴더에 scripts 전체를 같이 복사</h3>
+            <div class="file-path">windows/CMakeLists.txt</div>
+            <p>스크립트만 복사하면 SVG 아이콘이 빠집니다. 그래서 현재는 <code>scripts/</code> 아래의 <code>.ps1</code>, <code>.svg</code>를 통째로 Release 옆으로 설치합니다.</p>
+            <pre><code>install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/scripts"
+  COMPONENT Runtime
+  FILES_MATCHING
+    PATTERN "*.ps1"
+    PATTERN "*.svg"
+)</code></pre>
+          </div>
+          <div class="card">
+            <h3>2. PowerShell + WPF 렌더러 구조</h3>
+            <div class="file-path">scripts/show_taskbar_popup.ps1</div>
+            <pre><code>param(
+  [string]$Title = "Navi: Voice Navigator",
+  [string]$Message = "알림",
+  [int]$DurationMs = 5000,
+  [string]$State = "info",
+  [string]$ThemeMode = "light",
+  [string]$LargeText = "0"
+)
+
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase</code></pre>
+            <p>이 스크립트는 Windows 네이티브 Action Center 토스트가 아니라, WPF로 직접 만드는 borderless popup입니다.</p>
+          </div>
+          <div class="card">
+            <h3>3. 포커스를 덜 뺏는 no-activate 창</h3>
+            <pre><code>Add-Type @"
+public static class PopupWindowInterop {
+  public const int GWL_EXSTYLE = -20;
+  public const int WS_EX_TOOLWINDOW = 0x00000080;
+  public const int WS_EX_NOACTIVATE = 0x08000000;
+}
+"@
+
+$window.Add_SourceInitialized({
+  $helper = New-Object System.Windows.Interop.WindowInteropHelper($window)
+  $extendedStyle = [PopupWindowInterop]::GetWindowLong($helper.Handle, [PopupWindowInterop]::GWL_EXSTYLE)
+  $extendedStyle = $extendedStyle -bor [PopupWindowInterop]::WS_EX_TOOLWINDOW -bor [PopupWindowInterop]::WS_EX_NOACTIVATE
+  [PopupWindowInterop]::SetWindowLong($helper.Handle, [PopupWindowInterop]::GWL_EXSTYLE, $extendedStyle) | Out-Null
+})</code></pre>
+            <p>여기서 <code>WS_EX_NOACTIVATE</code>를 넣어야 팝업이 뜰 때 메인 앱 포커스를 빼앗는 현상을 줄일 수 있습니다.</p>
+          </div>
+          <div class="card">
+            <h3>4. Pretendard와 SVG 아이콘을 스크립트가 직접 읽음</h3>
+            <pre><code>function Get-PretendardFontFamily { ... }
+function New-SvgViewbox { ... }
+function Get-IconPath {
+  param([string]$PopupState)
+  $name = switch ($PopupState.ToLowerInvariant()) {
+    'listening' { 'mic.svg' }
+    'processing' { 'hourglass.svg' }
+    'success' { 'check.svg' }
+    'warning' { 'warning.svg' }
+    'error' { 'error.svg' }
+    default { 'info.svg' }
+  }
+  return Get-ScriptAssetPath "popup_icons\$name"
+}</code></pre>
+            <p>즉 Windows 팝업은 Flutter 아이콘을 재사용하지 않고, 별도 SVG 자산을 WPF shape로 변환해 그립니다.</p>
+          </div>
+          <div class="card">
+            <h3>꼭 만들어야 하는 scripts 폴더 구조</h3>
+            <pre><code>scripts/
+  show_taskbar_popup.ps1
+  popup_icons/
+    mic.svg
+    hourglass.svg
+    check.svg
+    warning.svg
+    error.svg
+    info.svg
+    x.svg</code></pre>
+            <p>이 구조가 맞지 않으면 <code>Get-IconPath</code>와 <code>Get-ScriptAssetPath</code>가 아이콘을 읽지 못합니다.</p>
+          </div>
+          <div class="card">
+            <h3>5. 카드 디자인은 현재 프로젝트 스타일로 맞춤</h3>
+            <pre><code>$popupWidth = if ($isLargeText) { 372 } else { 320 }
+$popupHeight = if ($isLargeText) { 118 } else { 96 }
+$titleFontSize = if ($isLargeText) { 17 } else { 14 }
+$messageFontSize = if ($isLargeText) { 15 } else { 13 }
+
+&lt;Border x:Name="CardBorder"
+        Background="$($palette.Bg)"
+        BorderBrush="$($palette.Border)"
+        BorderThickness="$($palette.BorderWidth)"
+        CornerRadius="18"
+        Padding="$(if ($isLargeText) { '16,10,16,10' } else { '16,8,16,8' })"&gt;</code></pre>
+            <p>크기는 Flutter fallback 카드와 동일하게 맞추고, 상태별 border / icon badge / close badge를 PowerShell 쪽에서 다시 재현합니다.</p>
+          </div>
+          <div class="card">
+            <h3>6. 현재 최종 WPF 레이아웃 핵심</h3>
+            <pre><code>&lt;Border x:Name="IconBadge" Width="40" Height="40" CornerRadius="12" /&gt;
+&lt;Grid Grid.Column="2" Margin="0,0,24,0"&gt;
+  &lt;TextBlock x:Name="TitleText" FontSize="$titleFontSize" /&gt;
+  &lt;TextBlock x:Name="MessageText" Margin="0,4,0,0" FontSize="$messageFontSize" /&gt;
+&lt;/Grid&gt;
+&lt;Border x:Name="CloseBadge"
+        Grid.Column="2"
+        Width="24"
+        Height="24"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Top" /&gt;</code></pre>
+            <p><code>CloseBadge</code>를 카드 안쪽 우상단에 두고, 텍스트 쪽은 <code>Margin="0,0,24,0"</code>을 줘서 닫기 버튼과 겹치지 않게 만드는 것이 중요합니다.</p>
+          </div>
+          <div class="card">
+            <h3>Day 22-2 적용 후 Release 폴더에서 확인할 것</h3>
+            <pre><code>build/windows/x64/runner/Release/
+  navi_front.exe
+  flutter_windows.dll
+  data/
+  scripts/
+    show_taskbar_popup.ps1
+    popup_icons/
+      mic.svg
+      hourglass.svg
+      check.svg
+      warning.svg
+      error.svg
+      info.svg
+      x.svg</code></pre>
+            <p>여기서 <code>scripts/</code> 폴더가 없으면 Flutter는 Windows에서 OS 팝업을 호출해도 스크립트를 찾지 못합니다.</p>
+          </div>
+          <div class="card success">
+            <h3>Day 22-2 완료 기준</h3>
+            <ul>
+              <li>Release 폴더에 <code>scripts/show_taskbar_popup.ps1</code>와 <code>scripts/popup_icons/*.svg</code>가 같이 복사된다.</li>
+              <li>Windows에서 팝업 요청 시 앱 내부가 아니라 별도 WPF 카드 창이 우하단에 뜬다.</li>
+              <li>라이트/다크/고대비/큰 글씨가 모두 현재 프로젝트 카드 디자인으로 보인다.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" id="final">
+          <div class="hero">
+            <span class="badge">Final</span>
+            <h2>현재 최종 상태</h2>
+            <p class="lead">지금 시점의 팝업 시스템은 “공통 Dart 진입점 + OS별 렌더러 + 플랫폼별 fallback” 구조입니다.</p>
+          </div>
+          <div class="card">
+            <h3>최종 흐름</h3>
+            <ol>
+              <li><code>showAppToast(...)</code>가 호출된다.</li>
+              <li><code>TaskbarPopupService.instance.show(...)</code>가 먼저 실행된다.</li>
+              <li>macOS면 MethodChannel이 <code>AppDelegate.swift</code>로 전달된다.</li>
+              <li>Windows면 <code>show_taskbar_popup.ps1</code>가 WPF 팝업을 띄운다.</li>
+              <li>Windows가 아니고 OS 팝업이 실패한 경우에만 Flutter overlay 토스트가 fallback으로 뜬다.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>문서만 보고 다시 만들 때 최소 체크리스트</h3>
+            <ul>
+              <li><code>app_toast.dart</code>에 Day 21 카드형 토스트와 Day 22의 OS 우선 구조가 모두 들어가 있는지</li>
+              <li><code>taskbar_popup_service.dart</code>가 새 파일로 존재하는지</li>
+              <li><code>AppDelegate.swift</code>와 <code>MainFlutterWindow.swift</code>가 macOS 채널 연결까지 포함하는지</li>
+              <li><code>project.pbxproj</code>의 macOS 배포 타깃이 <code>11.0</code>인지</li>
+              <li><code>windows/CMakeLists.txt</code>가 <code>scripts/</code> 전체를 Release로 복사하는지</li>
+              <li><code>show_taskbar_popup.ps1</code>와 <code>popup_icons/*.svg</code>가 모두 존재하는지</li>
+              <li><code>build_windows.bat</code>, <code>required.txt</code>가 Windows 빌드 설명용으로 포함돼 있는지</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>핵심 최종 파일</h3>
+            <ul>
+              <li><code>lib/features/notifications/presentation/app_toast.dart</code></li>
+              <li><code>lib/shared/services/taskbar_popup_service.dart</code></li>
+              <li><code>macos/Runner/AppDelegate.swift</code></li>
+              <li><code>macos/Runner/MainFlutterWindow.swift</code></li>
+              <li><code>windows/CMakeLists.txt</code></li>
+              <li><code>scripts/show_taskbar_popup.ps1</code></li>
+              <li><code>scripts/popup_icons/*.svg</code></li>
+            </ul>
+          </div>
+          <div class="card success">
+            <h3>다음 문서로 이어질 때 주의</h3>
+            <p>이 이후 문서가 추가되면, 기준점은 “OS 팝업 구조는 이미 완성되어 있다”입니다. 따라서 이후 작업은 보통 색상/레이아웃 미세 보정, Windows 실행 안정화, macOS 네이티브 UI polish 같은 후속 보강으로 이어지면 됩니다.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const buttons = document.querySelectorAll('.nav button');
+      const panels = document.querySelectorAll('.panel');
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const target = button.dataset.target;
+          buttons.forEach((item) => item.classList.remove('active'));
+          panels.forEach((panel) => panel.classList.remove('active'));
+          button.classList.add('active');
+          document.getElementById(target).classList.add('active');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    </script>
+  </body>
+</html>
