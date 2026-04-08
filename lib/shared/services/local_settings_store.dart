@@ -10,7 +10,7 @@ class LocalSettingsStore {
 
   Future<AppSettings> load() async {
     final file = File('${Directory.current.path}/runtime/settings.json');
-
+  ///Users/kenta/Library/Containers/com.example.naviFront/Data/runtime/settings.json
     if (!await file.exists()) {
       return AppSettings.defaults();
     }
