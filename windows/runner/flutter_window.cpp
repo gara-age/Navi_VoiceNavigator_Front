@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include <flutter/standard_method_codec.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -25,6 +27,87 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  window_control_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(),
+          "voice_navigator/window_control",
+          &flutter::StandardMethodCodec::GetInstance());
+  window_control_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        const auto& method = call.method_name();
+        if (method == "minimize") {
+          ShowWindow(GetHandle(), SW_MINIMIZE);
+          result->Success();
+          return;
+        }
+        if (method == "maximizeOrRestore") {
+          const bool is_maximized = IsZoomed(GetHandle());
+          ShowWindow(GetHandle(), is_maximized ? SW_RESTORE : SW_MAXIMIZE);
+          result->Success();
+          return;
+        }
+        if (method == "close") {
+          PostMessage(GetHandle(), WM_CLOSE, 0, 0);
+          result->Success();
+          return;
+        }
+        if (method == "startDrag") {
+          ReleaseCapture();
+          SendMessage(GetHandle(), WM_NCLBUTTONDOWN, HTCAPTION, 0);
+          result->Success();
+          return;
+        }
+        if (method == "startResize") {
+          const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+          if (arguments == nullptr) {
+            result->Error("bad_args", "Missing resize direction.");
+            return;
+          }
+
+          const auto direction_it =
+              arguments->find(flutter::EncodableValue("direction"));
+          if (direction_it == arguments->end()) {
+            result->Error("bad_args", "Missing resize direction.");
+            return;
+          }
+
+          const auto* direction =
+              std::get_if<std::string>(&direction_it->second);
+          if (direction == nullptr) {
+            result->Error("bad_args", "Invalid resize direction.");
+            return;
+          }
+
+          UINT hit_test = HTCLIENT;
+          if (*direction == "left") {
+            hit_test = HTLEFT;
+          } else if (*direction == "right") {
+            hit_test = HTRIGHT;
+          } else if (*direction == "top") {
+            hit_test = HTTOP;
+          } else if (*direction == "bottom") {
+            hit_test = HTBOTTOM;
+          } else if (*direction == "topLeft") {
+            hit_test = HTTOPLEFT;
+          } else if (*direction == "topRight") {
+            hit_test = HTTOPRIGHT;
+          } else if (*direction == "bottomLeft") {
+            hit_test = HTBOTTOMLEFT;
+          } else if (*direction == "bottomRight") {
+            hit_test = HTBOTTOMRIGHT;
+          }
+
+          if (hit_test != HTCLIENT) {
+            ReleaseCapture();
+            SendMessage(GetHandle(), WM_NCLBUTTONDOWN, hit_test, 0);
+          }
+          result->Success();
+          return;
+        }
+        result->NotImplemented();
+      });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -40,6 +123,9 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  if (window_control_channel_) {
+    window_control_channel_ = nullptr;
+  }
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -51,6 +137,10 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (message == WM_NCHITTEST) {
+    return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

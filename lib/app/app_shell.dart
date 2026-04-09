@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/settings/application/settings_controller.dart';
 import '../shared/services/local_ui_state_service.dart';
+import '../shared/widgets/desktop_resize_frame.dart';
 import 'mode_launcher_page.dart';
 import 'theme/app_theme.dart';
 
@@ -70,9 +71,11 @@ class _VoiceNavigatorAppState extends ConsumerState<VoiceNavigatorApp>
           data: mediaQuery.copyWith(
             textScaler: TextScaler.linear(scale),
           ),
-          child: DefaultTextStyle.merge(
-            style: const TextStyle(fontFamily: 'Pretendard'),
-            child: child ?? const SizedBox.shrink(),
+          child: DesktopResizeFrame(
+            child: DefaultTextStyle.merge(
+              style: const TextStyle(fontFamily: 'Pretendard'),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

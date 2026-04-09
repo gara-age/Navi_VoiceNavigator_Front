@@ -16,6 +16,15 @@ namespace {
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#define DWM_WINDOW_CORNER_PREFERENCE unsigned int
+#define DWMWCP_DEFAULT 0
+#define DWMWCP_DONOTROUND 1
+#define DWMWCP_ROUND 2
+#define DWMWCP_ROUNDSMALL 3
+#endif
+
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
 /// Registry key for app theme preference.
@@ -51,6 +60,13 @@ void EnableFullDpiSupportIfAvailable(HWND hwnd) {
     enable_non_client_dpi_scaling(hwnd);
   }
   FreeLibrary(user32_module);
+}
+
+int GetResizeBorderThickness(HWND hwnd) {
+  UINT dpi = GetDpiForWindow(hwnd);
+  const int frame_x = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi);
+  const int padded = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+  return frame_x + padded;
 }
 
 }  // namespace
@@ -134,8 +150,10 @@ bool Win32Window::Create(const std::wstring& title,
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
+  DWORD window_style =
+      WS_POPUP | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU;
   HWND window = CreateWindow(
-      window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
+      window_class, title.c_str(), window_style,
       Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
       Scale(size.width, scale_factor), Scale(size.height, scale_factor),
       nullptr, nullptr, GetModuleHandle(nullptr), this);
@@ -145,6 +163,9 @@ bool Win32Window::Create(const std::wstring& title,
   }
 
   UpdateTheme(window);
+  const DWM_WINDOW_CORNER_PREFERENCE corner_preference = DWMWCP_ROUND;
+  DwmSetWindowAttribute(window, DWMWA_WINDOW_CORNER_PREFERENCE,
+                        &corner_preference, sizeof(corner_preference));
 
   return OnCreate();
 }
@@ -179,6 +200,72 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_NCCALCSIZE:
+      if (wparam == TRUE) {
+        return 0;
+      }
+      break;
+
+    case WM_NCHITTEST: {
+      if (IsZoomed(hwnd)) {
+        return HTCLIENT;
+      }
+
+      RECT window_rect;
+      GetWindowRect(hwnd, &window_rect);
+
+      const int border = GetResizeBorderThickness(hwnd);
+      const int x = static_cast<int>(static_cast<short>(LOWORD(lparam)));
+      const int y = static_cast<int>(static_cast<short>(HIWORD(lparam)));
+
+      const bool left = x >= window_rect.left && x < window_rect.left + border;
+      const bool right = x < window_rect.right &&
+                         x >= window_rect.right - border;
+      const bool top = y >= window_rect.top && y < window_rect.top + border;
+      const bool bottom = y < window_rect.bottom &&
+                          y >= window_rect.bottom - border;
+
+      if (top && left) {
+        return HTTOPLEFT;
+      }
+      if (top && right) {
+        return HTTOPRIGHT;
+      }
+      if (bottom && left) {
+        return HTBOTTOMLEFT;
+      }
+      if (bottom && right) {
+        return HTBOTTOMRIGHT;
+      }
+      if (left) {
+        return HTLEFT;
+      }
+      if (right) {
+        return HTRIGHT;
+      }
+      if (top) {
+        return HTTOP;
+      }
+      if (bottom) {
+        return HTBOTTOM;
+      }
+      return HTCLIENT;
+    }
+
+    case WM_GETMINMAXINFO: {
+      if (minimum_size_.width > 0 && minimum_size_.height > 0) {
+        auto* minmax = reinterpret_cast<MINMAXINFO*>(lparam);
+        UINT dpi = GetDpiForWindow(hwnd);
+        const double scale_factor = dpi / 96.0;
+        minmax->ptMinTrackSize.x =
+            Scale(static_cast<int>(minimum_size_.width), scale_factor);
+        minmax->ptMinTrackSize.y =
+            Scale(static_cast<int>(minimum_size_.height), scale_factor);
+        return 0;
+      }
+      break;
+    }
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();
@@ -257,6 +344,10 @@ RECT Win32Window::GetClientArea() {
 
 HWND Win32Window::GetHandle() {
   return window_handle_;
+}
+
+void Win32Window::SetMinimumSize(Size minimum_size) {
+  minimum_size_ = minimum_size;
 }
 
 void Win32Window::SetQuitOnClose(bool quit_on_close) {

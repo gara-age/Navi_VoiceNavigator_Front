@@ -4,6 +4,7 @@ import '../app/theme/app_theme.dart';
 import '../shared/models/settings_models.dart';
 import '../shared/services/local_settings_store.dart';
 import '../shared/services/local_ui_state_service.dart';
+import '../shared/widgets/desktop_resize_frame.dart';
 import 'demo_home_page.dart';
 
 class VoiceNavigatorDemoApp extends StatefulWidget {
@@ -74,9 +75,11 @@ class _VoiceNavigatorDemoAppState extends State<VoiceNavigatorDemoApp>
           data: mediaQuery.copyWith(
             textScaler: TextScaler.linear(scale),
           ),
-          child: DefaultTextStyle.merge(
-            style: const TextStyle(fontFamily: 'Pretendard'),
-            child: child ?? const SizedBox.shrink(),
+          child: DesktopResizeFrame(
+            child: DefaultTextStyle.merge(
+              style: const TextStyle(fontFamily: 'Pretendard'),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },
