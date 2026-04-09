@@ -25,13 +25,20 @@ class ReadyState extends StatelessWidget {
       color: surfaceTheme.surface,
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final maxContentWidth = switch (constraints.maxWidth) {
+            > 1200 => 780.0,
+            > 980 => 700.0,
+            > 760 => 620.0,
+            _ => constraints.maxWidth,
+          };
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(32),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
+                  constraints: BoxConstraints(maxWidth: maxContentWidth),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
