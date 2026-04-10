@@ -98,7 +98,17 @@ class PlaywrightRunner:
                 if execution.get("status") != "success":
                     reason = execution.get("reason", "agent_plan_failed")
                     self._append_failure_step(steps, last_step, reason)
-                    return self._simulation_failure(reason, steps, progress_callback)
+                    return self._simulation_failure(
+                        reason,
+                        steps,
+                        progress_callback,
+                        extra={
+                            "failed_step": execution.get("failed_step"),
+                            "recovery": execution.get("recovery"),
+                            "observations": execution.get("observations", []),
+                            "detail": execution.get("detail"),
+                        },
+                    )
 
                 observations = execution.get("observations", [])
                 summary = success_summary or plan.get("goal", "") or "시나리오를 완료했습니다."
@@ -256,6 +266,7 @@ class PlaywrightRunner:
         reason: str,
         steps: list[dict],
         progress_callback: ProgressCallback | None,
+        extra: dict | None = None,
     ) -> dict:
         if progress_callback is not None:
             progress_callback(
@@ -267,12 +278,15 @@ class PlaywrightRunner:
                     "popup_state": "error",
                 }
             )
-        return {
+        payload = {
             "status": "error",
             "reason": reason,
             "steps": steps,
             "observations": [],
         }
+        if extra:
+            payload.update({key: value for key, value in extra.items() if value is not None})
+        return payload
 
     def _safe_close_browser(self, browser) -> None:
         try:

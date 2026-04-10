@@ -6,6 +6,9 @@ from local_server.app.automation.browser.target_resolver import (
     TargetResolutionError,
     TargetResolver,
 )
+from local_server.app.automation.browser.candidate_inventory import (
+    build_recovery_candidate_summary,
+)
 
 ProgressCallback = Callable[[dict[str, Any]], None]
 
@@ -65,6 +68,13 @@ class CommandExecutor:
                     popup_state="success",
                 )
             except Exception as exc:
+                failure = self._build_step_error(
+                    page,
+                    step,
+                    exc,
+                    completed_steps=completed_steps,
+                    observations=observations,
+                )
                 completed_steps.append(
                     {
                         "step": step_no,
@@ -73,12 +83,9 @@ class CommandExecutor:
                         "detail": str(exc),
                     }
                 )
-                return {
-                    "status": "error",
-                    "reason": str(exc),
-                    "steps": completed_steps,
-                    "observations": observations,
-                }
+                failure["steps"] = completed_steps
+                failure["observations"] = observations
+                return failure
 
         return {
             "status": "success",
@@ -166,8 +173,8 @@ class CommandExecutor:
                 target,
                 timeout_ms=int((step.get("args") or {}).get("timeout_ms", 8000)),
             )
-        except TargetResolutionError as exc:
-            raise RuntimeError(f"{exc} | debug={exc.debug_snapshot}") from exc
+        except TargetResolutionError:
+            raise
 
         self._last_locator = resolved.locator
         return resolved.locator
@@ -221,3 +228,37 @@ class CommandExecutor:
         if description:
             return f"{description} 단계 실행 중입니다."
         return f"{action} 단계를 실행 중입니다."
+
+    def _build_step_error(
+        self,
+        page: Any,
+        step: dict[str, Any],
+        exc: Exception,
+        *,
+        completed_steps: list[dict[str, Any]],
+        observations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        reason = str(exc)
+        failure = {
+            "status": "error",
+            "reason": reason,
+            "failed_step": step,
+            "steps": completed_steps,
+            "observations": observations,
+        }
+        if self._is_recoverable_target_error(exc):
+            target_exc = exc if isinstance(exc, TargetResolutionError) else None
+            failure["reason"] = target_exc.reason_code if target_exc else "target_not_found"
+            failure["recovery"] = {
+                "reason_code": target_exc.reason_code if target_exc else "target_not_found",
+                "debug_snapshot": target_exc.debug_snapshot if target_exc else "",
+                "candidate_summary": build_recovery_candidate_summary(
+                    page,
+                    step.get("target") or {},
+                ),
+            }
+            failure["detail"] = reason
+        return failure
+
+    def _is_recoverable_target_error(self, exc: Exception) -> bool:
+        return isinstance(exc, TargetResolutionError)

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 24 - Web Automation Recovery Tutorial</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --warn-bg: #fff8e8;
+      --warn-line: #f5d285;
+      --ok-bg: #ecfdf5;
+      --ok-line: #bbf7d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 18px 72px;
+    }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 32px; }
+    .card { padding: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h1, h2, h3 { line-height: 1.3; margin: 0 0 14px; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; }
+    h3 { font-size: 20px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .path {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .callout, .success {
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-top: 16px;
+    }
+    .callout {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      color: #92400e;
+    }
+    .success {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-line);
+      color: #166534;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+    }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Day 24</span>
+      <h1>Web Automation Recovery Flow</h1>
+      <p>이 문서는 웹 자동화 JSON plan 실행이 실패했을 때, 후보 축약 정보를 기반으로 Agent에게 다시 계획을 요청하고 1회 재실행하는 recovery 흐름을 정리한 튜토리얼입니다. 기본 실행 성공 시에는 추가 토큰 비용이 들지 않고, 실패 시에만 보조 프롬프트가 발생하도록 설계되어 있습니다.</p>
+      <div class="callout"><strong>핵심 원칙:</strong> recovery는 모든 에러에 대해 수행하지 않습니다. 오직 target 해석 실패처럼 “선택 문제”에 대해서만 실행하고, 재시도는 1회만 허용합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>1. 전체 recovery 흐름</h2>
+      <pre><code>LLM plan 생성
+  -> Flutter가 JSON plan 실행
+  -> Python/Playwright step 실행
+  -> target 선택 실패
+  -> Python이 recovery payload 반환
+  -> Flutter가 후보 축약과 실패 step을 포함한 recovery prompt 생성
+  -> Agent에게 수정된 plan 재요청
+  -> 새 plan 1회 재실행</code></pre>
+      <p>즉 정상 경로는 기존과 동일하고, 실패 시에만 recovery branch가 열립니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. 수정 파일</h2>
+      <ul>
+        <li><code>local_server/app/automation/browser/target_resolver.py</code></li>
+        <li><code>local_server/app/automation/browser/candidate_inventory.py</code></li>
+        <li><code>local_server/app/automation/browser/command_executor.py</code></li>
+        <li><code>local_server/app/automation/browser/playwright_runner.py</code></li>
+        <li><code>lib/shared/services/json_automation_runner_service.dart</code></li>
+        <li><code>lib/features/session/application/session_controller.dart</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>3. TargetResolver는 reason_code를 반환해야 한다</h2>
+      <div class="path">local_server/app/automation/browser/target_resolver.py</div>
+      <p>recovery는 “무슨 종류의 실패였는가”를 알아야 하므로, 문자열 오류만 던지지 말고 표준화된 <code>reason_code</code>를 같이 실어야 합니다.</p>
+      <pre><code>class TargetResolutionError(RuntimeError):
+    def __init__(
+        self,
+        message: str,
+        reason_code: str = "target_not_found",
+        debug_snapshot: str = "",
+    ) -&gt; None:
+        super().__init__(message)
+        self.reason_code = reason_code
+        self.debug_snapshot = debug_snapshot</code></pre>
+      <p>현재 구현에서는 우선 <code>target_not_found</code>를 기본 reason code로 사용합니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. candidate_inventory는 recovery용 후보 축약을 만들어야 한다</h2>
+      <div class="path">local_server/app/automation/browser/candidate_inventory.py</div>
+      <p>이미 들어간 inventory와 scoring을 그대로 재사용하되, LLM에 직접 보내기 좋은 작은 요약을 만들어야 합니다.</p>
+      <pre><code>def build_recovery_candidate_summary(
+    page: Any,
+    target: dict[str, Any],
+    limit: int = 5,
+) -&gt; dict[str, Any]:
+    inventory = build_candidate_inventory(page)
+    ranked = select_inventory_candidates(page, target)
+    top_candidates = [
+        compact_candidate(item.get("candidate") or {})
+        for item in ranked[:limit]
+        if item.get("candidate")
+    ]
+    return {
+        "intent": classify_candidate_intent(target),
+        "description": target.get("description"),
+        "top_candidates": top_candidates,
+        "summary": inventory.get("summary") or {},
+    }</code></pre>
+      <p>이 구조의 장점은 전체 HTML이나 전체 후보를 다시 보내지 않고도, recovery에 필요한 top candidates만 아주 작게 보낼 수 있다는 점입니다.</p>
+      <div class="success"><strong>최신 안정화:</strong> 현재는 <code>top_candidates</code>만 보내는 것이 아니라, <code>llm_summary</code> 안에 <code>top_matches</code>, <code>context_buckets</code>, <code>relation_summary</code>를 함께 넣어서 LLM이 페이지 맥락을 더 잘 읽을 수 있도록 보강했습니다.</div>
+      <pre><code>{
+  "intent": "button_selection",
+  "target_description": "검색 버튼",
+  "top_matches": [
+    {
+      "candidate_id": "cand_0002",
+      "role": "button",
+      "tag": "button",
+      "text": "검색",
+      "aria_label": "검색",
+      "locator_hint": "button.ytSearchboxComponentSearchButton",
+      "parent_context": "masthead",
+      "score": 178
+    }
+  ],
+  "context_buckets": {
+    "searchable_inputs": [],
+    "primary_buttons": [],
+    "dialogs": [],
+    "tabs": []
+  },
+  "relation_summary": {
+    "combobox_group_count": 0,
+    "label_input_group_count": 0,
+    "dialog_group_count": 0,
+    "tab_group_count": 0
+  }
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>5. CommandExecutor는 structured failure를 반환해야 한다</h2>
+      <div class="path">local_server/app/automation/browser/command_executor.py</div>
+      <p>step 실행 실패 시 단순 문자열만 돌려주면 Flutter에서 recovery를 orchestrate하기 어렵습니다. 실패한 step과 recovery payload를 같이 반환해야 합니다.</p>
+      <pre><code>except Exception as exc:
+    failure = self._build_step_error(
+        page,
+        step,
+        exc,
+        completed_steps=completed_steps,
+        observations=observations,
+    )
+    completed_steps.append(
+        {
+            "step": step_no,
+            "action": action,
+            "status": "error",
+            "detail": str(exc),
+        }
+    )
+    failure["steps"] = completed_steps
+    failure["observations"] = observations
+    return failure</code></pre>
+      <pre><code>def _build_step_error(...):
+    failure = {
+        "status": "error",
+        "reason": reason,
+        "failed_step": step,
+        "steps": completed_steps,
+        "observations": observations,
+    }
+    if self._is_recoverable_target_error(exc):
+        failure["reason"] = target_exc.reason_code
+        failure["recovery"] = {
+            "reason_code": target_exc.reason_code,
+            "debug_snapshot": target_exc.debug_snapshot,
+            "candidate_summary": build_recovery_candidate_summary(
+                page,
+                step.get("target") or {},
+            ),
+        }
+        failure["detail"] = reason
+    return failure</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>6. PlaywrightRunner는 recovery payload를 최종 result로 전달해야 한다</h2>
+      <div class="path">local_server/app/automation/browser/playwright_runner.py</div>
+      <p>CommandExecutor가 만든 recovery 정보를 final payload에 실어 Flutter까지 올려 보내야 합니다.</p>
+      <pre><code>if execution.get("status") != "success":
+    reason = execution.get("reason", "agent_plan_failed")
+    self._append_failure_step(steps, last_step, reason)
+    return self._simulation_failure(
+        reason,
+        steps,
+        progress_callback,
+        extra={
+            "failed_step": execution.get("failed_step"),
+            "recovery": execution.get("recovery"),
+            "observations": execution.get("observations", []),
+            "detail": execution.get("detail"),
+        },
+    )</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>7. Dart 결과 모델은 recoverable failure를 판별할 수 있어야 한다</h2>
+      <div class="path">lib/shared/services/json_automation_runner_service.dart</div>
+      <pre><code>bool get isRecoverableFailure {
+  if (success) {
+    return false;
+  }
+  final recovery = recoveryPayload;
+  final reasonCode = recovery?['reason_code']?.toString().trim();
+  return recovery != null &amp;&amp;
+      reasonCode != null &amp;&amp;
+      reasonCode.isNotEmpty &amp;&amp;
+      const {
+        'target_not_found',
+        'no_visible_candidate',
+        'candidate_blocked',
+        'ambiguous_target',
+      }.contains(reasonCode);
+}</code></pre>
+      <p>이렇게 해두면 SessionController는 raw JSON parsing을 직접 하지 않고도 recovery 가능 여부를 빠르게 판단할 수 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>8. SessionController가 recovery orchestration의 중심이다</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <p>이 파일에서 plan 실행 실패를 감지하고, recovery prompt를 만들어 Agent에게 다시 보냅니다.</p>
+      <pre><code>var execution = await JsonAutomationRunnerService.instance.runPlan(
+  rawPlan: response.body,
+);
+if (!execution.success &amp;&amp; execution.isRecoverableFailure) {
+  execution = await _attemptAutomationRecovery(
+    baseUri: uri,
+    originalCommand: command,
+    originalPlan: response.body,
+    execution: execution,
+  );
+}</code></pre>
+
+      <pre><code>Future&lt;JsonAutomationRunnerResult&gt; _attemptAutomationRecovery({
+  required Uri baseUri,
+  required String originalCommand,
+  required String originalPlan,
+  required JsonAutomationRunnerResult execution,
+}) async {
+  if (_maxAutomationRecoveryAttempts &lt; 1) {
+    return execution;
+  }
+
+  final recoveryPrompt = _buildAutomationRecoveryPrompt(
+    originalCommand: originalCommand,
+    originalPlan: originalPlan,
+    execution: execution,
+  );
+  if (recoveryPrompt == null) {
+    return execution;
+  }
+
+  final recoveredPlan = await _requestAutomationRecoveryPlan(
+    baseUri: baseUri,
+    recoveryPrompt: recoveryPrompt,
+  );
+  if (recoveredPlan == null) {
+    return execution;
+  }
+
+  return JsonAutomationRunnerService.instance.runPlan(
+    rawPlan: recoveredPlan,
+  );
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>9. recovery prompt는 전체 HTML이 아니라 실패 step과 후보 축약만 사용한다</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <pre><code>return '''
+기존 웹 자동화 JSON plan 실행에 실패했습니다.
+
+사용자 원래 요청:
+$originalCommand
+
+실패 reason_code:
+$reasonCode
+
+실패한 step:
+${jsonEncode(failedStep)}
+
+현재 페이지 후보 축약:
+${jsonEncode(llmSummary ?? candidateSummary)}
+
+원래 plan:
+$originalPlan
+
+위 정보를 바탕으로 전체 JSON plan을 다시 작성하세요.
+반드시 steps가 있는 단일 JSON 객체만 반환하세요.
+설명, 코드블록, 마크다운 없이 JSON만 반환하세요.
+''';</code></pre>
+      <div class="callout"><strong>중요:</strong> recovery에서는 step patch만 받는 구조도 가능하지만, 현재 구현은 안정성을 위해 수정된 전체 plan JSON을 다시 받는 방식입니다. 대신 후보 요약은 이제 <code>llm_summary</code>를 우선 사용하므로 토큰은 작게 유지하면서도 맥락은 더 풍부하게 전달합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>10. 재시도는 1회만</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <pre><code>static const int _maxAutomationRecoveryAttempts = 1;</code></pre>
+      <p>무한 재시도는 페이지 상태를 더 꼬이게 만들고 토큰 비용도 커집니다. 그래서 recovery는 반드시 1회로 제한하는 것이 좋습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>11. 구현 후 확인할 체크리스트</h2>
+      <ul>
+        <li>정상 실행 성공 시에는 recovery 요청이 발생하지 않는가</li>
+        <li><code>target_not_found</code> 실패 시 Python payload에 <code>recovery</code>가 들어가는가</li>
+        <li>Flutter가 <code>execution.isRecoverableFailure</code>를 true로 판단하는가</li>
+        <li>Recovery prompt가 JSON 후보 축약만 포함하고 전체 HTML은 포함하지 않는가</li>
+        <li>재실행은 1회만 일어나는가</li>
+      </ul>
+    </section>
+
+    <section class="card success">
+      <h2>12. 다음 후순위 작업</h2>
+      <ol>
+        <li><strong>relation group 확장</strong>: search input + submit button, autocomplete input + suggestion list 같은 action group을 추가하면 plan 생성 품질이 더 좋아집니다.</li>
+        <li><strong>locator_hint 안정화</strong>: data-testid, aria attr, stable parent context를 더 활용하면 fallback selector 품질이 좋아집니다.</li>
+        <li><strong>step patch 모드로 경량화</strong>: 현재는 전체 plan을 다시 받습니다. 이후에는 실패 step만 교체하는 방식으로 토큰을 더 줄일 수 있습니다.</li>
+        <li><strong>recovery prompt 템플릿 세분화</strong>: intent가 button/input/tab/dialog인지에 따라 프롬프트 지시문을 더 구체화하면 재질문 정확도가 좋아집니다.</li>
+      </ol>
+    </section>
+  </div>
+</body>
+</html>

@@ -18,6 +18,36 @@ class JsonAutomationRunnerResult {
   final String summary;
   final Map<String, dynamic> raw;
   final String? error;
+
+  bool get isRecoverableFailure {
+    if (success) {
+      return false;
+    }
+    final recovery = recoveryPayload;
+    final reasonCode = recovery?['reason_code']?.toString().trim();
+    return recovery != null &&
+        reasonCode != null &&
+        reasonCode.isNotEmpty &&
+        const {
+          'target_not_found',
+          'no_visible_candidate',
+          'candidate_blocked',
+          'ambiguous_target',
+        }.contains(reasonCode);
+  }
+
+  Map<String, dynamic>? get recoveryPayload {
+    final recovery = raw['recovery'];
+    if (recovery is Map<String, dynamic>) {
+      return recovery;
+    }
+    if (recovery is Map) {
+      return recovery.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+    return null;
+  }
 }
 
 class JsonAutomationRunnerService {

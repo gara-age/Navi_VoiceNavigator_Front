@@ -5,10 +5,22 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from local_server.app.automation.browser.candidate_inventory import (
+    build_candidate_inventory,
+    select_inventory_candidates,
+    summarize_candidate_inventory,
+)
+
 
 class TargetResolutionError(RuntimeError):
-    def __init__(self, message: str, debug_snapshot: str = "") -> None:
+    def __init__(
+        self,
+        message: str,
+        reason_code: str = "target_not_found",
+        debug_snapshot: str = "",
+    ) -> None:
         super().__init__(message)
+        self.reason_code = reason_code
         self.debug_snapshot = debug_snapshot
 
 
@@ -65,6 +77,7 @@ class TargetResolver:
 
         raise TargetResolutionError(
             f"target_not_found:{target.get('description', 'unnamed_target')} | last_error={last_error or 'n/a'}",
+            reason_code="target_not_found",
             debug_snapshot=self._build_debug_snapshot(page),
         )
 
@@ -77,6 +90,7 @@ class TargetResolver:
         resolved: list[ResolvedTarget] = []
         match = target.get("match") or {}
 
+        resolved.extend(self._match_inventory(frame, target))
         resolved.extend(self._match_role_and_name(frame, match))
         resolved.extend(self._match_text(frame, match))
         resolved.extend(self._match_attributes(frame, match))
@@ -91,6 +105,29 @@ class TargetResolver:
             seen.add(key)
             deduped.append(item)
         return deduped
+
+    def _match_inventory(self, frame: Any, target: dict[str, Any]) -> list[ResolvedTarget]:
+        candidates: list[ResolvedTarget] = []
+        try:
+            ranked = select_inventory_candidates(frame, target)
+        except Exception:
+            return candidates
+
+        for item in ranked[:8]:
+            candidate = item.get("candidate") or {}
+            candidate_id = candidate.get("candidate_id")
+            if not candidate_id:
+                continue
+            locator = frame.locator(f'[data-vn-candidate-id="{candidate_id}"]').first
+            candidates.append(
+                ResolvedTarget(
+                    locator=locator,
+                    score=int(item.get("score", 0)) + 100,
+                    frame_url=frame.url or "about:blank",
+                    strategy=f"inventory={candidate_id}|hint={candidate.get('locator_hint') or 'n/a'}",
+                )
+            )
+        return candidates
 
     def _match_role_and_name(self, frame: Any, match: dict[str, Any]) -> list[ResolvedTarget]:
         role = match.get("role")
@@ -300,20 +337,24 @@ class TargetResolver:
         return candidates
 
     def _build_debug_snapshot(self, page: Any) -> str:
-        snapshots: list[str] = []
-        for index, frame in enumerate(page.frames):
-            try:
-                frame_name = frame.name or f"frame_{index}"
-                frame_url = frame.url or "about:blank"
-                texts = frame.locator(
-                    "button, a, input, [role='button'], [role='tab'], [role='combobox']"
-                ).all_inner_texts()
-                normalized = [
-                    re.sub(r"\s+", " ", text).strip()
-                    for text in texts
-                    if re.sub(r"\s+", " ", text).strip()
-                ]
-                snapshots.append(f"{frame_name}@{frame_url} => {', '.join(normalized[:8]) or 'no_text'}")
-            except Exception:
-                continue
-        return " | ".join(snapshots[:6]) if snapshots else "no_frame_debug"
+        try:
+            inventory = build_candidate_inventory(page)
+            return summarize_candidate_inventory(inventory)
+        except Exception:
+            snapshots: list[str] = []
+            for index, frame in enumerate(page.frames):
+                try:
+                    frame_name = frame.name or f"frame_{index}"
+                    frame_url = frame.url or "about:blank"
+                    texts = frame.locator(
+                        "button, a, input, [role='button'], [role='tab'], [role='combobox']"
+                    ).all_inner_texts()
+                    normalized = [
+                        re.sub(r"\s+", " ", text).strip()
+                        for text in texts
+                        if re.sub(r"\s+", " ", text).strip()
+                    ]
+                    snapshots.append(f"{frame_name}@{frame_url} => {', '.join(normalized[:8]) or 'no_text'}")
+                except Exception:
+                    continue
+            return " | ".join(snapshots[:6]) if snapshots else "no_frame_debug"

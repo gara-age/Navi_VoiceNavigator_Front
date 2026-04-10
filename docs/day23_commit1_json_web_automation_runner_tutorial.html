@@ -131,6 +131,7 @@
         <li><code>local_server/app/__init__.py</code></li>
         <li><code>local_server/app/automation/__init__.py</code></li>
         <li><code>local_server/app/automation/browser/__init__.py</code></li>
+        <li><code>local_server/app/automation/browser/candidate_inventory.py</code></li>
         <li><code>local_server/app/core/config.py</code></li>
         <li><code>local_server/app/core/__init__.py</code></li>
         <li><code>local_server/app/automation/browser/command_executor.py</code></li>
@@ -157,6 +158,7 @@
     │   ├── __init__.py
     │   └── browser/
     │       ├── __init__.py
+    │       ├── candidate_inventory.py
     │       ├── command_executor.py
     │       ├── playwright_runner.py
     │       └── target_resolver.py
@@ -393,6 +395,41 @@ if action == "fill":
       <div class="path">local_server/app/automation/browser/target_resolver.py</div>
       <p>Agent plan의 <code>target</code> 필드에는 <code>description</code>, <code>fallbacks</code>, <code>frame_scope</code> 같은 정보가 들어갈 수 있습니다. 이 파일은 그런 정보를 실제 Playwright locator로 바꿔 줍니다.</p>
       <div class="callout"><strong>중요:</strong> JSON plan에서 selector를 직접 쓰지 않아도 되는 이유가 바로 이 resolver 계층 때문입니다. Agent는 의미 기반 target을 주고, resolver가 fallback selector와 frame 범위를 해석합니다.</div>
+      <div class="success"><strong>최신 반영:</strong> 현재 resolver는 role/text/css 매칭만 쓰지 않고, 먼저 <code>candidate_inventory.py</code>가 수집한 후보군을 점수화해서 상위 후보를 locator로 복원한 뒤, 기존 매칭 로직을 보완층으로 사용합니다.</div>
+      <pre><code>resolved.extend(self._match_inventory(frame, target))
+resolved.extend(self._match_role_and_name(frame, match))
+resolved.extend(self._match_text(frame, match))
+resolved.extend(self._match_attributes(frame, match))
+resolved.extend(self._match_fallbacks(frame, target.get("fallbacks") or []))</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>10-1. 후보군 수집 v2와 scoring 연결</h2>
+      <div class="path">local_server/app/automation/browser/candidate_inventory.py</div>
+      <p>이 파일은 전체 HTML을 직접 LLM에 넘기지 않고, 상호작용 가능성이 있는 요소만 후보로 수집하기 위한 inventory 계층입니다. DOM 전체를 순회하면서 interactive tag, ARIA role, tabindex, contenteditable, aria state, onclick/onfocus 신호를 기반으로 후보를 모읍니다.</p>
+      <ul>
+        <li>1차 수집: 전통 태그 + ARIA role + 인터랙션 신호</li>
+        <li>1차 필터: visible, enabled, bounding box/interactable, text signal</li>
+        <li>구조화: <code>candidate_id</code>, <code>tag</code>, <code>text</code>, <code>locator_hint</code> 등</li>
+        <li>중복 제거: 위치 + 텍스트 + 역할 기준</li>
+        <li>관계 그룹: combobox/listbox/option, label/input, button/dialog, tab/tabpanel</li>
+      </ul>
+      <p>그리고 <code>select_inventory_candidates(page, target)</code>가 target spec과 후보를 비교해 점수화합니다. 상위 후보는 DOM에 심어 둔 <code>data-vn-candidate-id</code>로 다시 Playwright locator로 복원합니다.</p>
+      <pre><code>ranked = select_inventory_candidates(frame, target)
+
+for item in ranked[:8]:
+    candidate = item.get("candidate") or {}
+    candidate_id = candidate.get("candidate_id")
+    locator = frame.locator(f'[data-vn-candidate-id="{candidate_id}"]').first
+    candidates.append(
+        ResolvedTarget(
+            locator=locator,
+            score=int(item.get("score", 0)) + 100,
+            frame_url=frame.url or "about:blank",
+            strategy=f"inventory={candidate_id}|hint={candidate.get('locator_hint') or 'n/a'}",
+        )
+    )</code></pre>
+      <div class="callout"><strong>의미:</strong> 이제 후보군 수집은 단순 디버그용이 아니라 실제 선택 엔진에 직접 연결되어 있습니다. 기존 role/text/attribute/fallback 매칭은 제거하지 않고 fallback 겸 보완층으로 남겨 둡니다.</div>
     </section>
 
     <section class="card">
@@ -801,8 +838,556 @@ class CommandExecutor:
     </section>
 
     <section class="card">
+      <h2>18-3-1. local_server/app/automation/browser/candidate_inventory.py</h2>
+      <div class="path">local_server/app/automation/browser/candidate_inventory.py</div>
+      <pre><code>from __future__ import annotations
+
+import json
+import re
+from typing import Any
+
+
+INTERACTIVE_ROLES = {
+    "button",
+    "link",
+    "textbox",
+    "searchbox",
+    "combobox",
+    "listbox",
+    "option",
+    "checkbox",
+    "radio",
+    "switch",
+    "tab",
+    "tabpanel",
+    "dialog",
+    "menuitem",
+}
+
+TEXT_OPTIONAL_TAGS = {
+    "input",
+    "button",
+}
+
+TEXT_OPTIONAL_ROLES = {
+    "combobox",
+    "listbox",
+    "option",
+    "dialog",
+}
+
+
+def collect_raw_candidates(page: Any) -&gt; list[dict[str, Any]]:
+    return page.evaluate(
+        """() =&gt; {
+            const interactiveRoles = new Set([
+              'button', 'link', 'textbox', 'searchbox', 'combobox', 'listbox',
+              'option', 'checkbox', 'radio', 'switch', 'tab', 'tabpanel',
+              'dialog', 'menuitem'
+            ]);
+            const traditionalTags = new Set([
+              'input', 'button', 'a', 'textarea', 'select',
+              'option', 'label', 'summary', 'details'
+            ]);
+            const excludedTags = new Set([
+              'script', 'style', 'template', 'meta', 'link', 'noscript'
+            ]);
+            const ariaHintAttrs = [
+              'aria-expanded',
+              'aria-controls',
+              'aria-haspopup',
+              'aria-activedescendant'
+            ];
+
+            const normalizeText = (value) =&gt;
+              (value || '').replace(/\\s+/g, ' ').trim();
+
+            const isContentEditable = (element) =&gt;
+              (element.getAttribute('contenteditable') || '').toLowerCase() === 'true';
+
+            const hasInteractiveSignal = (element) =&gt; {
+              const tag = (element.tagName || '').toLowerCase();
+              const role = (element.getAttribute('role') || '').toLowerCase();
+              const tabindex = element.getAttribute('tabindex');
+              const tabIndexValue = tabindex === null ? null : Number(tabindex);
+              return (
+                traditionalTags.has(tag) ||
+                interactiveRoles.has(role) ||
+                isContentEditable(element) ||
+                (tabIndexValue !== null && Number.isFinite(tabIndexValue) && tabIndexValue &gt;= 0) ||
+                ariaHintAttrs.some((attr) =&gt; element.hasAttribute(attr)) ||
+                typeof element.onclick === 'function' ||
+                typeof element.onfocus === 'function' ||
+                element.hasAttribute('onclick') ||
+                element.hasAttribute('onfocus')
+              );
+            };
+
+            const isHidden = (element, style, rect) =&gt; {
+              if (excludedTags.has((element.tagName || '').toLowerCase())) {
+                return true;
+              }
+              if (element.hidden) {
+                return true;
+              }
+              if ((element.getAttribute('aria-hidden') || '').toLowerCase() === 'true') {
+                return true;
+              }
+              if (style.display === 'none' || style.visibility === 'hidden') {
+                return true;
+              }
+              if (Number(style.opacity || '1') === 0) {
+                return true;
+              }
+              if (rect.width &lt;= 0 || rect.height &lt;= 0) {
+                return true;
+              }
+              return false;
+            };
+
+            const isMeaninglessWrapper = (element, tag, text, role, clickable) =&gt; {
+              if (tag !== 'div' &amp;&amp; tag !== 'span') {
+                return false;
+              }
+              if (role) {
+                return false;
+              }
+              if (clickable) {
+                return false;
+              }
+              if (text) {
+                return false;
+              }
+              return !element.getAttribute('aria-label') &amp;&amp; !element.getAttribute('title');
+            };
+
+            const buildLocatorHint = (element, tag) =&gt; {
+              const id = element.id ? `#${element.id}` : '';
+              const className = normalizeText(element.className || '')
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((item) =&gt; `.${item}`)
+                .join('');
+              const name = element.getAttribute('name');
+              const type = element.getAttribute('type');
+              if (id) {
+                return `${tag}${id}`;
+              }
+              if (name) {
+                return `${tag}[name="${name}"]`;
+              }
+              if (type) {
+                return `${tag}[type="${type}"]${className}`;
+              }
+              return `${tag}${className || ''}`;
+            };
+
+            const elements = Array.from(document.querySelectorAll('*'));
+            const raw = [];
+            let sequence = 1;
+
+            for (const element of elements) {
+              const tag = (element.tagName || '').toLowerCase();
+              const role = (element.getAttribute('role') || '').toLowerCase() || null;
+              const rect = element.getBoundingClientRect();
+              const style = window.getComputedStyle(element);
+              const clickable = (
+                tag === 'button' ||
+                tag === 'a' ||
+                role === 'button' ||
+                role === 'link' ||
+                typeof element.onclick === 'function' ||
+                element.hasAttribute('onclick')
+              );
+              const editable = (
+                tag === 'input' ||
+                tag === 'textarea' ||
+                tag === 'select' ||
+                role === 'textbox' ||
+                role === 'searchbox' ||
+                role === 'combobox' ||
+                isContentEditable(element)
+              );
+              const text = normalizeText(element.innerText || element.textContent || '');
+              const ariaLabel = normalizeText(element.getAttribute('aria-label'));
+              const placeholder = normalizeText(element.getAttribute('placeholder'));
+              const title = normalizeText(element.getAttribute('title'));
+              const visible = !isHidden(element, style, rect);
+              const enabled = !element.hasAttribute('disabled') &amp;&amp; element.getAttribute('aria-disabled') !== 'true';
+              const tabindexAttr = element.getAttribute('tabindex');
+              const tabindex = tabindexAttr === null ? null : Number(tabindexAttr);
+
+              if (!hasInteractiveSignal(element)) {
+                continue;
+              }
+              if (isMeaninglessWrapper(element, tag, text, role, clickable)) {
+                continue;
+              }
+
+              const candidateId = `cand_${String(sequence).padStart(4, '0')}`;
+              element.setAttribute('data-vn-candidate-id', candidateId);
+
+              raw.push({
+                candidate_id: candidateId,
+                tag,
+                text,
+                visible,
+                enabled,
+                locator_hint: buildLocatorHint(element, tag),
+                role,
+                aria_label: ariaLabel || null,
+                placeholder: placeholder || null,
+                title: title || null,
+                name: element.getAttribute('name'),
+                type: element.getAttribute('type'),
+                clickable,
+                editable,
+                tabindex: Number.isFinite(tabindex) ? tabindex : null,
+                bounding_box: {
+                  x: Math.round(rect.x),
+                  y: Math.round(rect.y),
+                  width: Math.round(rect.width),
+                  height: Math.round(rect.height),
+                },
+                parent_context: normalizeText(
+                  element.closest('form, section, article, nav, aside, dialog, [role="dialog"]')?.getAttribute('aria-label') ||
+                  element.closest('form, section, article, nav, aside, dialog, [role="dialog"]')?.getAttribute('id') ||
+                  ''
+                ) || null,
+                element_id: element.id || null,
+                for_id: element.getAttribute('for'),
+                controls: element.getAttribute('aria-controls'),
+                labelledby: element.getAttribute('aria-labelledby'),
+                expanded: element.getAttribute('aria-expanded'),
+                haspopup: element.getAttribute('aria-haspopup'),
+                activedescendant: element.getAttribute('aria-activedescendant'),
+              });
+              sequence += 1;
+            }
+
+            return raw;
+        }"""
+    )
+
+
+def filter_visible_candidates(raw_candidates: list[dict[str, Any]]) -&gt; list[dict[str, Any]]:
+    filtered: list[dict[str, Any]] = []
+    for candidate in raw_candidates:
+        visible = bool(candidate.get("visible"))
+        enabled = bool(candidate.get("enabled"))
+        box = candidate.get("bounding_box") or {}
+        has_box = bool((box.get("width") or 0) &gt; 0 and (box.get("height") or 0) &gt; 0)
+        interactable = bool(candidate.get("clickable") or candidate.get("editable"))
+        role = (candidate.get("role") or "").strip().lower()
+        tag = (candidate.get("tag") or "").strip().lower()
+        has_text_signal = any(
+            bool((candidate.get(key) or "").strip())
+            for key in ("text", "aria_label", "placeholder", "title")
+        )
+
+        if not visible or not enabled:
+            continue
+        if not has_box and not interactable:
+            continue
+        if not has_text_signal and tag not in TEXT_OPTIONAL_TAGS and role not in TEXT_OPTIONAL_ROLES:
+            continue
+        filtered.append(candidate)
+    return filtered
+
+
+def structure_candidates(visible_candidates: list[dict[str, Any]]) -&gt; list[dict[str, Any]]:
+    structured: list[dict[str, Any]] = []
+    for candidate in visible_candidates:
+        structured.append(
+            {
+                "candidate_id": candidate.get("candidate_id"),
+                "tag": candidate.get("tag"),
+                "text": candidate.get("text", ""),
+                "visible": bool(candidate.get("visible")),
+                "enabled": bool(candidate.get("enabled")),
+                "locator_hint": candidate.get("locator_hint"),
+                "role": candidate.get("role"),
+                "aria_label": candidate.get("aria_label"),
+                "placeholder": candidate.get("placeholder"),
+                "title": candidate.get("title"),
+                "name": candidate.get("name"),
+                "type": candidate.get("type"),
+                "clickable": bool(candidate.get("clickable")),
+                "editable": bool(candidate.get("editable")),
+                "tabindex": candidate.get("tabindex"),
+                "bounding_box": candidate.get("bounding_box"),
+                "parent_context": candidate.get("parent_context"),
+                "element_id": candidate.get("element_id"),
+                "for_id": candidate.get("for_id"),
+                "controls": candidate.get("controls"),
+                "labelledby": candidate.get("labelledby"),
+                "expanded": candidate.get("expanded"),
+                "haspopup": candidate.get("haspopup"),
+                "activedescendant": candidate.get("activedescendant"),
+            }
+        )
+    return structured
+
+
+def build_candidate_inventory(page: Any) -&gt; dict[str, Any]:
+    raw_candidates = collect_raw_candidates(page)
+    visible_candidates = filter_visible_candidates(raw_candidates)
+    structured_candidates = structure_candidates(visible_candidates)
+    return {
+        "candidates": deduplicate_candidates(structured_candidates),
+        "relation_groups": build_relation_groups(deduplicate_candidates(structured_candidates)),
+        "summary": {
+            "raw_count": len(raw_candidates),
+            "visible_count": len(visible_candidates),
+            "deduplicated_count": len(deduplicate_candidates(structured_candidates)),
+        },
+    }
+
+
+def score_candidate_against_target(candidate: dict[str, Any], target: dict[str, Any]) -&gt; int:
+    match = target.get("match") or {}
+    fields = [
+        candidate.get("text") or "",
+        candidate.get("aria_label") or "",
+        candidate.get("placeholder") or "",
+        candidate.get("title") or "",
+        candidate.get("name") or "",
+    ]
+    normalized_fields = [str(item).strip().lower() for item in fields if str(item).strip()]
+    combined_text = " ".join(normalized_fields).strip()
+    role = str(candidate.get("role") or "").strip().lower()
+    tag = str(candidate.get("tag") or "").strip().lower()
+    score = 0
+
+    if not candidate.get("visible") or not candidate.get("enabled"):
+        return -1
+
+    expected_role = str(match.get("role") or "").strip().lower()
+    if expected_role:
+        if role == expected_role:
+            score += 90
+        elif tag == expected_role:
+            score += 45
+        else:
+            return -1
+
+    expected_tag = str(match.get("tag") or "").strip().lower()
+    if expected_tag:
+        if tag == expected_tag:
+            score += 40
+        else:
+            return -1
+
+    exact_name = _normalize_match_value(match.get("name") or match.get("text"))
+    if exact_name:
+        if exact_name in normalized_fields:
+            score += 70
+        elif exact_name == combined_text:
+            score += 60
+        elif exact_name in combined_text:
+            score += 40
+        else:
+            return -1
+
+    text_contains = _normalize_match_value(match.get("text_contains"))
+    if text_contains:
+        if text_contains in combined_text:
+            score += 35
+        else:
+            return -1
+
+    return score + _candidate_specificity_score(candidate)
+
+
+def select_inventory_candidates(page: Any, target: dict[str, Any]) -&gt; list[dict[str, Any]]:
+    inventory = build_candidate_inventory(page)
+    ranked: list[dict[str, Any]] = []
+    for candidate in inventory.get("candidates") or []:
+        score = score_candidate_against_target(candidate, target)
+        if score &lt; 0:
+            continue
+        ranked.append({"candidate": candidate, "score": score})
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+    return ranked
+
+
+def summarize_candidate_inventory(inventory: dict[str, Any], limit: int = 8) -&gt; str:
+    summary = inventory.get("summary") or {}
+    candidates = inventory.get("candidates") or []
+    preview = []
+    for candidate in candidates[:limit]:
+        text = candidate.get("text") or candidate.get("aria_label") or candidate.get("placeholder") or "no_text"
+        role = candidate.get("role") or candidate.get("tag") or "unknown"
+        preview.append(f"{role}:{text}")
+    return json.dumps(
+        {
+            "summary": {
+                "raw_count": summary.get("raw_count", 0),
+                "visible_count": summary.get("visible_count", 0),
+                "deduplicated_count": summary.get("deduplicated_count", 0),
+            },
+            "preview": preview,
+            "relation_groups": inventory.get("relation_groups") or {},
+        },
+        ensure_ascii=False,
+    )
+
+
+def deduplicate_candidates(structured_candidates: list[dict[str, Any]]) -&gt; list[dict[str, Any]]:
+    seen: dict[str, dict[str, Any]] = {}
+    for candidate in structured_candidates:
+        box = candidate.get("bounding_box") or {}
+        position_key = f"{box.get('x', 0)}:{box.get('y', 0)}:{box.get('width', 0)}:{box.get('height', 0)}"
+        text_key = (candidate.get("text") or candidate.get("aria_label") or candidate.get("placeholder") or "").strip()
+        role_key = (candidate.get("role") or candidate.get("tag") or "").strip()
+        dedupe_key = f"{position_key}|{text_key}|{role_key}"
+        previous = seen.get(dedupe_key)
+        if previous is None or _candidate_specificity_score(candidate) &gt; _candidate_specificity_score(previous):
+            seen[dedupe_key] = candidate
+    deduped = list(seen.values())
+    deduped.sort(key=_candidate_sort_key)
+    return deduped
+
+
+def build_relation_groups(structured_candidates: list[dict[str, Any]]) -&gt; dict[str, list[dict[str, Any]]]:
+    by_id = {
+        candidate.get("element_id"): candidate
+        for candidate in structured_candidates
+        if candidate.get("element_id")
+    }
+
+    combobox_groups = []
+    label_input_groups = []
+    dialog_groups = []
+    tab_groups = []
+
+    for candidate in structured_candidates:
+        role = (candidate.get("role") or "").lower()
+        tag = (candidate.get("tag") or "").lower()
+        candidate_id = candidate.get("candidate_id")
+        controls = candidate.get("controls")
+
+        if role == "combobox":
+            listbox = by_id.get(controls) if controls else None
+            combobox_groups.append(
+                {
+                    "combobox_candidate_id": candidate_id,
+                    "listbox_candidate_id": listbox.get("candidate_id") if listbox else None,
+                    "option_candidate_ids": [
+                        item.get("candidate_id")
+                        for item in structured_candidates
+                        if (item.get("role") or "").lower() == "option"
+                    ],
+                }
+            )
+
+        if tag == "label" and candidate.get("for_id"):
+            linked = by_id.get(candidate.get("for_id"))
+            if linked:
+                label_input_groups.append(
+                    {
+                        "label_candidate_id": candidate_id,
+                        "input_candidate_id": linked.get("candidate_id"),
+                    }
+                )
+
+        if role == "button" and controls:
+            dialog = by_id.get(controls)
+            if dialog and (dialog.get("role") or "").lower() == "dialog":
+                dialog_groups.append(
+                    {
+                        "button_candidate_id": candidate_id,
+                        "dialog_candidate_id": dialog.get("candidate_id"),
+                    }
+                )
+
+        if role == "tab" and controls:
+            panel = by_id.get(controls)
+            if panel and (panel.get("role") or "").lower() == "tabpanel":
+                tab_groups.append(
+                    {
+                        "tab_candidate_id": candidate_id,
+                        "tabpanel_candidate_id": panel.get("candidate_id"),
+                    }
+                )
+
+    return {
+        "combobox_groups": combobox_groups,
+        "label_input_groups": label_input_groups,
+        "dialog_groups": dialog_groups,
+        "tab_groups": tab_groups,
+    }
+
+
+def _candidate_specificity_score(candidate: dict[str, Any]) -&gt; int:
+    score = 0
+    if candidate.get("clickable") or candidate.get("editable"):
+        score += 30
+    if candidate.get("role"):
+        score += 20
+    if candidate.get("aria_label") or candidate.get("placeholder") or candidate.get("title"):
+        score += 15
+    text = (candidate.get("text") or "").strip()
+    if text:
+        score += min(len(text), 20)
+    if candidate.get("tag") in {"button", "input", "textarea", "select", "a"}:
+        score += 10
+    return score
+
+
+def _candidate_sort_key(candidate: dict[str, Any]) -&gt; tuple[int, int, int]:
+    box = candidate.get("bounding_box") or {}
+    return (
+        int(box.get("y", 0)),
+        int(box.get("x", 0)),
+        -_candidate_specificity_score(candidate),
+    )
+
+
+def _normalize_match_value(value: Any) -&gt; str:
+    if value is None:
+        return ""
+    return re.sub(r"\\s+", " ", str(value)).strip().lower()</code></pre>
+    </section>
+
+    <section class="card">
       <h2>18-4. local_server/app/automation/browser/target_resolver.py</h2>
       <div class="path">local_server/app/automation/browser/target_resolver.py</div>
+      <div class="callout"><strong>최신 구현 메모:</strong> 현재 실제 코드에서는 이 파일 상단에 <code>candidate_inventory</code> import가 추가되어 있고, <code>_resolve_candidates_in_frame()</code> 안에서 <code>_match_inventory()</code>가 먼저 호출됩니다. 또한 <code>_build_debug_snapshot()</code>은 단순 텍스트 나열이 아니라 inventory summary를 사용합니다.</div>
+      <pre><code>from local_server.app.automation.browser.candidate_inventory import (
+    build_candidate_inventory,
+    select_inventory_candidates,
+    summarize_candidate_inventory,
+)
+
+def _resolve_candidates_in_frame(self, frame: Any, target: dict[str, Any]) -&gt; list[ResolvedTarget]:
+    resolved: list[ResolvedTarget] = []
+    match = target.get("match") or {}
+
+    resolved.extend(self._match_inventory(frame, target))
+    resolved.extend(self._match_role_and_name(frame, match))
+    resolved.extend(self._match_text(frame, match))
+    resolved.extend(self._match_attributes(frame, match))
+    resolved.extend(self._match_fallbacks(frame, target.get("fallbacks") or []))
+    ...
+
+def _match_inventory(self, frame: Any, target: dict[str, Any]) -&gt; list[ResolvedTarget]:
+    candidates: list[ResolvedTarget] = []
+    ranked = select_inventory_candidates(frame, target)
+    for item in ranked[:8]:
+        candidate = item.get("candidate") or {}
+        candidate_id = candidate.get("candidate_id")
+        locator = frame.locator(f'[data-vn-candidate-id="{candidate_id}"]').first
+        candidates.append(
+            ResolvedTarget(
+                locator=locator,
+                score=int(item.get("score", 0)) + 100,
+                frame_url=frame.url or "about:blank",
+                strategy=f"inventory={candidate_id}|hint={candidate.get('locator_hint') or 'n/a'}",
+            )
+        )
+    return candidates</code></pre>
       <pre><code>from __future__ import annotations
 
 import re

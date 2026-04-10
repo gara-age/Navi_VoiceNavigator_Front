@@ -58,6 +58,8 @@ class SessionUiState {
 class SessionController extends StateNotifier<SessionUiState> {
   SessionController() : super(const SessionUiState());
 
+  static const int _maxAutomationRecoveryAttempts = 1;
+
   bool hasPendingFollowUp() {
     return _cleanText(state.lastFollowUp) != null &&
         _cleanText(state.pendingAction) != null;
@@ -212,9 +214,17 @@ class SessionController extends StateNotifier<SessionUiState> {
       }
 
       if (_isAgentPlanResponse(uri, response.body)) {
-        final execution = await JsonAutomationRunnerService.instance.runPlan(
+        var execution = await JsonAutomationRunnerService.instance.runPlan(
           rawPlan: response.body,
         );
+        if (!execution.success && execution.isRecoverableFailure) {
+          execution = await _attemptAutomationRecovery(
+            baseUri: uri,
+            originalCommand: command,
+            originalPlan: response.body,
+            execution: execution,
+          );
+        }
         return AgentCommandPayload(
           transcript: command,
           summary: execution.summary,
@@ -279,6 +289,144 @@ class SessionController extends StateNotifier<SessionUiState> {
       return const Duration(seconds: 45);
     }
     return const Duration(seconds: 15);
+  }
+
+  Future<JsonAutomationRunnerResult> _attemptAutomationRecovery({
+    required Uri baseUri,
+    required String originalCommand,
+    required String originalPlan,
+    required JsonAutomationRunnerResult execution,
+  }) async {
+    if (_maxAutomationRecoveryAttempts < 1) {
+      return execution;
+    }
+
+    final recoveryPrompt = _buildAutomationRecoveryPrompt(
+      originalCommand: originalCommand,
+      originalPlan: originalPlan,
+      execution: execution,
+    );
+    if (recoveryPrompt == null) {
+      return execution;
+    }
+
+    final recoveredPlan = await _requestAutomationRecoveryPlan(
+      baseUri: baseUri,
+      recoveryPrompt: recoveryPrompt,
+    );
+    if (recoveredPlan == null) {
+      return execution;
+    }
+
+    return JsonAutomationRunnerService.instance.runPlan(
+      rawPlan: recoveredPlan,
+    );
+  }
+
+  Future<String?> _requestAutomationRecoveryPlan({
+    required Uri baseUri,
+    required String recoveryPrompt,
+  }) async {
+    if (_agentApiBaseUrl.isEmpty) {
+      return null;
+    }
+
+    final uri = _resolveAgentPlanUri(baseUri);
+    final requestBody = _buildRequestBody(
+      uri: uri,
+      command: recoveryPrompt,
+      source: 'automation_recovery',
+    );
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(requestBody),
+          )
+          .timeout(const Duration(seconds: 45));
+
+      debugPrint('Automation recovery request uri = $uri');
+      debugPrint('Automation recovery request body = ${jsonEncode(requestBody)}');
+      debugPrint('Automation recovery response status = ${response.statusCode}');
+      debugPrint('Automation recovery response body = ${response.body}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+
+      if (!_isAgentPlanResponse(uri, response.body)) {
+        return null;
+      }
+
+      return response.body;
+    } catch (error) {
+      debugPrint('Automation recovery request uri = $uri');
+      debugPrint('Automation recovery request error = $error');
+      return null;
+    }
+  }
+
+  Uri _resolveAgentPlanUri(Uri baseUri) {
+    final trimmedPath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      return baseUri;
+    }
+    if (trimmedPath.endsWith('/agent/respond')) {
+      return baseUri.replace(
+        path: trimmedPath.replaceFirst(RegExp(r'/agent/respond$'), '/agent/plan'),
+      );
+    }
+    return baseUri.replace(
+      path: '${trimmedPath.isEmpty ? '' : trimmedPath}/agent/plan',
+    );
+  }
+
+  String? _buildAutomationRecoveryPrompt({
+    required String originalCommand,
+    required String originalPlan,
+    required JsonAutomationRunnerResult execution,
+  }) {
+    final recovery = execution.recoveryPayload;
+    if (recovery == null) {
+      return null;
+    }
+    final candidateSummary = recovery['candidate_summary'];
+    final llmSummary = candidateSummary is Map
+        ? candidateSummary['llm_summary']
+        : null;
+    final failedStep = execution.raw['failed_step'];
+    final reasonCode = recovery['reason_code']?.toString().trim();
+    if (candidateSummary == null || failedStep == null || reasonCode == null) {
+      return null;
+    }
+
+    return '''
+기존 웹 자동화 JSON plan 실행에 실패했습니다.
+
+사용자 원래 요청:
+$originalCommand
+
+실패 reason_code:
+$reasonCode
+
+실패한 step:
+${jsonEncode(failedStep)}
+
+현재 페이지 후보 축약:
+${jsonEncode(llmSummary ?? candidateSummary)}
+
+원래 plan:
+$originalPlan
+
+위 정보를 바탕으로 전체 JSON plan을 다시 작성하세요.
+반드시 steps가 있는 단일 JSON 객체만 반환하세요.
+설명, 코드블록, 마크다운 없이 JSON만 반환하세요.
+''';
   }
 
   Map<String, dynamic> _buildRequestBody({
