@@ -1,0 +1,2782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 23 Commit 1 - JSON Web Automation Runner</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --warn-bg: #fff8e8;
+      --warn-line: #f6d482;
+      --ok-bg: #ecfdf5;
+      --ok-line: #bbf7d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 18px 72px;
+    }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 32px; }
+    .card { padding: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h1, h2, h3 { line-height: 1.3; margin: 0 0 14px; }
+    h1 { font-size: 34px; }
+    h2 { font-size: 26px; margin-top: 4px; }
+    h3 { font-size: 20px; margin-top: 4px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .path {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .callout, .success {
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-top: 16px;
+    }
+    .callout {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      color: #92400e;
+    }
+    .success {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-line);
+      color: #166534;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+    }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Commit 1</span>
+      <h1>JSON Web Automation Runner</h1>
+      <p>이 문서는 <code>feat: add json-based web automation runner</code> 커밋을 직접 다시 구현할 수 있도록 만든 튜토리얼입니다. 목표는 이 프로젝트 안에서만 동작하는 Playwright 기반 웹 자동화 실행기를 추가하고, Agent가 내려준 JSON plan을 Flutter에서 받아 실행하는 것입니다.</p>
+      <div class="callout"><strong>핵심 원칙:</strong> 이 커밋에서는 Windows/macOS 데스크톱 자동화 코드를 넣지 않습니다. 오직 웹 자동화만 유지하고, Python 진입점도 <code>json_agent_scenario.py</code> 하나로 고정합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>1. 이번 커밋에서 바뀌는 구조</h2>
+      <ul>
+        <li>Flutter는 Agent 응답이 JSON plan 형태이면 로컬 Python 실행기로 넘깁니다.</li>
+        <li>로컬 Python 실행기는 <code>local_server.app.simulation.json_agent_scenario</code> 하나만 씁니다.</li>
+        <li>Python은 Playwright와 공통 step executor를 이용해 브라우저에서 JSON steps를 실행합니다.</li>
+        <li>Windows/macOS 전용 자동화 helper, 시나리오 파일, 의존성은 프로젝트에서 제거합니다.</li>
+      </ul>
+      <pre><code>Flutter SessionController
+  -> JsonAutomationRunnerService
+  -> python -m local_server.app.simulation.json_agent_scenario plan.json
+  -> PlaywrightRunner
+  -> CommandExecutor
+  -> TargetResolver</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>2. 수정/추가 파일 목록</h2>
+      <ul>
+        <li><code>lib/features/session/application/session_controller.dart</code></li>
+        <li><code>lib/shared/services/json_automation_runner_service.dart</code></li>
+        <li><code>local_server/__init__.py</code></li>
+        <li><code>local_server/app/__init__.py</code></li>
+        <li><code>local_server/app/automation/__init__.py</code></li>
+        <li><code>local_server/app/automation/browser/__init__.py</code></li>
+        <li><code>local_server/app/core/config.py</code></li>
+        <li><code>local_server/app/core/__init__.py</code></li>
+        <li><code>local_server/app/automation/browser/command_executor.py</code></li>
+        <li><code>local_server/app/automation/browser/target_resolver.py</code></li>
+        <li><code>local_server/app/automation/browser/playwright_runner.py</code></li>
+        <li><code>local_server/app/simulation/__init__.py</code></li>
+        <li><code>local_server/app/simulation/json_agent_scenario.py</code></li>
+        <li><code>local_server/requirements.txt</code></li>
+        <li><code>scripts/setup_automation_env.sh</code></li>
+        <li><code>scripts/setup_automation_env.ps1</code></li>
+      </ul>
+      <p>이 커밋은 새 디렉토리 <code>local_server/</code> 자체가 추가됩니다. 프로젝트 안에 Python 실행기를 같이 들고 오는 구조입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2-1. 최종 디렉토리 구조</h2>
+      <p>문서만 보고 다시 만들 때 가장 자주 빠지는 부분이 Python package용 <code>__init__.py</code> 파일입니다. 아래 구조를 그대로 맞추는 것이 안전합니다.</p>
+      <pre><code>local_server/
+├── __init__.py
+├── requirements.txt
+└── app/
+    ├── __init__.py
+    ├── automation/
+    │   ├── __init__.py
+    │   └── browser/
+    │       ├── __init__.py
+    │       ├── command_executor.py
+    │       ├── playwright_runner.py
+    │       └── target_resolver.py
+    ├── core/
+    │   ├── __init__.py
+    │   └── config.py
+    └── simulation/
+        ├── __init__.py
+        └── json_agent_scenario.py</code></pre>
+      <div class="callout"><strong>중요:</strong> <code>python -m local_server.app.simulation.json_agent_scenario</code> 방식으로 실행하려면 각 디렉토리가 Python package로 인식되어야 하므로 <code>__init__.py</code>가 빠지면 안 됩니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>3. Flutter에서 plan 응답을 잡는 SessionController</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <p>여기서는 기존 Agent 응답 처리 흐름에 “JSON plan이면 로컬 자동화를 실행한다”는 한 단계가 들어갑니다.</p>
+      <pre><code>if (_isAgentPlanResponse(uri, response.body)) {
+  final execution = await JsonAutomationRunnerService.instance.runPlan(
+    rawPlan: response.body,
+  );
+  return AgentCommandPayload(
+    transcript: command,
+    summary: execution.summary,
+    isError: !execution.success,
+    status: execution.success ? 'success' : 'error',
+    completesFollowUp: true,
+    rawText: jsonEncode(execution.raw),
+  );
+}</code></pre>
+      <p>중요한 점은 Flutter가 플랫폼 자동화 세부사항을 알지 않는다는 점입니다. Flutter는 plan 문자열을 넘기고, 결과 payload만 다시 받습니다.</p>
+      <div class="callout"><strong>왜 필요한가:</strong> Agent가 브라우저에서 해야 할 일을 JSON steps로 정리해 주면, 앱은 그 plan을 실행해 결과만 다시 UI에 반영할 수 있습니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>4. Dart 실행기 서비스는 엔트리포인트 하나만 사용</h2>
+      <div class="path">lib/shared/services/json_automation_runner_service.dart</div>
+      <p>이 파일은 JSON 문자열을 받아 임시 plan 파일을 만든 뒤, Python 모듈을 실행합니다. 웹 전용 구조에서는 오직 <code>json_agent_scenario</code>만 호출합니다.</p>
+      <pre><code>Future&lt;_AutomationInvocation?&gt; _prepareInvocation(
+  Map&lt;String, dynamic&gt; rawPlan,
+) async {
+  final rawSteps = rawPlan['steps'];
+  if (rawSteps is! List || rawSteps.isEmpty) {
+    return null;
+  }
+
+  final normalizedPlan = jsonEncode(_normalizePlan(rawPlan));
+  final tempDir = await Directory.systemTemp.createTemp(
+    'voice_navigator_plan_',
+  );
+  final planFile = File(
+    '${tempDir.path}${Platform.pathSeparator}agent_plan.json',
+  );
+  await planFile.writeAsString(normalizedPlan, flush: true);
+
+  return _AutomationInvocation(
+    moduleName: 'local_server.app.simulation.json_agent_scenario',
+    moduleArguments: [planFile.path],
+    onDispose: () async {
+      if (planFile.existsSync()) {
+        await planFile.delete();
+      }
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    },
+  );
+}</code></pre>
+      <p>예전처럼 <code>memo_notepad</code>, <code>textedit_note</code>, <code>calculator_addition</code> 같은 scenario 분기는 넣지 않습니다.</p>
+      <p>추가로 이 서비스는 프로젝트 루트 탐색, Python 실행기 탐색, stdout/stderr 파싱까지 같이 담당합니다.</p>
+      <pre><code>environment: {
+  ...Platform.environment,
+  'VOICE_NAVIGATOR_ROOT': root.path,
+  'PLAYWRIGHT_HEADLESS': 'false',
+  'PYTHONUTF8': '1',
+  'PYTHONHOME': '',
+  'PYTHONPATH': '',
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>4-1. 프로젝트 루트와 Python 실행기 찾기</h2>
+      <div class="path">lib/shared/services/json_automation_runner_service.dart</div>
+      <p>이 서비스는 현재 프로젝트만 보도록 설계되어 있고, 아래 우선순위로 루트를 찾습니다.</p>
+      <ol>
+        <li>컴파일 타임 상수 <code>VOICE_NAVIGATOR_PROJECT_ROOT</code></li>
+        <li><code>Directory.current</code> 상위에서 <code>pubspec.yaml</code>이 있는 폴더</li>
+        <li><code>Platform.resolvedExecutable</code> 상위에서 <code>pubspec.yaml</code>이 있는 폴더</li>
+      </ol>
+      <p>Python 실행기는 아래 우선순위로 찾습니다.</p>
+      <ol>
+        <li><code>&lt;root&gt;/.venv-server/bin/python</code></li>
+        <li><code>&lt;root&gt;/.venv-server/Scripts/python.exe</code></li>
+        <li><code>python3</code>, <code>python</code>, <code>py</code></li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>5. plan 정규화에서 꼭 하는 일</h2>
+      <div class="path">lib/shared/services/json_automation_runner_service.dart</div>
+      <p>Agent가 주는 JSON은 불완전할 수 있으니, Flutter 쪽에서 한 번 정규화해서 Python으로 넘깁니다. 이때 주로 하는 작업은 다음과 같습니다.</p>
+      <ul>
+        <li><code>site</code>와 step 타입을 기준으로 target을 보정</li>
+        <li><code>fill</code> 단계 앞에 필요한 synthetic <code>wait_for</code> 추가</li>
+        <li>간단한 selector를 <code>target.fallbacks</code> 구조로 변환</li>
+      </ul>
+      <p>이 정규화는 Python에서 plan schema를 더 단순하게 유지하게 해 줍니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>6. Python 엔트리포인트는 웹 plan dispatcher</h2>
+      <div class="path">local_server/app/simulation/json_agent_scenario.py</div>
+      <p>이 파일은 plan 파일을 읽고, step 형식을 정리한 뒤 PlaywrightRunner에 넘깁니다.</p>
+      <pre><code>def run(plan_path: str) -&gt; dict:
+    plan_file = Path(plan_path)
+    if not plan_file.exists():
+        raise FileNotFoundError("plan_file_not_found")
+
+    raw_plan = json.loads(plan_file.read_text(encoding="utf-8"))
+    normalized_plan = normalize_plan(raw_plan)
+
+    config = replace(AppConfig.from_env(), browser_headless=False)
+    runner = PlaywrightRunner(config=config)
+    return runner.run_agent_plan(
+        plan=normalized_plan,
+        progress_callback=emit_progress,
+        scenario_name="custom_json_agent_plan",
+        success_summary="직접 입력한 JSON 시나리오를 완료했습니다.",
+    )</code></pre>
+      <p>여기서는 web only 정책을 유지하기 위해 dispatcher를 복잡하게 만들지 않습니다. plan이 있으면 곧바로 브라우저 executor로 갑니다.</p>
+      <p>표준 출력 형식도 중요합니다. 이 모듈은 Flutter가 읽을 수 있게 항상 JSON envelope를 출력합니다.</p>
+      <pre><code>print(
+    json.dumps(
+        {
+            "kind": "result",
+            "payload": result,
+        },
+        ensure_ascii=False,
+    ),
+    flush=True,
+)</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>7. normalize_plan의 역할</h2>
+      <div class="path">local_server/app/simulation/json_agent_scenario.py</div>
+      <p>이 함수는 JSON plan을 공통 실행 포맷으로 바꿉니다. 지원 action도 여기서 제한합니다.</p>
+      <pre><code>def _normalize_step(raw_step: dict, index: int, site: str) -&gt; dict:
+    step_type = raw_step.get("type") or raw_step.get("action")
+    ...
+    if step_type == "navigate":
+        ...
+    elif step_type == "wait_for":
+        ...
+    elif step_type == "click":
+        ...
+    elif step_type == "fill":
+        ...
+    elif step_type == "press":
+        ...
+    elif step_type == "extract":
+        ...
+    elif step_type == "finish":
+        ...
+    else:
+        raise ValueError(f"unsupported_action:{step_type}")</code></pre>
+      <p>즉 현재 지원 step은 <code>navigate</code>, <code>wait_for</code>, <code>click</code>, <code>fill</code>, <code>press</code>, <code>extract</code>, <code>finish</code> 입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>8. PlaywrightRunner는 웹 전용으로 단순화</h2>
+      <div class="path">local_server/app/automation/browser/playwright_runner.py</div>
+      <p>이 파일은 이번 커밋에서 가장 중요한 정리 대상입니다. Windows helper를 제거하고 브라우저 session + generic plan execution만 남깁니다.</p>
+      <pre><code>class PlaywrightRunner:
+    def run_agent_plan(
+        self,
+        plan: dict,
+        progress_callback: ProgressCallback | None = None,
+        scenario_name: str = "agent_plan",
+        success_summary: str | None = None,
+    ) -&gt; dict:
+        ...
+        with sync_playwright() as playwright:
+            emit(1, "open_browser_session", "processing", "브라우저 세션을 준비하는 중입니다.")
+            browser, page, reused_browser = self._create_browser_session(playwright)
+            ...
+            executor = CommandExecutor()
+            execution = executor.execute_plan(
+                page,
+                plan,
+                progress_callback=self._offset_progress_callback(progress_callback, offset=1),
+            )
+            ...
+                return {
+                    "status": "success",
+                "scenario": scenario_name,
+                "goal": plan.get("goal", ""),
+                "summary": summary,
+                "url": page.url,
+                "title": page.title(),
+                "steps": steps,
+                "observations": observations,
+                "engine": {
+                    "browser": "chrome",
+                    "headless": config.browser_headless,
+                    "automation": "playwright",
+                    },
+                }</code></pre>
+      <p>이제 이 파일에는 <code>UiAutomationHelper</code> import도 없고, Windows foreground window 확인 같은 데스크톱 의존도 없습니다.</p>
+      <p>브라우저 연결 방식도 맞춰야 합니다. 이 구현은 Playwright가 직접 브라우저를 launch하는 대신, Chrome 원격 디버깅 세션을 재사용하거나 새로 띄웁니다.</p>
+      <pre><code>browser = playwright.chromium.connect_over_cdp(endpoint)
+context = browser.contexts[0] if browser.contexts else browser.new_context()
+page = self._resolve_page_for_simulation(context, reused_browser)</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>9. 브라우저 step executor는 CommandExecutor를 그대로 쓴다</h2>
+      <div class="path">local_server/app/automation/browser/command_executor.py</div>
+      <p>이 파일은 실제 step interpreter입니다. target resolution, click, fill, wait, extract, press가 여기서 실행됩니다.</p>
+      <pre><code>if action == "navigate":
+    page.goto(url, wait_until=args.get("wait_until", "domcontentloaded"))
+
+if action == "click":
+    locator = self._resolve_target(page, step)
+    self._click_in_current_tab(page, locator)
+
+if action == "fill":
+    locator = self._resolve_target(page, step)
+    locator.fill(text)</code></pre>
+      <p>웹 자동화 유지 전략의 핵심은 이 계층을 바꾸지 않고 상위 구조만 정리하는 것입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>10. target locator 해석은 TargetResolver가 담당</h2>
+      <div class="path">local_server/app/automation/browser/target_resolver.py</div>
+      <p>Agent plan의 <code>target</code> 필드에는 <code>description</code>, <code>fallbacks</code>, <code>frame_scope</code> 같은 정보가 들어갈 수 있습니다. 이 파일은 그런 정보를 실제 Playwright locator로 바꿔 줍니다.</p>
+      <div class="callout"><strong>중요:</strong> JSON plan에서 selector를 직접 쓰지 않아도 되는 이유가 바로 이 resolver 계층 때문입니다. Agent는 의미 기반 target을 주고, resolver가 fallback selector와 frame 범위를 해석합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>11. requirements는 Playwright 하나만 남긴다</h2>
+      <div class="path">local_server/requirements.txt</div>
+      <pre><code>playwright==1.48.0</code></pre>
+      <p>이 커밋에서는 FastAPI, httpx, uiautomation 같은 의존성이 필요 없습니다. 자동화 실행기는 로컬 plan executor일 뿐이기 때문입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>12. 환경 준비 스크립트</h2>
+      <div class="path">scripts/setup_automation_env.sh</div>
+      <pre><code>python -m pip install -r local_server/requirements.txt
+python -m playwright install chromium</code></pre>
+      <div class="path">scripts/setup_automation_env.ps1</div>
+      <pre><code>.\.venv-server\Scripts\python -m pip install -r local_server\requirements.txt
+.\.venv-server\Scripts\python -m playwright install chromium</code></pre>
+      <p>두 스크립트 모두 같은 목적입니다. 가상환경을 만들고, Playwright와 Chromium을 설치합니다.</p>
+      <pre><code># macOS / Linux
+./scripts/setup_automation_env.sh
+
+# Windows PowerShell
+.\scripts\setup_automation_env.ps1</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>13. 제거해야 하는 파일</h2>
+      <p>웹 전용 구조로 가려면 아래 파일들은 프로젝트에서 빼야 합니다.</p>
+      <ul>
+        <li><code>local_server/app/automation/windows/__init__.py</code></li>
+        <li><code>local_server/app/automation/windows/ui_automation_helper.py</code></li>
+        <li><code>local_server/app/automation/macos/__init__.py</code></li>
+        <li><code>local_server/app/automation/macos/accessibility_helper.py</code></li>
+        <li><code>local_server/app/automation/macos/workspace_helper.py</code></li>
+        <li><code>local_server/app/simulation/memo_notepad_scenario.py</code></li>
+        <li><code>local_server/app/simulation/textedit_scenario.py</code></li>
+        <li><code>local_server/app/simulation/calculator_scenario.py</code></li>
+        <li><code>local_server/app/simulation/theme_scenario.py</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>14. 샘플 JSON plan 예시</h2>
+      <pre><code>{
+  "task_id": "youtube-search-001",
+  "goal": "유튜브에서 고양이 영상을 검색한다",
+  "site": "https://www.youtube.com",
+  "steps": [
+    {
+      "step": 1,
+      "type": "navigate",
+      "args": { "url": "https://www.youtube.com" }
+    },
+    {
+      "step": 2,
+      "type": "fill",
+      "target": {
+        "description": "유튜브 검색창",
+        "fallbacks": [
+          { "css": "input[name='search_query']" }
+        ],
+        "frame_scope": "all_frames",
+        "index": 0
+      },
+      "args": { "text": "고양이 영상" }
+    },
+    {
+      "step": 3,
+      "type": "press",
+      "target": {
+        "description": "유튜브 검색창",
+        "reuse_previous_target": true
+      },
+      "args": { "key": "Enter" }
+    },
+    {
+      "step": 4,
+      "type": "finish",
+      "args": { "message": "유튜브 검색을 완료했습니다." }
+    }
+  ]
+}</code></pre>
+      <p>이 예시는 현재 구조에서 바로 실행 가능한 형태입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>15. 검증 방법</h2>
+      <ol>
+        <li><code>scripts/setup_automation_env.sh</code> 또는 <code>scripts/setup_automation_env.ps1</code>로 환경을 준비합니다.</li>
+        <li>Flutter analyzer를 돌립니다.</li>
+        <li>샘플 plan 파일을 만들어 아래처럼 직접 실행합니다.</li>
+      </ol>
+      <pre><code>.venv-server/bin/python -m local_server.app.simulation.json_agent_scenario /absolute/path/to/plan.json</code></pre>
+      <pre><code>.venv-server\Scripts\python -m local_server.app.simulation.json_agent_scenario C:\path\to\plan.json</code></pre>
+      <pre><code>"$HOME/flutter/bin/flutter" analyze \
+  lib/features/session/application/session_controller.dart \
+  lib/shared/services/json_automation_runner_service.dart</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>16. 구현하면서 흔히 놓치는 것</h2>
+      <ul>
+        <li><code>local_server</code> 각 디렉토리에 <code>__init__.py</code>를 빠뜨리는 것</li>
+        <li><code>requirements.txt</code>에 데스크톱 자동화 의존성이 남는 것</li>
+        <li><code>json_automation_runner_service.dart</code>에 scenario 분기 코드를 남겨 두는 것</li>
+        <li><code>PLAYWRIGHT_HEADLESS=false</code>를 넘기지 않아 브라우저가 안 보이는 것</li>
+        <li><code>kind: result</code> envelope를 안 찍어서 Flutter가 결과 payload를 못 읽는 것</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>17. 완료 기준</h2>
+      <ul>
+        <li>Flutter가 JSON plan이면 항상 <code>json_agent_scenario.py</code>만 호출한다.</li>
+        <li>Python 실행기는 Playwright 기반 웹 steps만 수행한다.</li>
+        <li>Windows/macOS 전용 helper와 시나리오 파일이 프로젝트에서 제거되어 있다.</li>
+        <li><code>requirements.txt</code>는 Playwright만 가진다.</li>
+        <li>환경 스크립트 한 번으로 웹 자동화 실행 환경을 만들 수 있다.</li>
+      </ul>
+      <div class="success"><strong>정리:</strong> 이 커밋은 “현재 프로젝트 안에서만 동작하는 JSON 기반 웹 자동화 실행기”를 만드는 작업입니다. 데스크톱 자동화는 의도적으로 포함하지 않습니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>18. 소스 복붙용 최종 코드 모음</h2>
+      <p>아래 섹션은 설명보다 복붙을 우선한 최종 코드 모음입니다. 필요한 파일을 그대로 만들어 넣을 수 있도록 정리했습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>18-1. Python package 파일</h2>
+      <p>아래 6개 파일은 모두 빈 파일로 생성하면 됩니다.</p>
+      <ul>
+        <li><code>local_server/__init__.py</code></li>
+        <li><code>local_server/app/__init__.py</code></li>
+        <li><code>local_server/app/automation/__init__.py</code></li>
+        <li><code>local_server/app/automation/browser/__init__.py</code></li>
+        <li><code>local_server/app/core/__init__.py</code></li>
+        <li><code>local_server/app/simulation/__init__.py</code></li>
+      </ul>
+      <pre><code></code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-2. local_server/app/core/config.py</h2>
+      <div class="path">local_server/app/core/config.py</div>
+      <pre><code>import os
+from dataclasses import dataclass
+
+
+@dataclass(slots=True)
+class AppConfig:
+    host: str = "127.0.0.1"
+    port: int = 18400
+    agent_api_url: str = ""
+    agent_api_key: str = ""
+    agent_api_timeout_ms: int = 15000
+    openai_model: str = "gpt-4.1-mini"
+    openai_api_key: str = ""
+    openai_stt_model: str = "gpt-4o-mini-transcribe"
+    google_tts_api_key: str = ""
+    tts_voice: str = "ko-KR-Neural2-A"
+    browser_headless: bool = True
+
+    @classmethod
+    def from_env(cls) -&gt; "AppConfig":
+        return cls(
+            host=os.getenv("VOICE_NAVIGATOR_HOST", "127.0.0.1"),
+            port=int(os.getenv("VOICE_NAVIGATOR_PORT", "18400")),
+            agent_api_url=os.getenv("AGENT_API_URL", "").strip(),
+            agent_api_key=os.getenv("AGENT_API_KEY", "").strip(),
+            agent_api_timeout_ms=int(os.getenv("AGENT_API_TIMEOUT_MS", "15000")),
+            openai_model=os.getenv("OPENAI_LLM_MODEL", "gpt-4.1-mini"),
+            openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+            openai_stt_model=os.getenv("OPENAI_STT_MODEL", "gpt-4o-mini-transcribe"),
+            google_tts_api_key=os.getenv("GOOGLE_CLOUD_API_KEY", ""),
+            tts_voice=os.getenv("GOOGLE_TTS_VOICE", "ko-KR-Neural2-A"),
+            browser_headless=os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() != "false",
+        )</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-3. local_server/app/automation/browser/command_executor.py</h2>
+      <div class="path">local_server/app/automation/browser/command_executor.py</div>
+      <pre><code>from __future__ import annotations
+
+from typing import Any, Callable
+
+from local_server.app.automation.browser.target_resolver import (
+    TargetResolutionError,
+    TargetResolver,
+)
+
+ProgressCallback = Callable[[dict[str, Any]], None]
+
+
+class CommandExecutor:
+    """Execute a structured browser plan step by step.
+
+    This executor is designed as the next-stage replacement for the current
+    scenario-specific Playwright methods. Existing hardcoded scenarios can
+    gradually migrate by generating a JSON plan and delegating execution here.
+    """
+
+    def __init__(self, target_resolver: TargetResolver | None = None) -&gt; None:
+        self.target_resolver = target_resolver or TargetResolver()
+        self._last_locator: Any | None = None
+
+    def execute_plan(
+        self,
+        page: Any,
+        plan: dict[str, Any],
+        progress_callback: ProgressCallback | None = None,
+    ) -&gt; dict[str, Any]:
+        steps = plan.get("steps") or []
+        completed_steps: list[dict[str, Any]] = []
+        observations: list[dict[str, Any]] = []
+
+        for step in steps:
+            step_no = int(step.get("step", len(completed_steps) + 1))
+            action = step.get("type", "unknown")
+            description = self._describe_step(step)
+
+            self._emit(
+                progress_callback,
+                step_no,
+                action,
+                "processing",
+                description,
+            )
+
+            try:
+                observation = self.execute_step(page, step)
+                observations.append(observation)
+                completed_steps.append(
+                    {
+                        "step": step_no,
+                        "action": action,
+                        "status": "success",
+                        "detail": observation.get("summary", description),
+                    }
+                )
+                self._emit(
+                    progress_callback,
+                    step_no,
+                    action,
+                    "success",
+                    observation.get("summary", description),
+                    popup_state="success",
+                )
+            except Exception as exc:
+                completed_steps.append(
+                    {
+                        "step": step_no,
+                        "action": action,
+                        "status": "error",
+                        "detail": str(exc),
+                    }
+                )
+                return {
+                    "status": "error",
+                    "reason": str(exc),
+                    "steps": completed_steps,
+                    "observations": observations,
+                }
+
+        return {
+            "status": "success",
+            "goal": plan.get("goal", ""),
+            "steps": completed_steps,
+            "observations": observations,
+        }
+
+    def execute_step(self, page: Any, step: dict[str, Any]) -&gt; dict[str, Any]:
+        action = step["type"]
+        args = step.get("args") or {}
+
+        if action == "navigate":
+            url = args["url"]
+            page.goto(url, wait_until=args.get("wait_until", "domcontentloaded"))
+            return {
+                "action": action,
+                "summary": f"{url}로 이동했습니다.",
+                "url": page.url,
+            }
+
+        if action == "click":
+            locator = self._resolve_target(page, step)
+            self._click_in_current_tab(page, locator)
+            return {
+                "action": action,
+                "summary": f"{step.get('target', {}).get('description', '대상')}을 클릭했습니다.",
+            }
+
+        if action == "fill":
+            locator = self._resolve_target(page, step)
+            text = args["text"]
+            locator.fill(text)
+            return {
+                "action": action,
+                "summary": f"{step.get('target', {}).get('description', '입력창')}에 값을 입력했습니다.",
+                "text": text,
+            }
+
+        if action == "wait_for":
+            locator = self._resolve_target(page, step)
+            locator.wait_for(
+                state=args.get("state", "visible"),
+                timeout=int(args.get("timeout_ms", 5000)),
+            )
+            return {
+                "action": action,
+                "summary": f"{step.get('target', {}).get('description', '대상')}이 준비되었습니다.",
+            }
+
+        if action == "extract":
+            locator = self._resolve_target(page, step)
+            text = locator.inner_text(timeout=int(args.get("timeout_ms", 1200))).strip()
+            return {
+                "action": action,
+                "summary": f"{step.get('target', {}).get('description', '대상')}의 텍스트를 추출했습니다.",
+                "text": text,
+                "fields": args.get("fields", []),
+            }
+
+        if action == "press":
+            locator = self._resolve_target(page, step)
+            locator.press(args["key"])
+            return {
+                "action": action,
+                "summary": f"{args['key']} 키를 입력했습니다.",
+            }
+
+        if action == "finish":
+            return {
+                "action": action,
+                "summary": args.get("message", "작업을 종료합니다."),
+            }
+
+        raise RuntimeError(f"unsupported_action:{action}")
+
+    def _resolve_target(self, page: Any, step: dict[str, Any]) -&gt; Any:
+        target = step.get("target") or {}
+        if target.get("reuse_previous_target") and self._last_locator is not None:
+            return self._last_locator
+
+        try:
+            resolved = self.target_resolver.resolve_with_metadata(
+                page,
+                target,
+                timeout_ms=int((step.get("args") or {}).get("timeout_ms", 8000)),
+            )
+        except TargetResolutionError as exc:
+            raise RuntimeError(f"{exc} | debug={exc.debug_snapshot}") from exc
+
+        self._last_locator = resolved.locator
+        return resolved.locator
+
+    def _emit(
+        self,
+        progress_callback: ProgressCallback | None,
+        step: int,
+        action: str,
+        status: str,
+        detail: str,
+        popup_state: str = "processing",
+    ) -&gt; None:
+        if progress_callback is None:
+            return
+        progress_callback(
+            {
+                "step": step,
+                "action": action,
+                "status": status,
+                "detail": detail,
+                "popup_state": popup_state,
+            }
+        )
+
+    def _click_in_current_tab(self, page: Any, locator: Any) -&gt; None:
+        try:
+            tag_name = locator.evaluate(
+                """element =&gt; (element.tagName || '').toLowerCase()"""
+            )
+        except Exception:
+            tag_name = ""
+
+        if tag_name == "a":
+            try:
+                locator.evaluate(
+                    """element =&gt; {
+                        element.setAttribute('target', '_self');
+                        element.removeAttribute('rel');
+                    }"""
+                )
+            except Exception:
+                pass
+
+        locator.click()
+
+    def _describe_step(self, step: dict[str, Any]) -&gt; str:
+        action = step.get("type", "unknown")
+        target = step.get("target") or {}
+        description = target.get("description")
+        if description:
+            return f"{description} 단계 실행 중입니다."
+        return f"{action} 단계를 실행 중입니다."</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-4. local_server/app/automation/browser/target_resolver.py</h2>
+      <div class="path">local_server/app/automation/browser/target_resolver.py</div>
+      <pre><code>from __future__ import annotations
+
+import re
+import time
+from dataclasses import dataclass
+from typing import Any
+
+
+class TargetResolutionError(RuntimeError):
+    def __init__(self, message: str, debug_snapshot: str = "") -&gt; None:
+        super().__init__(message)
+        self.debug_snapshot = debug_snapshot
+
+
+@dataclass(slots=True)
+class ResolvedTarget:
+    locator: Any
+    score: int
+    frame_url: str
+    strategy: str
+
+
+class TargetResolver:
+    """Resolve a structured target spec into a Playwright locator.
+
+    This is a generic replacement for scenario-specific lambda lists.
+    The executor can reuse this resolver for search, route, shopping,
+    and other future site flows.
+    """
+
+    def resolve(self, page: Any, target: dict[str, Any], timeout_ms: int = 8000) -&gt; Any:
+        resolved = self.resolve_with_metadata(page, target, timeout_ms=timeout_ms)
+        return resolved.locator
+
+    def resolve_with_metadata(
+        self,
+        page: Any,
+        target: dict[str, Any],
+        timeout_ms: int = 8000,
+    ) -&gt; ResolvedTarget:
+        deadline = time.time() + (timeout_ms / 1000)
+        last_error = ""
+
+        while time.time() &lt; deadline:
+            candidates: list[ResolvedTarget] = []
+            for frame in self._collect_frames(page, target.get("frame_scope", "all_frames")):
+                candidates.extend(self._resolve_candidates_in_frame(frame, target))
+
+            visible_candidates: list[ResolvedTarget] = []
+            for candidate in candidates:
+                try:
+                    candidate.locator.wait_for(state="visible", timeout=250)
+                    visible_candidates.append(candidate)
+                except Exception as exc:
+                    last_error = str(exc)
+
+            if visible_candidates:
+                visible_candidates.sort(key=lambda item: item.score, reverse=True)
+                index = target.get("index", 0)
+                if index &lt; len(visible_candidates):
+                    return visible_candidates[index]
+                return visible_candidates[0]
+
+            page.wait_for_timeout(300)
+
+        raise TargetResolutionError(
+            f"target_not_found:{target.get('description', 'unnamed_target')} | last_error={last_error or 'n/a'}",
+            debug_snapshot=self._build_debug_snapshot(page),
+        )
+
+    def _collect_frames(self, page: Any, frame_scope: str) -&gt; list[Any]:
+        if frame_scope == "main_frame":
+            return [page.main_frame]
+        return list(page.frames)
+
+    def _resolve_candidates_in_frame(self, frame: Any, target: dict[str, Any]) -&gt; list[ResolvedTarget]:
+        resolved: list[ResolvedTarget] = []
+        match = target.get("match") or {}
+
+        resolved.extend(self._match_role_and_name(frame, match))
+        resolved.extend(self._match_text(frame, match))
+        resolved.extend(self._match_attributes(frame, match))
+        resolved.extend(self._match_fallbacks(frame, target.get("fallbacks") or []))
+
+        deduped: list[ResolvedTarget] = []
+        seen: set[str] = set()
+        for item in resolved:
+            key = f"{item.frame_url}|{item.strategy}"
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(item)
+        return deduped
+
+    def _match_role_and_name(self, frame: Any, match: dict[str, Any]) -&gt; list[ResolvedTarget]:
+        role = match.get("role")
+        tag = match.get("tag")
+        name = match.get("name") or match.get("text")
+        text_contains = match.get("text_contains")
+        text_starts_with = match.get("text_starts_with")
+        if not role:
+            return []
+
+        candidates: list[ResolvedTarget] = []
+        try:
+            if name:
+                locator = frame.get_by_role(role, name=name).first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=140,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"role={role}|name={name}",
+                    )
+                )
+        except Exception:
+            pass
+
+        if text_starts_with:
+            try:
+                locator = frame.get_by_role(
+                    role,
+                    name=re.compile(rf"^{re.escape(text_starts_with)}"),
+                ).first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=130,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"role={role}|name^={text_starts_with}",
+                    )
+                )
+            except Exception:
+                pass
+
+        if text_contains:
+            try:
+                locator = frame.get_by_role(role, name=re.compile(re.escape(text_contains))).first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=120,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"role={role}|name~=/{text_contains}/",
+                    )
+                )
+            except Exception:
+                pass
+
+        if tag:
+            role_selector = f"{tag}[role='{role}']"
+            try:
+                if text_starts_with:
+                    locator = frame.locator(role_selector).filter(
+                        has_text=re.compile(rf"^{re.escape(text_starts_with)}"),
+                    ).first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=160,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"tag={tag}|role={role}|text^={text_starts_with}",
+                        )
+                    )
+                elif name:
+                    locator = frame.locator(role_selector).filter(
+                        has_text=re.compile(re.escape(name)),
+                    ).first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=150,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"tag={tag}|role={role}|text={name}",
+                        )
+                    )
+            except Exception:
+                pass
+        return candidates
+
+    def _match_text(self, frame: Any, match: dict[str, Any]) -&gt; list[ResolvedTarget]:
+        candidates: list[ResolvedTarget] = []
+        text = match.get("text")
+        text_contains = match.get("text_contains")
+
+        if text:
+            try:
+                locator = frame.get_by_text(text, exact=True).first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=110,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"text={text}",
+                    )
+                )
+            except Exception:
+                pass
+
+        if text_contains:
+            try:
+                locator = frame.get_by_text(text_contains, exact=False).first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=90,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"text*={text_contains}",
+                    )
+                )
+            except Exception:
+                pass
+        return candidates
+
+    def _match_attributes(self, frame: Any, match: dict[str, Any]) -&gt; list[ResolvedTarget]:
+        candidates: list[ResolvedTarget] = []
+        attr_map = [
+            ("placeholder_contains", "placeholder", 85),
+            ("aria_label_contains", "aria-label", 85),
+            ("title_contains", "title", 80),
+            ("name_contains", "name", 75),
+        ]
+        for match_key, attr_name, score in attr_map:
+            value = match.get(match_key)
+            if not value:
+                continue
+            try:
+                locator = frame.locator(f"[{attr_name}*='{value}']").first
+                candidates.append(
+                    ResolvedTarget(
+                        locator=locator,
+                        score=score,
+                        frame_url=frame.url or "about:blank",
+                        strategy=f"{attr_name}*={value}",
+                    )
+                )
+            except Exception:
+                continue
+        return candidates
+
+    def _match_fallbacks(self, frame: Any, fallbacks: list[dict[str, Any]]) -&gt; list[ResolvedTarget]:
+        candidates: list[ResolvedTarget] = []
+        for fallback in fallbacks:
+            role = fallback.get("role")
+            text = fallback.get("text")
+            css = fallback.get("css")
+            xpath = fallback.get("xpath")
+            exact = fallback.get("exact", True)
+
+            try:
+                if role and text:
+                    locator = frame.get_by_role(role, name=text if exact else re.compile(re.escape(text))).first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=70 if exact else 65,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"fallback-role={role}|text={text}",
+                        )
+                    )
+                    continue
+
+                if text:
+                    locator = frame.get_by_text(text, exact=exact).first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=60 if exact else 55,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"fallback-text={text}",
+                        )
+                    )
+                    continue
+
+                if css:
+                    locator = frame.locator(css).first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=50,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"fallback-css={css}",
+                        )
+                    )
+                    continue
+
+                if xpath:
+                    locator = frame.locator(f"xpath={xpath}").first
+                    candidates.append(
+                        ResolvedTarget(
+                            locator=locator,
+                            score=45,
+                            frame_url=frame.url or "about:blank",
+                            strategy=f"fallback-xpath={xpath}",
+                        )
+                    )
+            except Exception:
+                continue
+
+        return candidates
+
+    def _build_debug_snapshot(self, page: Any) -&gt; str:
+        snapshots: list[str] = []
+        for index, frame in enumerate(page.frames):
+            try:
+                frame_name = frame.name or f"frame_{index}"
+                frame_url = frame.url or "about:blank"
+                texts = frame.locator(
+                    "button, a, input, [role='button'], [role='tab'], [role='combobox']"
+                ).all_inner_texts()
+                normalized = [
+                    re.sub(r"\s+", " ", text).strip()
+                    for text in texts
+                    if re.sub(r"\s+", " ", text).strip()
+                ]
+                snapshots.append(f"{frame_name}@{frame_url} =&gt; {', '.join(normalized[:8]) or 'no_text'}")
+            except Exception:
+                continue
+        return " | ".join(snapshots[:6]) if snapshots else "no_frame_debug"</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-5. local_server/app/automation/browser/playwright_runner.py</h2>
+      <div class="path">local_server/app/automation/browser/playwright_runner.py</div>
+      <pre><code>from __future__ import annotations
+
+import os
+import subprocess
+import time
+from dataclasses import replace
+from pathlib import Path
+from typing import Callable
+from urllib.error import URLError
+from urllib.request import urlopen
+
+from local_server.app.automation.browser.command_executor import CommandExecutor
+from local_server.app.core.config import AppConfig
+
+ProgressCallback = Callable[[dict], None]
+
+
+class PlaywrightRunner:
+    """Execute generic JSON browser plans with Playwright.
+
+    This runner intentionally keeps the implementation web-only. Desktop
+    automation for Windows and macOS is handled outside this project scope.
+    """
+
+    def __init__(self, config: AppConfig | None = None) -&gt; None:
+        self.config = config or AppConfig.from_env()
+
+    def run_agent_plan(
+        self,
+        plan: dict,
+        progress_callback: ProgressCallback | None = None,
+        scenario_name: str = "agent_plan",
+        success_summary: str | None = None,
+    ) -&gt; dict:
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+            from playwright.sync_api import sync_playwright
+        except Exception:
+            return self._simulation_failure("playwright_not_installed", [], progress_callback)
+
+        config = replace(self.config, browser_headless=False)
+        steps: list[dict] = []
+        last_step: dict | None = None
+
+        def emit(step: int, action: str, status: str, detail: str, popup_state: str = "processing") -&gt; None:
+            nonlocal last_step
+            payload = {
+                "step": step,
+                "action": action,
+                "status": status,
+                "detail": detail,
+                "popup_state": popup_state,
+            }
+            last_step = {
+                "step": step,
+                "action": action,
+                "status": status,
+                "detail": detail,
+            }
+            if progress_callback is not None:
+                progress_callback(payload)
+
+        def record(step: int, action: str, status: str, detail: str, popup_state: str = "success") -&gt; None:
+            nonlocal last_step
+            step_payload = {
+                "step": step,
+                "action": action,
+                "status": status,
+                "detail": detail,
+            }
+            steps.append(step_payload)
+            last_step = step_payload
+            emit(step, action, status, detail, popup_state)
+
+        browser = None
+        try:
+            with sync_playwright() as playwright:
+                emit(1, "open_browser_session", "processing", "브라우저 세션을 준비하는 중입니다.")
+                browser, page, reused_browser = self._create_browser_session(playwright)
+                page.wait_for_timeout(1200)
+                record(
+                    1,
+                    "open_browser_session",
+                    "success",
+                    "기존 크롬 브라우저 탭을 재사용합니다."
+                    if reused_browser
+                    else "크롬 브라우저를 실행하고 새 탭을 열었습니다.",
+                )
+
+                executor = CommandExecutor()
+                execution = executor.execute_plan(
+                    page,
+                    plan,
+                    progress_callback=self._offset_progress_callback(progress_callback, offset=1),
+                )
+                steps.extend(execution.get("steps", []))
+
+                if execution.get("status") != "success":
+                    reason = execution.get("reason", "agent_plan_failed")
+                    self._append_failure_step(steps, last_step, reason)
+                    return self._simulation_failure(reason, steps, progress_callback)
+
+                observations = execution.get("observations", [])
+                summary = success_summary or plan.get("goal", "") or "시나리오를 완료했습니다."
+
+                return {
+                    "status": "success",
+                    "scenario": scenario_name,
+                    "goal": plan.get("goal", ""),
+                    "summary": summary,
+                    "url": page.url,
+                    "title": page.title(),
+                    "steps": steps,
+                    "observations": observations,
+                    "engine": {
+                        "browser": "chrome",
+                        "headless": config.browser_headless,
+                        "automation": "playwright",
+                    },
+                }
+        except PlaywrightTimeoutError as exc:
+            self._append_failure_step(steps, last_step, f"timeout:{type(exc).__name__}")
+            return self._simulation_failure(f"timeout:{type(exc).__name__}", steps, progress_callback)
+        except Exception as exc:
+            self._append_failure_step(steps, last_step, f"playwright_error:{type(exc).__name__}: {exc}")
+            return self._simulation_failure(
+                f"playwright_error:{type(exc).__name__}: {exc}",
+                steps,
+                progress_callback,
+            )
+        finally:
+            if browser is not None:
+                self._safe_close_browser(browser)
+
+    def _create_browser_session(self, playwright):
+        endpoint = "http://127.0.0.1:9222"
+        reused_browser = self._is_debug_browser_ready(endpoint)
+
+        if not reused_browser:
+            chrome_path = self._resolve_chrome_path()
+            if chrome_path is None:
+                raise RuntimeError("chrome_executable_not_found")
+
+            user_data_dir = self._resolve_debug_profile_dir()
+            user_data_dir.mkdir(parents=True, exist_ok=True)
+            subprocess.Popen(
+                [
+                    chrome_path,
+                    "--remote-debugging-port=9222",
+                    f"--user-data-dir={user_data_dir}",
+                    "--new-window",
+                    "about:blank",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            self._wait_for_debug_browser(endpoint, timeout_ms=12000)
+
+        browser = playwright.chromium.connect_over_cdp(endpoint)
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        page = self._resolve_page_for_simulation(context, reused_browser)
+        return browser, page, reused_browser
+
+    def _resolve_page_for_simulation(self, context, reused_browser: bool):
+        pages = context.pages
+        if reused_browser and pages:
+            for page in reversed(pages):
+                try:
+                    url = (page.url or "").strip().lower()
+                    if url.startswith("devtools://"):
+                        continue
+                    return page
+                except Exception:
+                    continue
+            return pages[-1]
+
+        if pages:
+            for page in pages:
+                try:
+                    url = (page.url or "").strip().lower()
+                    if url in ("", "about:blank", "chrome://newtab/"):
+                        return page
+                except Exception:
+                    continue
+            return pages[0]
+
+        return context.new_page()
+
+    def _resolve_debug_profile_dir(self) -&gt; Path:
+        env_root = os.getenv("VOICE_NAVIGATOR_ROOT")
+        if env_root:
+            return Path(env_root) / "runtime" / "chrome_debug_profile"
+        return Path.cwd() / "runtime" / "chrome_debug_profile"
+
+    def _resolve_chrome_path(self) -&gt; str | None:
+        candidates = [
+            os.getenv("PROGRAMFILES", "") + r"\Google\Chrome\Application\chrome.exe",
+            os.getenv("PROGRAMFILES(X86)", "") + r"\Google\Chrome\Application\chrome.exe",
+            os.getenv("LOCALAPPDATA", "") + r"\Google\Chrome\Application\chrome.exe",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            str(Path.home() / "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        ]
+        for candidate in candidates:
+            if candidate and Path(candidate).exists():
+                return candidate
+        return None
+
+    def _is_debug_browser_ready(self, endpoint: str) -&gt; bool:
+        try:
+            with urlopen(f"{endpoint}/json/version", timeout=1.2) as response:
+                return response.status == 200
+        except (URLError, TimeoutError, OSError):
+            return False
+
+    def _wait_for_debug_browser(self, endpoint: str, timeout_ms: int) -&gt; None:
+        deadline = time.time() + (timeout_ms / 1000)
+        while time.time() &lt; deadline:
+            if self._is_debug_browser_ready(endpoint):
+                return
+            time.sleep(0.25)
+        raise RuntimeError("chrome_debug_endpoint_not_ready")
+
+    def _offset_progress_callback(
+        self,
+        callback: ProgressCallback | None,
+        offset: int,
+    ) -&gt; ProgressCallback | None:
+        if callback is None:
+            return None
+
+        def wrapped(payload: dict) -&gt; None:
+            adjusted = dict(payload)
+            adjusted["step"] = int(adjusted.get("step", 0)) + offset
+            callback(adjusted)
+
+        return wrapped
+
+    def _append_failure_step(self, steps: list[dict], last_step: dict | None, reason: str) -&gt; None:
+        if last_step is None:
+            return
+        failed_step = {
+            "step": last_step["step"],
+            "action": last_step["action"],
+            "status": "error",
+            "detail": reason,
+        }
+        if steps and steps[-1]["step"] == failed_step["step"]:
+            steps[-1] = failed_step
+            return
+        steps.append(failed_step)
+
+    def _simulation_failure(
+        self,
+        reason: str,
+        steps: list[dict],
+        progress_callback: ProgressCallback | None,
+    ) -&gt; dict:
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "step": len(steps) + 1,
+                    "action": "finish",
+                    "status": "error",
+                    "detail": reason,
+                    "popup_state": "error",
+                }
+            )
+        return {
+            "status": "error",
+            "reason": reason,
+            "steps": steps,
+            "observations": [],
+        }
+
+    def _safe_close_browser(self, browser) -&gt; None:
+        try:
+            browser.close()
+        except Exception:
+            pass</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-6. local_server/app/simulation/json_agent_scenario.py</h2>
+      <div class="path">local_server/app/simulation/json_agent_scenario.py</div>
+      <pre><code>from __future__ import annotations
+
+import json
+import sys
+from dataclasses import replace
+from pathlib import Path
+
+from local_server.app.automation.browser.playwright_runner import PlaywrightRunner
+from local_server.app.core.config import AppConfig
+
+
+def emit_progress(payload: dict) -&gt; None:
+    print(
+        json.dumps(
+            {
+                "kind": "progress",
+                "payload": payload,
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
+
+
+def _normalize_target(raw_step: dict) -&gt; dict | None:
+    target = raw_step.get("target")
+    if isinstance(target, dict):
+        return target
+
+    element = raw_step.get("element")
+    if isinstance(element, str) and element.strip():
+        return {
+            "description": raw_step.get("description", "직접 지정 요소"),
+            "fallbacks": [{"css": element.strip()}],
+            "frame_scope": "all_frames",
+            "index": 0,
+        }
+
+    return None
+
+
+def _normalize_step(raw_step: dict, index: int, site: str) -&gt; dict:
+    step_type = raw_step.get("type") or raw_step.get("action")
+    if not isinstance(step_type, str) or not step_type.strip():
+        raise ValueError(f"step_{index}_missing_action")
+
+    step_type = step_type.strip()
+    raw_args = raw_step.get("args") if isinstance(raw_step.get("args"), dict) else {}
+    normalized: dict[str, object] = {
+        "step": int(raw_step.get("step", index)),
+        "type": step_type,
+    }
+    args: dict[str, object] = {}
+    target = _normalize_target(raw_step)
+
+    if step_type == "navigate":
+        url = raw_step.get("url") or raw_args.get("url") or site
+        if not isinstance(url, str) or not url.strip():
+            raise ValueError(f"step_{index}_navigate_url_missing")
+        args["url"] = url.strip()
+        if isinstance(raw_args.get("wait_until"), str):
+            args["wait_until"] = raw_args["wait_until"]
+    elif step_type == "wait_for":
+        if target is None:
+            raise ValueError(f"step_{index}_wait_for_target_missing")
+        args["timeout_ms"] = int(raw_step.get("timeout_ms", raw_args.get("timeout_ms", 5000)))
+        args["state"] = raw_step.get("state") or raw_args.get("state") or "visible"
+    elif step_type == "click":
+        if target is None:
+            raise ValueError(f"step_{index}_click_target_missing")
+    elif step_type == "fill":
+        if target is None:
+            raise ValueError(f"step_{index}_fill_target_missing")
+        text = raw_step.get("text") or raw_args.get("text")
+        if not isinstance(text, str):
+            raise ValueError(f"step_{index}_fill_text_missing")
+        args["text"] = text
+    elif step_type == "press":
+        if target is None:
+            raise ValueError(f"step_{index}_press_target_missing")
+        key = raw_step.get("key") or raw_args.get("key")
+        if not isinstance(key, str):
+            raise ValueError(f"step_{index}_press_key_missing")
+        args["key"] = key
+    elif step_type == "extract":
+        if target is None:
+            raise ValueError(f"step_{index}_extract_target_missing")
+        fields = raw_step.get("fields") or raw_args.get("fields") or []
+        if isinstance(fields, list):
+            args["fields"] = fields
+    elif step_type == "finish":
+        message = raw_step.get("message") or raw_args.get("message")
+        if isinstance(message, str) and message.strip():
+            args["message"] = message.strip()
+    else:
+        raise ValueError(f"unsupported_action:{step_type}")
+
+    if target is not None:
+        normalized["target"] = target
+    if args:
+        normalized["args"] = args
+    return normalized
+
+
+def normalize_plan(raw_plan: dict) -&gt; dict:
+    if not isinstance(raw_plan, dict):
+        raise ValueError("plan_must_be_object")
+
+    site = raw_plan.get("site")
+    if site is None:
+        site = ""
+    if not isinstance(site, str):
+        raise ValueError("site_must_be_string")
+
+    raw_steps = raw_plan.get("steps")
+    if not isinstance(raw_steps, list) or not raw_steps:
+        raise ValueError("steps_must_be_non_empty_array")
+
+    normalized_steps = [
+        _normalize_step(raw_step, index + 1, site)
+        for index, raw_step in enumerate(raw_steps)
+        if isinstance(raw_step, dict)
+    ]
+    if not normalized_steps:
+        raise ValueError("steps_must_contain_objects")
+
+    return {
+        "task_id": raw_plan.get("task_id", "custom_json_plan"),
+        "goal": raw_plan.get("goal", "직접 입력한 JSON 시나리오를 실행합니다."),
+        "site": site,
+        "steps": normalized_steps,
+    }
+
+
+def run(plan_path: str) -&gt; dict:
+    plan_file = Path(plan_path)
+    if not plan_file.exists():
+        raise FileNotFoundError("plan_file_not_found")
+
+    raw_plan = json.loads(plan_file.read_text(encoding="utf-8"))
+    normalized_plan = normalize_plan(raw_plan)
+
+    config = replace(AppConfig.from_env(), browser_headless=False)
+    runner = PlaywrightRunner(config=config)
+    return runner.run_agent_plan(
+        plan=normalized_plan,
+        progress_callback=emit_progress,
+        scenario_name="custom_json_agent_plan",
+        success_summary="직접 입력한 JSON 시나리오를 완료했습니다.",
+    )
+
+
+def main() -&gt; None:
+    if len(sys.argv) &lt; 2:
+        result = {
+            "status": "error",
+            "scenario": "custom_json_agent_plan",
+            "reason": "plan_path_missing",
+            "steps": [],
+        }
+    else:
+        try:
+            result = run(sys.argv[1])
+        except Exception as exc:
+            result = {
+                "status": "error",
+                "scenario": "custom_json_agent_plan",
+                "reason": str(exc),
+                "steps": [],
+            }
+
+    print(
+        json.dumps(
+            {
+                "kind": "result",
+                "payload": result,
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-7. scripts/setup_automation_env.sh</h2>
+      <div class="path">scripts/setup_automation_env.sh</div>
+      <pre><code>#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &amp;&amp; pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." &amp;&amp; pwd)"
+cd "$PROJECT_ROOT"
+
+PYTHON_BIN=""
+for candidate in python3 python; do
+  if command -v "$candidate" &gt;/dev/null 2&gt;&amp;1; then
+    PYTHON_BIN="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$PYTHON_BIN" ]]; then
+  echo "[ERROR] Python 3.11+ interpreter not found."
+  exit 1
+fi
+
+rm -rf .venv-server
+"$PYTHON_BIN" -m venv .venv-server
+. .venv-server/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r local_server/requirements.txt
+python -m playwright install chromium
+
+echo
+echo "[DONE] Automation environment ready: .venv-server"
+echo "[NEXT] Run JSON automation plans through the Flutter app or with:"
+echo "       .venv-server/bin/python -m local_server.app.simulation.json_agent_scenario &lt;plan.json&gt;"</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-8. scripts/setup_automation_env.ps1</h2>
+      <div class="path">scripts/setup_automation_env.ps1</div>
+      <pre><code>Set-Location $PSScriptRoot\..
+
+if (Test-Path .\.venv-server) {
+  Remove-Item .\.venv-server -Recurse -Force
+}
+
+function Initialize-AutomationEnv {
+  param(
+    [string]$Launcher,
+    [string[]]$Arguments,
+    [string]$Label
+  )
+
+  try {
+    &amp; $Launcher @Arguments -m venv .venv-server
+    if ($LASTEXITCODE -ne 0) { throw "venv creation failed" }
+
+    .\.venv-server\Scripts\python -m pip install --upgrade pip
+    if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed" }
+
+    .\.venv-server\Scripts\python -m pip install -r local_server\requirements.txt
+    if ($LASTEXITCODE -ne 0) { throw "requirements install failed" }
+
+    .\.venv-server\Scripts\python -m playwright install chromium
+    if ($LASTEXITCODE -ne 0) { throw "playwright install failed" }
+
+    Write-Host "Automation environment ready: .venv-server ($Label)"
+    exit 0
+  } catch {
+    if (Test-Path .\.venv-server) {
+      Remove-Item .\.venv-server -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
+
+if (Get-Command py -ErrorAction SilentlyContinue) {
+  Initialize-AutomationEnv -Launcher "py" -Arguments @("-3.13") -Label "Python 3.13"
+  Initialize-AutomationEnv -Launcher "py" -Arguments @("-3.12") -Label "Python 3.12"
+  Initialize-AutomationEnv -Launcher "py" -Arguments @("-3.11") -Label "Python 3.11"
+}
+
+if (Get-Command python -ErrorAction SilentlyContinue) {
+  Initialize-AutomationEnv -Launcher "python" -Arguments @() -Label "python"
+}
+
+Write-Error "Python launcher was not found. Install Python 3.11+ first."</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-9. local_server/requirements.txt</h2>
+      <div class="path">local_server/requirements.txt</div>
+      <pre><code>playwright==1.48.0</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-10. lib/shared/services/json_automation_runner_service.dart</h2>
+      <div class="path">lib/shared/services/json_automation_runner_service.dart</div>
+      <pre><code>import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+
+class JsonAutomationRunnerResult {
+  const JsonAutomationRunnerResult({
+    required this.success,
+    required this.status,
+    required this.summary,
+    required this.raw,
+    this.error,
+  });
+
+  final bool success;
+  final String status;
+  final String summary;
+  final Map&lt;String, dynamic&gt; raw;
+  final String? error;
+}
+
+class JsonAutomationRunnerService {
+  JsonAutomationRunnerService._();
+
+  static final JsonAutomationRunnerService instance =
+      JsonAutomationRunnerService._();
+
+  static const String _compiledProjectRoot = String.fromEnvironment(
+    'VOICE_NAVIGATOR_PROJECT_ROOT',
+  );
+
+  Future&lt;JsonAutomationRunnerResult&gt; runPlan({
+    required String rawPlan,
+  }) async {
+    final root = _resolveProjectRoot();
+    if (root == null) {
+      return const JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: 'JSON 자동화 실행기를 찾지 못했습니다.',
+        raw: {'reason': 'root_not_found'},
+        error: 'root_not_found',
+      );
+    }
+
+    late final Map&lt;String, dynamic&gt; decodedPlan;
+    try {
+      final decoded = jsonDecode(rawPlan);
+      if (decoded is! Map&lt;String, dynamic&gt;) {
+        return const JsonAutomationRunnerResult(
+          success: false,
+          status: 'error',
+          summary: '자동화 계획 JSON 형식이 올바르지 않습니다.',
+          raw: {'reason': 'invalid_json'},
+          error: 'invalid_json',
+        );
+      }
+      decodedPlan = decoded;
+    } catch (_) {
+      return const JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: '자동화 계획 JSON 형식이 올바르지 않습니다.',
+        raw: {'reason': 'invalid_json'},
+        error: 'invalid_json',
+      );
+    }
+
+    final invocation = await _prepareInvocation(decodedPlan);
+    if (invocation == null) {
+      return const JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: '지원하지 않는 자동화 계획입니다.',
+        raw: {'reason': 'unsupported_plan'},
+        error: 'unsupported_plan',
+      );
+    }
+
+    final pythonCommand = _resolvePythonCommand(
+      root,
+      invocation.moduleName,
+      invocation.moduleArguments,
+    );
+    if (pythonCommand == null) {
+      return JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: '자동화용 Python 실행기를 찾지 못했습니다.',
+        raw: {'reason': 'python_not_found', 'module': invocation.moduleName},
+        error: 'python_not_found',
+      );
+    }
+
+    try {
+      debugPrint('Json automation root = ${root.path}');
+      debugPrint('Json automation module = ${invocation.moduleName}');
+      debugPrint('Json automation executable = ${pythonCommand.executable}');
+      debugPrint(
+        'Json automation arguments = ${pythonCommand.arguments}',
+      );
+      return await _runProcess(
+        executable: pythonCommand.executable,
+        arguments: pythonCommand.arguments,
+        workingDirectory: root.path,
+        environment: {
+          ...Platform.environment,
+          'VOICE_NAVIGATOR_ROOT': root.path,
+          'PLAYWRIGHT_HEADLESS': 'false',
+          'PYTHONUTF8': '1',
+          'PYTHONHOME': '',
+          'PYTHONPATH': '',
+        },
+      );
+    } finally {
+      await invocation.dispose();
+    }
+  }
+
+  Future&lt;JsonAutomationRunnerResult&gt; _runProcess({
+    required String executable,
+    required List&lt;String&gt; arguments,
+    required String workingDirectory,
+    required Map&lt;String, String&gt; environment,
+  }) async {
+    final process = await Process.start(
+      executable,
+      arguments,
+      workingDirectory: workingDirectory,
+      environment: environment,
+      runInShell: true,
+    );
+
+    final stdoutBuffer = StringBuffer();
+    final stderrBuffer = StringBuffer();
+    final stdoutDone = Completer&lt;void&gt;();
+    final stderrDone = Completer&lt;void&gt;();
+    Map&lt;String, dynamic&gt;? resultPayload;
+
+    Future&lt;void&gt; handleStdoutLine(String line) async {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        return;
+      }
+      stdoutBuffer.writeln(trimmed);
+
+      try {
+        final envelope = jsonDecode(trimmed) as Map&lt;String, dynamic&gt;;
+        final kind = envelope['kind'] as String? ?? '';
+        if (kind == 'progress') {
+          final payload = Map&lt;String, dynamic&gt;.from(
+            envelope['payload'] as Map? ?? const &lt;String, dynamic&gt;{},
+          );
+          debugPrint('Json automation progress = ${jsonEncode(payload)}');
+          return;
+        }
+        if (kind != 'result') {
+          return;
+        }
+
+        resultPayload = Map&lt;String, dynamic&gt;.from(
+          envelope['payload'] as Map? ?? const &lt;String, dynamic&gt;{},
+        );
+        debugPrint('Json automation result = ${jsonEncode(resultPayload)}');
+      } catch (_) {
+        debugPrint('Json automation stdout line = $trimmed');
+      }
+    }
+
+    final stdoutSub = process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+          handleStdoutLine,
+          onDone: () {
+            if (!stdoutDone.isCompleted) {
+              stdoutDone.complete();
+            }
+          },
+        );
+
+    final stderrSub = process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+          (line) {
+            final trimmed = line.trim();
+            if (trimmed.isNotEmpty) {
+              stderrBuffer.writeln(trimmed);
+            }
+          },
+          onDone: () {
+            if (!stderrDone.isCompleted) {
+              stderrDone.complete();
+            }
+          },
+        );
+
+    final exitCode = await process.exitCode;
+    await Future.wait&lt;void&gt;([
+      stdoutDone.future.timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () {},
+      ),
+      stderrDone.future.timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () {},
+      ),
+    ]);
+
+    await stdoutSub.cancel();
+    await stderrSub.cancel();
+
+    if (exitCode != 0) {
+      final detail = stderrBuffer.isNotEmpty
+          ? stderrBuffer.toString().trim()
+          : stdoutBuffer.toString().trim();
+      debugPrint('Json automation exitCode = $exitCode');
+      if (stdoutBuffer.isNotEmpty) {
+        debugPrint('Json automation stdout = ${stdoutBuffer.toString()}');
+      }
+      if (stderrBuffer.isNotEmpty) {
+        debugPrint('Json automation stderr = ${stderrBuffer.toString()}');
+      }
+      final detailLine = _firstMeaningfulLine(detail);
+      return JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: detailLine == null
+            ? 'JSON 자동화 실행이 비정상 종료되었습니다.'
+            : 'JSON 자동화 실행이 비정상 종료되었습니다. $detailLine',
+        raw: {
+          'exit_code': exitCode,
+          'stdout': stdoutBuffer.toString(),
+          'stderr': stderrBuffer.toString(),
+        },
+        error: detail.isEmpty ? 'process_exit_$exitCode' : detail,
+      );
+    }
+
+    if (resultPayload == null) {
+      debugPrint('Json automation missing result payload');
+      if (stdoutBuffer.isNotEmpty) {
+        debugPrint('Json automation stdout = ${stdoutBuffer.toString()}');
+      }
+      if (stderrBuffer.isNotEmpty) {
+        debugPrint('Json automation stderr = ${stderrBuffer.toString()}');
+      }
+      return JsonAutomationRunnerResult(
+        success: false,
+        status: 'error',
+        summary: '자동화 실행 결과를 받지 못했습니다.',
+        raw: {
+          'stdout': stdoutBuffer.toString(),
+          'stderr': stderrBuffer.toString(),
+        },
+        error: 'missing_result_payload',
+      );
+    }
+
+    final isSuccess = resultPayload!['status'] == 'success';
+    final summary = _resolveSummary(resultPayload!);
+    final reason = (resultPayload!['reason'] as String?)?.trim();
+
+    return JsonAutomationRunnerResult(
+      success: isSuccess,
+      status: resultPayload!['status'] as String? ?? 'unknown',
+      summary: isSuccess
+          ? (summary ?? 'JSON 자동화 계획을 실행했습니다.')
+          : _friendlyFailureReason(reason, stdoutBuffer, stderrBuffer),
+      raw: resultPayload!,
+      error: reason,
+    );
+  }
+
+  String? _resolveSummary(Map&lt;String, dynamic&gt; payload) {
+    final routeSummary = (payload['route_summary'] as String?)?.trim();
+    if (routeSummary != null && routeSummary.isNotEmpty) {
+      return routeSummary;
+    }
+
+    final summary = (payload['summary'] as String?)?.trim();
+    if (summary != null && summary.isNotEmpty) {
+      return summary;
+    }
+
+    final steps = payload['steps'];
+    if (steps is List) {
+      for (final item in steps.reversed) {
+        if (item is! Map) {
+          continue;
+        }
+        final detail = item['detail']?.toString().trim();
+        if (detail != null && detail.isNotEmpty) {
+          return detail;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  Future&lt;_AutomationInvocation?&gt; _prepareInvocation(
+    Map&lt;String, dynamic&gt; rawPlan,
+  ) async {
+    final rawSteps = rawPlan['steps'];
+    if (rawSteps is! List || rawSteps.isEmpty) {
+      return null;
+    }
+
+    final normalizedPlan = jsonEncode(_normalizePlan(rawPlan));
+    final tempDir = await Directory.systemTemp.createTemp(
+      'voice_navigator_plan_',
+    );
+    final planFile = File(
+      '${tempDir.path}${Platform.pathSeparator}agent_plan.json',
+    );
+    await planFile.writeAsString(normalizedPlan, flush: true);
+
+    return _AutomationInvocation(
+      moduleName: 'local_server.app.simulation.json_agent_scenario',
+      moduleArguments: [planFile.path],
+      onDispose: () async {
+        if (planFile.existsSync()) {
+          await planFile.delete();
+        }
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      },
+    );
+  }
+
+  Map&lt;String, dynamic&gt; _normalizePlan(Map&lt;String, dynamic&gt; rawPlan) {
+    final rawSteps = rawPlan['steps'];
+    if (rawSteps is! List) {
+      return rawPlan;
+    }
+
+    final site = rawPlan['site']?.toString().trim() ?? '';
+    Map&lt;String, dynamic&gt;? lastTarget;
+    final normalizedSteps = &lt;Map&lt;String, dynamic&gt;&gt;[];
+
+    for (final step in rawSteps) {
+      if (step is! Map) {
+        continue;
+      }
+
+      final normalizedStep = Map&lt;String, dynamic&gt;.from(
+        step.cast&lt;String, dynamic&gt;(),
+      );
+      final target = _extractTarget(normalizedStep);
+      if (target != null) {
+        final normalizedTarget = _normalizeTarget(
+          site: site,
+          stepType:
+              (normalizedStep['type'] ?? normalizedStep['action'])?.toString(),
+          target: target,
+        );
+        normalizedStep['target'] = normalizedTarget;
+        lastTarget = normalizedTarget;
+      }
+
+      final stepType =
+          (normalizedStep['type'] ?? normalizedStep['action'])?.toString();
+
+      if (stepType == 'fill' &&
+          normalizedStep['target'] is Map&lt;String, dynamic&gt; &&
+          _shouldInsertWaitFor(site, normalizedStep['target'] as Map&lt;String, dynamic&gt;)) {
+        normalizedSteps.add({
+          'step': _syntheticStepNumber(normalizedStep['step'], normalizedSteps.length),
+          'type': 'wait_for',
+          'target': normalizedStep['target'],
+          'args': {
+            'timeout_ms': 4000,
+            'state': 'visible',
+          },
+        });
+      }
+
+      if (stepType == 'press' && target == null && lastTarget != null) {
+        normalizedStep['target'] = {
+          ...lastTarget,
+          'reuse_previous_target': true,
+        };
+      }
+
+      normalizedSteps.add(normalizedStep);
+    }
+
+    return {
+      ...rawPlan,
+      'steps': normalizedSteps,
+    };
+  }
+
+  Map&lt;String, dynamic&gt; _normalizeTarget({
+    required String site,
+    required String? stepType,
+    required Map&lt;String, dynamic&gt; target,
+  }) {
+    if (stepType != 'fill') {
+      return target;
+    }
+
+    final description = target['description']?.toString() ?? '';
+    final fallbacks = &lt;Map&lt;String, dynamic&gt;&gt;[];
+    final rawFallbacks = target['fallbacks'];
+    if (rawFallbacks is List) {
+      for (final item in rawFallbacks) {
+        if (item is Map) {
+          fallbacks.add(Map&lt;String, dynamic&gt;.from(item.cast&lt;String, dynamic&gt;()));
+        }
+      }
+    }
+
+    void addFallback(Map&lt;String, dynamic&gt; fallback) {
+      final encoded = jsonEncode(fallback);
+      if (fallbacks.any((item) =&gt; jsonEncode(item) == encoded)) {
+        return;
+      }
+      fallbacks.add(fallback);
+    }
+
+    if (site.contains('youtube.com') &&
+        description.contains('유튜브') &&
+        description.contains('검색')) {
+      addFallback({'css': 'input[name="search_query"]'});
+      addFallback({'css': 'input[placeholder="검색"]'});
+      addFallback({'css': 'input.ytSearchboxComponentInput'});
+      addFallback({'css': 'input.yt-searchbox-input'});
+    }
+
+    if (site.contains('map.naver.com')) {
+      if (description.contains('출발지')) {
+        addFallback({'css': 'input[placeholder*="출발지"]'});
+        addFallback({'css': 'input[placeholder="출발지 입력"]'});
+        addFallback({'css': 'input.input_search[placeholder*="출발지"]'});
+        addFallback({'css': '[data-area-directions="departure"] input'});
+      }
+      if (description.contains('도착지')) {
+        addFallback({'css': 'input[placeholder*="도착지"]'});
+        addFallback({'css': 'input[placeholder="도착지 입력"]'});
+        addFallback({'css': 'input.input_search[placeholder*="도착지"]'});
+        addFallback({'css': '[data-area-directions="arrival"] input'});
+      }
+    }
+
+    if (fallbacks.isEmpty) {
+      return target;
+    }
+
+    return {
+      ...target,
+      'fallbacks': fallbacks,
+    };
+  }
+
+  bool _shouldInsertWaitFor(String site, Map&lt;String, dynamic&gt; target) {
+    if (!site.contains('map.naver.com')) {
+      return false;
+    }
+    final description = target['description']?.toString() ?? '';
+    return description.contains('출발지') || description.contains('도착지');
+  }
+
+  int _syntheticStepNumber(Object? originalStep, int currentLength) {
+    if (originalStep is int) {
+      return originalStep * 10;
+    }
+    return (currentLength + 1) * 10;
+  }
+
+  Map&lt;String, dynamic&gt;? _extractTarget(Map&lt;String, dynamic&gt; step) {
+    final target = step['target'];
+    if (target is Map) {
+      return Map&lt;String, dynamic&gt;.from(target.cast&lt;String, dynamic&gt;());
+    }
+
+    final element = step['element'];
+    if (element is String && element.trim().isNotEmpty) {
+      return {
+        'description': step['description'] ?? '직접 지정 요소',
+        'fallbacks': [
+          {'css': element.trim()},
+        ],
+        'frame_scope': 'all_frames',
+        'index': 0,
+      };
+    }
+
+    return null;
+  }
+
+  String? _firstMeaningfulLine(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final lines = value
+        .split('\n')
+        .map((line) =&gt; line.trim())
+        .where((line) =&gt; line.isNotEmpty)
+        .toList();
+
+    if (lines.isEmpty) {
+      return null;
+    }
+
+    return lines.first;
+  }
+
+  String _friendlyFailureReason(
+    String? reason,
+    StringBuffer stdoutBuffer,
+    StringBuffer stderrBuffer,
+  ) {
+    switch (reason) {
+      case 'python_not_found':
+        return '자동화용 Python 실행기를 찾지 못했습니다.';
+      case 'root_not_found':
+        return '현재 프로젝트의 자동화 루트를 찾지 못했습니다.';
+      case 'plan_file_not_found':
+        return '자동화 계획 파일을 찾지 못했습니다.';
+      case 'unsupported_platform':
+        return '현재 운영체제에서 지원하지 않는 자동화 시나리오입니다.';
+      case 'accessibility_permission_required':
+        return '운영체제 접근성 권한이 필요합니다.';
+      case null:
+      case '':
+        final detail = stderrBuffer.toString().trim().isNotEmpty
+            ? stderrBuffer.toString().trim()
+            : stdoutBuffer.toString().trim();
+        return detail.isEmpty ? '자동화 실행 중 오류가 발생했습니다.' : detail;
+      default:
+        return reason;
+    }
+  }
+
+  _PythonCommand? _resolvePythonCommand(
+    Directory root,
+    String moduleName,
+    List&lt;String&gt; moduleArguments,
+  ) {
+    final projectRoot = root.path;
+    final candidates = &lt;_PythonCommand&gt;[
+      _PythonCommand(
+        executable:
+            '$projectRoot${Platform.pathSeparator}.venv-server${Platform.pathSeparator}bin${Platform.pathSeparator}python',
+        arguments: ['-m', moduleName, ...moduleArguments],
+      ),
+      _PythonCommand(
+        executable:
+            '$projectRoot${Platform.pathSeparator}.venv-server${Platform.pathSeparator}Scripts${Platform.pathSeparator}python.exe',
+        arguments: ['-m', moduleName, ...moduleArguments],
+      ),
+      _PythonCommand(
+        executable: 'python3',
+        arguments: ['-m', moduleName, ...moduleArguments],
+      ),
+      _PythonCommand(
+        executable: 'python',
+        arguments: ['-m', moduleName, ...moduleArguments],
+      ),
+      _PythonCommand(
+        executable: 'py',
+        arguments: ['-3', '-m', moduleName, ...moduleArguments],
+      ),
+    ];
+
+    for (final candidate in candidates) {
+      if (_canExecute(candidate.executable)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  Directory? _resolveProjectRoot() {
+    final root = _resolveCurrentProjectRoot();
+    if (root == null) {
+      return null;
+    }
+    return _containsJsonScenario(root) ? root : null;
+  }
+
+  Directory? _resolveCurrentProjectRoot() {
+    if (_compiledProjectRoot.isNotEmpty) {
+      final compiledRoot = Directory(_compiledProjectRoot);
+      if (_isFlutterProjectRoot(compiledRoot)) {
+        return compiledRoot;
+      }
+    }
+
+    Directory? findFlutterRoot(String startPath) {
+      var dir = Directory(startPath);
+      for (var i = 0; i < 14; i++) {
+        if (_isFlutterProjectRoot(dir)) {
+          return dir;
+        }
+        final parent = dir.parent;
+        if (parent.path == dir.path) {
+          break;
+        }
+        dir = parent;
+      }
+      return null;
+    }
+
+    return findFlutterRoot(Directory.current.path) ??
+        findFlutterRoot(File(Platform.resolvedExecutable).parent.path);
+  }
+
+  bool _isFlutterProjectRoot(Directory root) {
+    if (!root.existsSync()) {
+      return false;
+    }
+    final pubspec = File(
+      '${root.path}${Platform.pathSeparator}pubspec.yaml',
+    );
+    return pubspec.existsSync();
+  }
+
+  bool _containsJsonScenario(Directory root) {
+    if (!root.existsSync()) {
+      return false;
+    }
+    final scenarioFile = File(
+      '${root.path}${Platform.pathSeparator}local_server'
+      '${Platform.pathSeparator}app${Platform.pathSeparator}simulation'
+      '${Platform.pathSeparator}json_agent_scenario.py',
+    );
+    return scenarioFile.existsSync();
+  }
+
+  bool _canExecute(String executable) {
+    if (executable.contains(Platform.pathSeparator)) {
+      return File(executable).existsSync();
+    }
+    return true;
+  }
+}
+
+class _PythonCommand {
+  const _PythonCommand({
+    required this.executable,
+    required this.arguments,
+  });
+
+  final String executable;
+  final List&lt;String&gt; arguments;
+}
+
+class _AutomationInvocation {
+  const _AutomationInvocation({
+    required this.moduleName,
+    required this.moduleArguments,
+    this.onDispose,
+  });
+
+  final String moduleName;
+  final List&lt;String&gt; moduleArguments;
+  final Future&lt;void&gt; Function()? onDispose;
+
+  Future&lt;void&gt; dispose() async {
+    await onDispose?.call();
+  }
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>18-11. lib/features/session/application/session_controller.dart</h2>
+      <div class="path">lib/features/session/application/session_controller.dart</div>
+      <pre><code>import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../shared/models/response_models.dart';
+import '../../../shared/services/json_automation_runner_service.dart';
+
+const _unset = Object();
+const _agentApiBaseUrl = String.fromEnvironment('AGENT_API_BASE_URL'); 
+//실제에서는 'http://127.0.0.1:8000';이런식으로 하면 http://127.0.0.1:8000/agent/respond 로 요청이됨
+
+class SessionUiState {
+  const SessionUiState({
+    this.lastSummary,
+    this.lastFollowUp,
+    this.pendingAction,
+    this.pendingTarget,
+    this.isBusy = false,
+    this.isRecording = false,
+  });
+
+  final String? lastSummary;
+  final String? lastFollowUp;
+  final String? pendingAction;
+  final String? pendingTarget;
+  final bool isBusy;
+  final bool isRecording;
+
+  SessionUiState copyWith({
+    Object? lastSummary = _unset,
+    Object? lastFollowUp = _unset,
+    Object? pendingAction = _unset,
+    Object? pendingTarget = _unset,
+    bool? isBusy,
+    bool? isRecording,
+  }) {
+    return SessionUiState(
+      lastSummary: identical(lastSummary, _unset)
+          ? this.lastSummary
+          : lastSummary as String?,
+      lastFollowUp: identical(lastFollowUp, _unset)
+          ? this.lastFollowUp
+          : lastFollowUp as String?,
+      pendingAction: identical(pendingAction, _unset)
+          ? this.pendingAction
+          : pendingAction as String?,
+      pendingTarget: identical(pendingTarget, _unset)
+          ? this.pendingTarget
+          : pendingTarget as String?,
+      isBusy: isBusy ?? this.isBusy,
+      isRecording: isRecording ?? this.isRecording,
+    );
+  }
+}
+
+class SessionController extends StateNotifier&lt;SessionUiState&gt; {
+  SessionController() : super(const SessionUiState());
+
+  bool hasPendingFollowUp() {
+    return _cleanText(state.lastFollowUp) != null &&
+        _cleanText(state.pendingAction) != null;
+  }
+
+  Future&lt;CommandResponseModel&gt; submitTextCommand(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    final payload = await _requestAgentResponse(
+      command: text,
+      source: 'text',
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: text,
+      fallbackSummary: '텍스트 명령을 처리했습니다.',
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; submitFollowUpResponse(String text) async {
+    state = state.copyWith(isBusy: true);
+
+    final payload = await _requestAgentResponse(
+      command: text,
+      source: 'text',
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: text,
+      fallbackSummary: '후속 응답을 처리했습니다.',
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;void&gt; startListening() async {
+    state = state.copyWith(isRecording: true);
+  }
+
+  Future&lt;CommandResponseModel&gt; stopListeningAndProcess() async {
+    state = state.copyWith(isRecording: false, isBusy: true);
+
+    const transcript = '음성 인식 결과 텍스트';
+
+    final payload = await _requestAgentResponse(
+      command: transcript,
+      source: 'voice',
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: transcript,
+      fallbackSummary: '음성 명령을 처리했습니다.',
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  Future&lt;CommandResponseModel&gt; triggerScreenRead() async {
+    state = state.copyWith(isBusy: true);
+
+    const command = 'screen_read';
+
+    final payload = await _requestAgentResponse(
+      command: command,
+      source: 'screen_read',
+    );
+
+    final response = _mapAgentPayloadToCommandResponse(
+      payload,
+      fallbackTranscript: command,
+      fallbackSummary: '현재 화면을 읽었습니다.',
+    );
+
+    _applyResponse(response);
+    return response;
+  }
+
+  void _applyResponse(CommandResponseModel response) {
+    final clearsPending = response.completesFollowUp;
+
+    state = state.copyWith(
+      isBusy: false,
+      lastSummary: response.summary,
+      lastFollowUp: response.followUp,
+      pendingAction: clearsPending ? null : response.pendingAction,
+      pendingTarget: clearsPending ? null : response.pendingTarget,
+    );
+  }
+
+  Future&lt;AgentCommandPayload&gt; _requestAgentResponse({
+    required String command,
+    required String source,
+  }) async {
+    if (_agentApiBaseUrl.isEmpty) {
+      return AgentCommandPayload(
+        transcript: command,
+        summary: 'Agent 서버 주소가 아직 설정되지 않아 명령을 처리할 수 없습니다.',
+        followUp: 'API 서버 주소를 설정한 뒤 다시 시도할까요?',
+        isError: true,
+        status: 'error',
+        completesFollowUp: true,
+        rawText: 'Missing AGENT_API_BASE_URL',
+      );
+    }
+
+    final uri = _resolveAgentResponseUri(_agentApiBaseUrl);
+    final requestBody = _buildRequestBody(
+      uri: uri,
+      command: command,
+      source: source,
+    );
+    final timeout = _resolveAgentTimeout(uri);
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(requestBody),
+          )
+          .timeout(timeout);
+
+      debugPrint('Agent request uri = $uri');
+      debugPrint('Agent request body = ${jsonEncode(requestBody)}');
+      debugPrint('Agent response status = ${response.statusCode}');
+      debugPrint('Agent response body = ${response.body}');
+
+      if (response.statusCode &lt; 200 || response.statusCode &gt;= 300) {
+        final responseSummary = _extractSummaryFromRaw(response.body);
+        return AgentCommandPayload(
+          transcript: command,
+          summary: responseSummary == null
+              ? 'Agent 서버 요청에 실패했습니다. (${response.statusCode})'
+              : 'Agent 서버 요청에 실패했습니다. (${response.statusCode}) $responseSummary',
+          followUp: '서버 상태를 확인한 뒤 다시 시도할까요?',
+          isError: true,
+          status: 'error',
+          completesFollowUp: true,
+          rawText: response.body,
+        );
+      }
+
+      if (_isAgentPlanResponse(uri, response.body)) {
+        final execution = await JsonAutomationRunnerService.instance.runPlan(
+          rawPlan: response.body,
+        );
+        return AgentCommandPayload(
+          transcript: command,
+          summary: execution.summary,
+          isError: !execution.success,
+          status: execution.success ? 'success' : 'error',
+          completesFollowUp: true,
+          rawText: jsonEncode(execution.raw),
+        );
+      }
+
+      return _parseAgentResponse(response.body);
+    } catch (error) {
+      debugPrint('Agent request uri = $uri');
+      debugPrint('Agent request body = ${jsonEncode(requestBody)}');
+      debugPrint('Agent request error = $error');
+      return AgentCommandPayload(
+        transcript: command,
+        summary: 'Agent 서버에 연결하지 못했습니다.',
+        followUp: '네트워크 또는 API 주소를 확인한 뒤 다시 시도할까요?',
+        isError: true,
+        status: 'error',
+        completesFollowUp: true,
+        rawText: error.toString(),
+      );
+    }
+  }
+
+  Uri _resolveAgentResponseUri(String rawBaseUrl) {
+    final normalized = rawBaseUrl.trim();
+    final uri = Uri.parse(normalized);
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+
+    if (trimmedPath.endsWith('/agent/respond') ||
+        trimmedPath.endsWith('/agent/plan')) {
+      return uri;
+    }
+
+    return uri.replace(
+      path: '${trimmedPath.isEmpty ? '' : trimmedPath}/agent/respond',
+    );
+  }
+
+  bool _isAgentPlanResponse(Uri uri, String rawResponse) {
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      return true;
+    }
+
+    try {
+      final decoded = jsonDecode(rawResponse);
+      return decoded is Map &&
+          decoded['task_id'] != null &&
+          decoded['steps'] is List;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Duration _resolveAgentTimeout(Uri uri) {
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      return const Duration(seconds: 45);
+    }
+    return const Duration(seconds: 15);
+  }
+
+  Map&lt;String, dynamic&gt; _buildRequestBody({
+    required Uri uri,
+    required String command,
+    required String source,
+  }) {
+    final body = &lt;String, dynamic&gt;{
+      'command': command,
+      'source': source, //명령방식 (키보드, 음성, 화면읽기)
+      'context': {
+        'last_summary': state.lastSummary, //이전 요약
+        'last_follow_up': state.lastFollowUp, //이전 후속질문
+        'pending_action': state.pendingAction, //보류중인 액션
+        'pending_target': state.pendingTarget, //보류중인 타겟
+      },
+    };
+
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      body['instruction'] = command;
+    }
+
+    return body;
+  }
+
+  AgentCommandPayload _parseAgentResponse(String rawResponse) {
+    try {
+      final decoded = jsonDecode(rawResponse);
+      if (decoded is Map&lt;String, dynamic&gt;) {
+        return AgentCommandPayload.fromJson(decoded);
+      }
+      if (decoded is Map) {
+        return AgentCommandPayload.fromJson(
+          decoded.map(
+            (key, value) =&gt; MapEntry(key.toString(), value),
+          ),
+        );
+      }
+    } catch (_) {
+      // Fall back to raw text extraction below.
+    }
+
+    return AgentCommandPayload(rawText: rawResponse);
+  }
+
+  CommandResponseModel _mapAgentPayloadToCommandResponse(
+    AgentCommandPayload payload, {
+    required String fallbackTranscript,
+    required String fallbackSummary,
+  }) {
+    final transcript = _cleanText(payload.transcript) ?? fallbackTranscript;
+    final summary = _cleanText(payload.summary) ??
+        _extractSummaryFromRaw(payload.rawText) ??
+        fallbackSummary;
+    final followUp = _cleanText(payload.followUp);
+    final pendingAction = _cleanText(payload.pendingAction);
+    final pendingTarget = _cleanText(payload.pendingTarget);
+    final status = _resolveStatus(payload);
+    final completesFollowUp = payload.completesFollowUp ?? false;
+
+    return CommandResponseModel(
+      transcript: transcript,
+      summary: summary,
+      followUp: followUp,
+      isError: status == CommandResponseStatus.error,
+      pendingAction: pendingAction,
+      pendingTarget: pendingTarget,
+      status: status,
+      completesFollowUp: completesFollowUp,
+    );
+  }
+
+  CommandResponseStatus _resolveStatus(AgentCommandPayload payload) {
+    final rawStatus = _cleanText(payload.status)?.toLowerCase();
+
+    switch (rawStatus) {
+      case 'warning':
+        return CommandResponseStatus.warning;
+      case 'error':
+        return CommandResponseStatus.error;
+      case 'success':
+        return CommandResponseStatus.success;
+    }
+
+    if (payload.isError == true) {
+      return CommandResponseStatus.error;
+    }
+
+    return CommandResponseStatus.success;
+  }
+
+  String? _cleanText(String? value) {
+    if (value == null) {
+      return null;
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _extractSummaryFromRaw(String? rawText) {
+    final normalized = _cleanText(rawText);
+    if (normalized == null) {
+      return null;
+    }
+
+    final lines = normalized
+        .split('\n')
+        .map((line) =&gt; line.trim())
+        .where((line) =&gt; line.isNotEmpty)
+        .toList();
+
+    if (lines.isEmpty) {
+      return null;
+    }
+
+    return lines.first;
+  }
+}
+
+final sessionControllerProvider =
+    StateNotifierProvider&lt;SessionController, SessionUiState&gt;((ref) {
+  return SessionController();
+});</code></pre>
+    </section>
+  </div>
+</body>
+</html>

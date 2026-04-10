@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/models/response_models.dart';
+import '../../../shared/services/json_automation_runner_service.dart';
 
 const _unset = Object();
 const _agentApiBaseUrl = String.fromEnvironment('AGENT_API_BASE_URL'); 
@@ -169,7 +171,13 @@ class SessionController extends StateNotifier<SessionUiState> {
       );
     }
 
-    final uri = Uri.parse('$_agentApiBaseUrl/agent/respond');
+    final uri = _resolveAgentResponseUri(_agentApiBaseUrl);
+    final requestBody = _buildRequestBody(
+      uri: uri,
+      command: command,
+      source: source,
+    );
+    final timeout = _resolveAgentTimeout(uri);
 
     try {
       final response = await http
@@ -179,17 +187,22 @@ class SessionController extends StateNotifier<SessionUiState> {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
-            body: jsonEncode(_buildRequestBody(
-              command: command,
-              source: source,
-            )),
+            body: jsonEncode(requestBody),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(timeout);
+
+      debugPrint('Agent request uri = $uri');
+      debugPrint('Agent request body = ${jsonEncode(requestBody)}');
+      debugPrint('Agent response status = ${response.statusCode}');
+      debugPrint('Agent response body = ${response.body}');
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
+        final responseSummary = _extractSummaryFromRaw(response.body);
         return AgentCommandPayload(
           transcript: command,
-          summary: 'Agent 서버 요청에 실패했습니다. (${response.statusCode})',
+          summary: responseSummary == null
+              ? 'Agent 서버 요청에 실패했습니다. (${response.statusCode})'
+              : 'Agent 서버 요청에 실패했습니다. (${response.statusCode}) $responseSummary',
           followUp: '서버 상태를 확인한 뒤 다시 시도할까요?',
           isError: true,
           status: 'error',
@@ -198,8 +211,25 @@ class SessionController extends StateNotifier<SessionUiState> {
         );
       }
 
+      if (_isAgentPlanResponse(uri, response.body)) {
+        final execution = await JsonAutomationRunnerService.instance.runPlan(
+          rawPlan: response.body,
+        );
+        return AgentCommandPayload(
+          transcript: command,
+          summary: execution.summary,
+          isError: !execution.success,
+          status: execution.success ? 'success' : 'error',
+          completesFollowUp: true,
+          rawText: jsonEncode(execution.raw),
+        );
+      }
+
       return _parseAgentResponse(response.body);
     } catch (error) {
+      debugPrint('Agent request uri = $uri');
+      debugPrint('Agent request body = ${jsonEncode(requestBody)}');
+      debugPrint('Agent request error = $error');
       return AgentCommandPayload(
         transcript: command,
         summary: 'Agent 서버에 연결하지 못했습니다.',
@@ -212,11 +242,51 @@ class SessionController extends StateNotifier<SessionUiState> {
     }
   }
 
+  Uri _resolveAgentResponseUri(String rawBaseUrl) {
+    final normalized = rawBaseUrl.trim();
+    final uri = Uri.parse(normalized);
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+
+    if (trimmedPath.endsWith('/agent/respond') ||
+        trimmedPath.endsWith('/agent/plan')) {
+      return uri;
+    }
+
+    return uri.replace(
+      path: '${trimmedPath.isEmpty ? '' : trimmedPath}/agent/respond',
+    );
+  }
+
+  bool _isAgentPlanResponse(Uri uri, String rawResponse) {
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      return true;
+    }
+
+    try {
+      final decoded = jsonDecode(rawResponse);
+      return decoded is Map &&
+          decoded['task_id'] != null &&
+          decoded['steps'] is List;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Duration _resolveAgentTimeout(Uri uri) {
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      return const Duration(seconds: 45);
+    }
+    return const Duration(seconds: 15);
+  }
+
   Map<String, dynamic> _buildRequestBody({
+    required Uri uri,
     required String command,
     required String source,
   }) {
-    return {
+    final body = <String, dynamic>{
       'command': command,
       'source': source, //명령방식 (키보드, 음성, 화면읽기)
       'context': {
@@ -226,6 +296,13 @@ class SessionController extends StateNotifier<SessionUiState> {
         'pending_target': state.pendingTarget, //보류중인 타겟
       },
     };
+
+    final trimmedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    if (trimmedPath.endsWith('/agent/plan')) {
+      body['instruction'] = command;
+    }
+
+    return body;
   }
 
   AgentCommandPayload _parseAgentResponse(String rawResponse) {
