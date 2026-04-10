@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 23 Commit 2 - macOS Runner Entitlements</title>
+  <style>
+    :root {
+      --bg: #f3f7fc;
+      --panel: #ffffff;
+      --soft: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --warn-bg: #fff8e8;
+      --warn-line: #f6d482;
+      --ok-bg: #ecfdf5;
+      --ok-line: #bbf7d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 18px 72px;
+    }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      margin-bottom: 22px;
+    }
+    .hero { padding: 32px; }
+    .card { padding: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h1, h2 { line-height: 1.3; margin: 0 0 14px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; margin-top: 4px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    ul, ol { margin: 0 0 14px 22px; color: var(--muted); }
+    li { margin-bottom: 8px; }
+    .path {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .callout, .success {
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-top: 16px;
+    }
+    .callout {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      color: #92400e;
+    }
+    .success {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-line);
+      color: #166534;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 18px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+    }
+    code { font-family: "SFMono-Regular", Consolas, Monaco, monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge">Commit 2</span>
+      <h1>macOS Runner Entitlements</h1>
+      <p>이 문서는 <code>chore: update macos runner entitlements</code> 커밋을 재구현하기 위한 튜토리얼입니다. 수정 범위는 작지만, 왜 이 권한이 필요한지와 최종 plist 내용을 정확히 이해하고 반영하는 것이 중요합니다.</p>
+      <div class="callout"><strong>주의:</strong> Entitlements는 기능 추가가 아니라 Runner 권한 설정입니다. 값 하나가 잘못되어도 macOS 런타임 동작이 달라지므로, 문서의 최종 plist를 그대로 맞추는 것이 안전합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>1. 이번 커밋에서 건드리는 파일</h2>
+      <ul>
+        <li><code>macos/Runner/DebugProfile.entitlements</code></li>
+        <li><code>macos/Runner/Release.entitlements</code></li>
+      </ul>
+      <p>즉 이번 커밋은 macOS Runner 권한 설정만 다룹니다. Flutter Dart 코드나 UI 코드는 변경하지 않습니다.</p>
+      <p>중요한 점은 이 커밋에서 <code>project.pbxproj</code>를 함께 수정하지 않는다는 것입니다. 현재 Runner 타깃이 이미 이 entitlement 파일들을 참조하고 있다는 전제가 있는 정리 커밋입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. entitlements를 왜 따로 두는가</h2>
+      <p>macOS 앱은 Debug와 Release에서 필요한 권한 구성이 다를 수 있습니다. 특히 Flutter debug 런타임은 JIT와 개발용 네트워크 동작을 사용할 수 있기 때문에, Debug 프로파일에서 더 많은 권한이 필요할 수 있습니다.</p>
+      <ul>
+        <li><strong>DebugProfile.entitlements</strong>: 개발 실행과 디버그 런타임을 위한 권한</li>
+        <li><strong>Release.entitlements</strong>: 배포 빌드에서 필요한 최소 권한</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>3. DebugProfile.entitlements 최종 코드</h2>
+      <div class="path">macos/Runner/DebugProfile.entitlements</div>
+      <pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+  &lt;key&gt;com.apple.security.cs.allow-jit&lt;/key&gt;
+  &lt;true/&gt;
+  &lt;key&gt;com.apple.security.network.client&lt;/key&gt;
+  &lt;true/&gt;
+  &lt;key&gt;com.apple.security.network.server&lt;/key&gt;
+  &lt;true/&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</code></pre>
+      <p>여기서 각 key의 의미는 다음과 같습니다.</p>
+      <ul>
+        <li><code>com.apple.security.cs.allow-jit</code>: Flutter debug 런타임의 JIT 허용</li>
+        <li><code>com.apple.security.network.client</code>: 외부 HTTP/WS 호출 허용</li>
+        <li><code>com.apple.security.network.server</code>: 디버그 환경에서 로컬 서버/수신 동작 허용</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>4. Release.entitlements 최종 코드</h2>
+      <div class="path">macos/Runner/Release.entitlements</div>
+      <pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+  &lt;key&gt;com.apple.security.network.client&lt;/key&gt;
+  &lt;true/&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</code></pre>
+      <p>Release에서는 네트워크 client 권한만 남깁니다. 이 프로젝트의 Release 빌드는 외부/로컬 서버에 요청을 보낼 수 있으면 되고, Debug처럼 JIT나 서버 권한이 필요하지 않기 때문입니다.</p>
+    </section>
+
+    <section class="card">
+      <h2>5. 왜 Debug와 Release가 다른가</h2>
+      <ul>
+        <li>Debug는 개발 중이라 Flutter 엔진과 디버거 요구사항이 더 큽니다.</li>
+        <li>Release는 실제 실행에 필요한 최소 권한만 두는 편이 안정적입니다.</li>
+        <li>특히 <code>allow-jit</code>는 Debug에서는 자연스럽지만 Release에서는 불필요할 수 있습니다.</li>
+      </ul>
+      <div class="callout"><strong>실무 팁:</strong> macOS에서 네트워크 호출, 로컬 Python 보조 프로세스 연동, 디버그 실행이 섞이면 entitlement 차이 때문에 “Debug는 되는데 Release가 안 되는” 상황이 자주 생깁니다. 그래서 두 파일을 명확히 분리해 두는 것이 중요합니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>6. 실제 적용 순서</h2>
+      <ol>
+        <li><code>macos/Runner/DebugProfile.entitlements</code>를 열고 위 최종 plist로 맞춥니다.</li>
+        <li><code>macos/Runner/Release.entitlements</code>를 열고 위 최종 plist로 맞춥니다.</li>
+        <li>Xcode 또는 Flutter로 macOS Debug 실행을 확인합니다.</li>
+        <li>필요하면 macOS Release 빌드도 한 번 확인합니다.</li>
+      </ol>
+      <div class="callout"><strong>만약 이 문서만 보고 새 프로젝트에 처음 적용한다면:</strong> Xcode Runner target의 Debug/Release entitlement 경로가 각각 이 두 파일을 바라보는지도 추가로 확인해야 합니다. 현재 프로젝트에서는 그 연결이 이미 되어 있어서 파일 내용만 정리하면 됩니다.</div>
+    </section>
+
+    <section class="card">
+      <h2>7. 확인 포인트</h2>
+      <ul>
+        <li>Debug 빌드에서 네트워크 요청이 막히지 않는지</li>
+        <li>Debug 실행 중 Flutter 엔진/JIT 관련 오류가 없는지</li>
+        <li>Release 빌드에서 최소한의 네트워크 요청은 정상인지</li>
+      </ul>
+      <pre><code>flutter run -d macos
+flutter build macos</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>완료 기준</h2>
+      <ul>
+        <li><code>DebugProfile.entitlements</code>에 JIT, network client, network server가 들어 있다.</li>
+        <li><code>Release.entitlements</code>에는 network client만 들어 있다.</li>
+        <li>두 파일 모두 plist 형식이 깨지지 않는다.</li>
+        <li>macOS Runner가 Debug/Release에서 의도한 권한으로 실행된다.</li>
+      </ul>
+      <div class="success"><strong>정리:</strong> 이 커밋은 작은 권한 조정처럼 보이지만, macOS Runner가 개발과 배포에서 안정적으로 동작하게 만드는 기반 설정입니다.</div>
+    </section>
+  </div>
+</body>
+</html>
