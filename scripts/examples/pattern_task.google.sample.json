@@ -1,0 +1,31 @@
+{
+  "site": "https://www.google.com",
+  "user_request": "구글에서 ChatGPT 검색해줘",
+  "intent": {
+    "task_type": "keyword_search",
+    "slots": {
+      "query": "ChatGPT"
+    },
+    "risk_level": "low",
+    "confidence": 0.98
+  },
+  "host_bias": {
+    "host": "www.google.com",
+    "prefer_panel_ui": 1.0,
+    "autocomplete_confirm_weight": 1.0,
+    "timeout_multiplier": 1.0,
+    "preferred_result_landmarks": [
+      "results",
+      "search",
+      "검색결과"
+    ],
+    "primary_action_label_preferences": [
+      "search",
+      "google search",
+      "검색"
+    ]
+  },
+  "metadata": {
+    "note": "Google keyword-search sample task for the pattern-centric automation engine"
+  }
+}
