@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../shared/models/agent_api_models.dart';
 import '../../../shared/models/response_models.dart';
 import '../../../shared/services/json_automation_runner_service.dart';
+import '../../../shared/services/pattern_automation_runner_service.dart';
 
 const _unset = Object();
 const _agentApiBaseUrl = String.fromEnvironment('AGENT_API_BASE_URL'); 
@@ -213,9 +215,16 @@ class SessionController extends StateNotifier<SessionUiState> {
         );
       }
 
-      if (_isAgentPlanResponse(uri, response.body)) {
+      final parsedResponse = AgentApiResponseEnvelope.parse(response.body);
+
+      if (_isAgentPlanResponse(uri, response.body) ||
+          parsedResponse.kind == AgentApiAutomationKind.legacyPlan) {
         var execution = await JsonAutomationRunnerService.instance.runPlan(
-          rawPlan: response.body,
+          rawPlan: jsonEncode(
+            parsedResponse.legacyPlan?.raw.isNotEmpty == true
+                ? parsedResponse.legacyPlan!.raw
+                : jsonDecode(response.body),
+          ),
         );
         if (!execution.success && execution.isRecoverableFailure) {
           execution = await _attemptAutomationRecovery(
@@ -233,6 +242,26 @@ class SessionController extends StateNotifier<SessionUiState> {
           completesFollowUp: true,
           rawText: jsonEncode(execution.raw),
         );
+      }
+
+      if (parsedResponse.kind == AgentApiAutomationKind.patternTask &&
+          parsedResponse.patternTask != null) {
+        final execution = await PatternAutomationRunnerService.instance.runTask(
+          rawTask: jsonEncode(parsedResponse.patternTask!.toJson()),
+        );
+        return AgentCommandPayload(
+          transcript: command,
+          summary: execution.summary,
+          isError: !execution.success,
+          status: execution.success ? 'success' : 'error',
+          completesFollowUp: true,
+          rawText: jsonEncode(execution.raw),
+        );
+      }
+
+      if (parsedResponse.kind == AgentApiAutomationKind.message &&
+          parsedResponse.message != null) {
+        return parsedResponse.message!;
       }
 
       return _parseAgentResponse(response.body);

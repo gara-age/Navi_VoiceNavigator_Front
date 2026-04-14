@@ -10,6 +10,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from local_server.app.automation.browser.command_executor import CommandExecutor
+from local_server.app.automation.engine.pattern_executor import PatternExecutor
 from local_server.app.core.config import AppConfig
 
 ProgressCallback = Callable[[dict], None]
@@ -136,6 +137,50 @@ class PlaywrightRunner:
             return self._simulation_failure(
                 f"playwright_error:{type(exc).__name__}: {exc}",
                 steps,
+                progress_callback,
+            )
+        finally:
+            if browser is not None:
+                self._safe_close_browser(browser)
+
+    def run_pattern_task(
+        self,
+        task_request: dict,
+        progress_callback: ProgressCallback | None = None,
+        scenario_name: str = "pattern_task",
+    ) -> dict:
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+            from playwright.sync_api import sync_playwright
+        except Exception:
+            return self._simulation_failure("playwright_not_installed", [], progress_callback)
+
+        config = replace(self.config, browser_headless=False)
+        browser = None
+        try:
+            with sync_playwright() as playwright:
+                browser, page, _reused_browser = self._create_browser_session(playwright)
+                page.wait_for_timeout(800)
+                executor = PatternExecutor()
+                execution = executor.execute_task(
+                    page,
+                    task_request,
+                    progress_callback=progress_callback,
+                )
+                execution["scenario"] = scenario_name
+                execution["engine"] = {
+                    "browser": "chrome",
+                    "headless": config.browser_headless,
+                    "automation": "playwright",
+                    "mode": "pattern_executor",
+                }
+                return execution
+        except PlaywrightTimeoutError as exc:
+            return self._simulation_failure(f"timeout:{type(exc).__name__}", [], progress_callback)
+        except Exception as exc:
+            return self._simulation_failure(
+                f"playwright_error:{type(exc).__name__}: {exc}",
+                [],
                 progress_callback,
             )
         finally:
