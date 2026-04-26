@@ -127,6 +127,7 @@ def _to_element_snapshot(candidate: dict[str, Any]) -> ElementSnapshot:
         id=str(candidate.get("candidate_id") or ""),
         role=str(candidate.get("role") or candidate.get("tag") or "unknown"),
         tag=str(candidate.get("tag") or ""),
+        input_type=str(candidate.get("type") or ""),
         name=accessible_name,
         text=str(candidate.get("text") or ""),
         placeholder=str(candidate.get("placeholder") or ""),

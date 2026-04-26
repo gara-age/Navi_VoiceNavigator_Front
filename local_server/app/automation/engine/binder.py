@@ -16,6 +16,7 @@ from local_server.app.automation.core.schemas import (
 INPUT_LIKE_ROLES = {"textbox", "searchbox", "combobox"}
 CLICKABLE_ROLES = {"button", "link", "tab", "menuitem", "option"}
 SUGGESTION_ROLES = {"option", "listbox", "link", "button"}
+NON_TEXT_INPUT_TYPES = {"range", "checkbox", "radio", "file", "hidden", "submit", "button", "reset", "image", "color"}
 ROUTE_ENTRY_LABELS = {"route", "direction", "directions", "길찾기", "경로"}
 NEGATIVE_SUBMIT_LABELS = {"clear", "delete", "remove", "mic", "voice", "삭제", "지우기", "음성"}
 
@@ -68,6 +69,29 @@ class PatternBinder:
             if region_bound is not None:
                 return region_bound
 
+        if (
+            action.kind == ActionKind.SUBMIT_PRIMARY
+            and _normalize_text(action.label) == "search"
+            and snapshot.state == UiState.SUGGESTION_OPEN
+        ):
+            query_action = ActionStep(
+                id=f"{action.id}__query_focus",
+                kind=ActionKind.RETRY_FOCUS,
+                slot="query",
+                required=False,
+            )
+            query_matches = self._rank_element_candidates(snapshot, query_action, bias)
+            selected = query_matches[0] if query_matches else None
+            return BoundAction(
+                action=action,
+                mode=ExecutionMode.KEYBOARD_PRESS,
+                confidence=0.92,
+                keyboard_key="Enter",
+                selected_candidate=selected,
+                top_candidates=query_matches[:3],
+                notes=["search_submit_enter_when_suggestion_open"],
+            )
+
         matches = self._rank_element_candidates(snapshot, action, bias)
         if matches:
             best = matches[0]
@@ -92,7 +116,7 @@ class PatternBinder:
         for slot in slots:
             aliases = self._slot_aliases(slot)
             for element in snapshot.elements:
-                if not element.editable and element.role not in INPUT_LIKE_ROLES:
+                if not self._is_text_entry_candidate(element):
                     continue
                 corpus = _element_corpus(element)
                 if any(alias in corpus for alias in aliases):
@@ -224,6 +248,8 @@ class PatternBinder:
         score = 0.0
 
         if action.kind in {ActionKind.FILL_SLOT, ActionKind.RETRY_FOCUS}:
+            if self._is_non_text_input(element):
+                return 0.0, []
             if element.role in INPUT_LIKE_ROLES or element.tag in {"input", "textarea", "select"}:
                 score += 0.42
                 notes.append("input_like_role")
@@ -285,6 +311,14 @@ class PatternBinder:
             score += explicit_label_bonus
             if explicit_label_bonus:
                 notes.append("explicit_label_match")
+            if action.kind == ActionKind.SELECT_LIST_ITEM:
+                value_bonus = self._value_bonus(action.value, content_corpus or corpus)
+                score += value_bonus
+                if value_bonus:
+                    notes.append("list_value_match")
+                if element.role in {"link", "option"} or element.tag == "a":
+                    score += 0.08
+                    notes.append("result_link_bonus")
             if host_bias.prefer_panel_ui > 1.0 and any(
                 token in _normalize_text(element.parent_context) for token in ("panel", "tab", "route", "길찾기")
             ):
@@ -436,8 +470,7 @@ class PatternBinder:
             if candidate.visible
             and candidate.enabled
             and candidate.interactable
-            and candidate.editable
-            and (candidate.role in INPUT_LIKE_ROLES or candidate.tag in {"input", "textarea", "select"})
+            and self._is_text_entry_candidate(candidate)
         ]
         if len(ordered_inputs) < 2:
             return 0.0
@@ -449,6 +482,39 @@ class PatternBinder:
         if action.slot == "target" and element.id == target_candidate.id:
             return 0.2
         return 0.0
+
+    def _is_text_entry_candidate(self, element: ElementSnapshot) -> bool:
+        if self._is_non_text_input(element):
+            return False
+        return bool(
+            element.editable
+            or element.role in INPUT_LIKE_ROLES
+            or element.tag in {"input", "textarea", "select"}
+        )
+
+    def _is_non_text_input(self, element: ElementSnapshot) -> bool:
+        input_type = _normalize_text(element.input_type)
+        if input_type in NON_TEXT_INPUT_TYPES:
+            return True
+
+        locator_corpus = _normalize_text(element.locator_hint)
+        label_corpus = _normalize_text(
+            " ".join(
+                filter(
+                    None,
+                    [
+                        element.name,
+                        element.text,
+                        element.placeholder,
+                    ],
+                )
+            )
+        )
+        if 'type="range"' in locator_corpus:
+            return True
+        if "slider" in label_corpus or "slider" in locator_corpus:
+            return True
+        return False
 
 
 def _mode_for_action(kind: ActionKind) -> ExecutionMode:

@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import Field
 
-from local_server.app.automation.core.enums import ActionKind, RiskLevel, TaskType
+from local_server.app.automation.core.enums import ActionKind, RiskLevel, TaskType, UiState
 from local_server.app.automation.core.schemas import ActionStep, Intent, StrictModel
 
 
@@ -12,6 +12,7 @@ class ActionTemplate(StrictModel):
     kind: ActionKind
     slot: str | None = None
     label: str | None = None
+    target_state: UiState | None = None
     required: bool = True
     copy_slot_value: bool = False
 
@@ -35,6 +36,19 @@ TASK_REGISTRY: dict[TaskType, TaskDefinition] = {
             ActionTemplate(kind=ActionKind.CHOOSE_SUGGESTION, slot="query", copy_slot_value=True, required=False),
             ActionTemplate(kind=ActionKind.SUBMIT_PRIMARY, label="search"),
             ActionTemplate(kind=ActionKind.READ_RESULTS),
+        ],
+    ),
+    TaskType.SEARCH_AND_OPEN_RESULT: TaskDefinition(
+        task_type=TaskType.SEARCH_AND_OPEN_RESULT,
+        required_slots=["query"],
+        optional_slots=["target_hint"],
+        default_risk_level=RiskLevel.LOW,
+        template=[
+            ActionTemplate(kind=ActionKind.OPEN_PRIMARY_ENTRY, label="search", required=False),
+            ActionTemplate(kind=ActionKind.FILL_SLOT, slot="query", copy_slot_value=True),
+            ActionTemplate(kind=ActionKind.CHOOSE_SUGGESTION, slot="query", copy_slot_value=True, required=False),
+            ActionTemplate(kind=ActionKind.SUBMIT_PRIMARY, label="search"),
+            ActionTemplate(kind=ActionKind.SELECT_LIST_ITEM, slot="target_hint", copy_slot_value=True),
         ],
     ),
     TaskType.PAIRED_LOOKUP: TaskDefinition(
@@ -68,6 +82,8 @@ def build_task_plan(intent: Intent) -> list[ActionStep]:
 
     if intent.task_type == TaskType.FORM_FILL:
         return _build_form_fill_plan(intent)
+    if intent.task_type == TaskType.SEARCH_AND_OPEN_RESULT:
+        return _build_search_and_open_plan(intent, definition)
 
     missing = [slot for slot in definition.required_slots if slot not in intent.slots]
     if missing:
@@ -86,6 +102,41 @@ def build_task_plan(intent: Intent) -> list[ActionStep]:
                 slot=template.slot,
                 value=value,
                 label=template.label,
+                target_state=template.target_state,
+                required=template.required,
+            )
+        )
+    return plan
+
+
+def _build_search_and_open_plan(intent: Intent, definition: TaskDefinition) -> list[ActionStep]:
+    if "query" not in intent.slots:
+        raise ValueError("missing_required_slots:query")
+
+    target_hint = intent.slots.get("target_hint") or intent.slots.get("query")
+    if target_hint:
+        intent = intent.model_copy(
+            update={
+                "slots": {
+                    **intent.slots,
+                    "target_hint": target_hint,
+                }
+            }
+        )
+
+    plan: list[ActionStep] = []
+    for index, template in enumerate(definition.template, start=1):
+        value: Any | None = None
+        if template.copy_slot_value and template.slot is not None:
+            value = intent.slots.get(template.slot)
+        plan.append(
+            ActionStep(
+                id=f"{intent.task_type.value}_{index}",
+                kind=template.kind,
+                slot=template.slot,
+                value=value,
+                label=template.label,
+                target_state=template.target_state,
                 required=template.required,
             )
         )

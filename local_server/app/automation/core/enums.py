@@ -20,6 +20,7 @@ class UiState(str, Enum):
 
 class TaskType(str, Enum):
     KEYWORD_SEARCH = "keyword_search"
+    SEARCH_AND_OPEN_RESULT = "search_and_open_result"
     PAIRED_LOOKUP = "paired_lookup"
     FORM_FILL = "form_fill"
     SELECT_FROM_LIST = "select_from_list"

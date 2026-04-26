@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -34,15 +35,32 @@ class TaskRequest(StrictModel):
 
     @model_validator(mode="after")
     def validate_payload(self) -> "TaskRequest":
+        self.site = _normalize_site_url(self.site)
         if self.intent is None and not self.user_request:
             raise ValueError("task_request_requires_intent_or_user_request")
         return self
+
+
+def _normalize_site_url(value: str) -> str:
+    site = (value or "").strip()
+    if not site:
+        return ""
+
+    parsed = urlparse(site)
+    if parsed.scheme:
+        return site
+
+    if site.startswith("//"):
+        return f"https:{site}"
+
+    return f"https://{site}"
 
 
 class ElementSnapshot(StrictModel):
     id: str
     role: str
     tag: str = ""
+    input_type: str = ""
     name: str = ""
     text: str = ""
     placeholder: str = ""

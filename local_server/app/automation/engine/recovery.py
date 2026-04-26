@@ -66,6 +66,38 @@ class RecoveryOrchestrator:
                     notes=["open_primary_entry_before_retry"],
                 )
 
+        if self._needs_paired_lookup_entry_recovery(snapshot, action):
+            open_action = ActionStep(
+                id=f"{action.id}__open_entry",
+                kind=ActionKind.OPEN_PRIMARY_ENTRY,
+                label="route",
+                required=False,
+            )
+            open_bound = self.binder.bind(snapshot, open_action, bias)
+            if open_bound.mode == ExecutionMode.CANDIDATE_CLICK and open_bound.confidence >= self.policy.cautious_threshold:
+                return RecoveryDecision(
+                    pre_actions=[open_bound],
+                    rebind=True,
+                    notes=["open_primary_entry_before_retry"],
+                )
+
+        if action.kind == ActionKind.SELECT_LIST_ITEM and snapshot.state == UiState.SUGGESTION_OPEN:
+            submit_action = ActionStep(
+                id=f"{action.id}__submit_search",
+                kind=ActionKind.SUBMIT_PRIMARY,
+                label="search",
+                required=False,
+            )
+            submit_bound = self.binder.bind(snapshot, submit_action, bias)
+            if submit_bound.mode in {ExecutionMode.CANDIDATE_CLICK, ExecutionMode.KEYBOARD_PRESS} and (
+                submit_bound.confidence >= self.policy.cautious_threshold
+            ):
+                return RecoveryDecision(
+                    pre_actions=[submit_bound],
+                    rebind=True,
+                    notes=["submit_search_before_retry"],
+                )
+
         if action.kind in {ActionKind.CHOOSE_SUGGESTION, ActionKind.SUBMIT_PRIMARY} and bound.mode == ExecutionMode.NOOP:
             fallback = self.binder.bind(snapshot, action.model_copy(update={"required": False}), bias)
             if fallback.mode == ExecutionMode.KEYBOARD_PRESS:
@@ -76,3 +108,22 @@ class RecoveryOrchestrator:
                 )
 
         return RecoveryDecision()
+
+    def _needs_paired_lookup_entry_recovery(
+        self,
+        snapshot: PageSnapshot,
+        action: ActionStep,
+    ) -> bool:
+        if action.kind != ActionKind.FILL_SLOT or action.slot not in {"source", "target"}:
+            return False
+        if snapshot.state not in {UiState.IDLE, UiState.INPUT_READY, UiState.SUGGESTION_OPEN}:
+            return False
+
+        paired_inputs = 0
+        for element in snapshot.elements:
+            if not element.visible or not element.enabled or not element.interactable:
+                continue
+            if self.binder._is_text_entry_candidate(element):
+                paired_inputs += 1
+
+        return paired_inputs < 2

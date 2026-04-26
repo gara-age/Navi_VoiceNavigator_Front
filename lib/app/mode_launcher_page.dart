@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../demo/demo_app.dart';
 import '../features/home/presentation/home_page.dart';
+import '../features/pattern_api_test/presentation/pattern_api_test_page.dart';
 import 'theme/colors.dart';
 
 class ModeLauncherPage extends StatelessWidget {
@@ -23,15 +24,24 @@ class ModeLauncherPage extends StatelessWidget {
     );
   }
 
+  void _openPatternApiTestMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const PatternApiTestPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 980),
+              constraints: const BoxConstraints(maxWidth: 1180),
               child: Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
@@ -72,32 +82,37 @@ class ModeLauncherPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '실행할 모드를 선택하세요.',
+                      '실행할 모드를 선택해 주세요.',
                       style: TextStyle(
                         fontSize: 15,
                         color: AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Row(
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 20,
                       children: [
-                        Expanded(
+                        SizedBox(
+                          width: 340,
                           child: _ModeLaunchCard(
                             title: '실제 모드',
-                            subtitle: '실제 홈 화면과 연결되는 기본 앱 흐름입니다.',
+                            subtitle:
+                                '기존 연결형 UI 화면에서 실제 명령 흐름을 테스트합니다.',
                             badge: '서비스',
-                            hint: 'UI 연결',
+                            hint: '기본 UI',
                             icon: Icons.link_rounded,
                             accentColor: AppColors.accent,
                             background: AppColors.accentSoft,
                             onTap: () => _openRealMode(context),
                           ),
                         ),
-                        const SizedBox(width: 20),
-                        Expanded(
+                        SizedBox(
+                          width: 340,
                           child: _ModeLaunchCard(
                             title: '데모 모드',
-                            subtitle: '백엔드 없이 시나리오 화면 흐름을 확인하는 모드입니다.',
+                            subtitle:
+                                '백엔드 없이 시나리오와 화면 흐름만 확인하는 모드입니다.',
                             badge: '오프라인',
                             hint: '데모',
                             icon: Icons.play_circle_outline_rounded,
@@ -106,11 +121,25 @@ class ModeLauncherPage extends StatelessWidget {
                             onTap: () => _openDemoMode(context),
                           ),
                         ),
+                        SizedBox(
+                          width: 340,
+                          child: _ModeLaunchCard(
+                            title: 'Pattern API 테스트',
+                            subtitle:
+                                'endpoint, instruction, prompt를 직접 입력하고 API 응답으로 Pattern Task 실행까지 확인합니다.',
+                            badge: 'API',
+                            hint: '패턴 테스트',
+                            icon: Icons.api_rounded,
+                            accentColor: AppColors.success,
+                            background: AppColors.successSoft,
+                            onTap: () => _openPatternApiTestMode(context),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      '2일차 목표는 실제 모드와 데모 모드 진입점을 만드는 것입니다.',
+                      '새 테스트 모드는 instruction/prompt 기반 API를 GUI에서 바로 확인하기 위한 전용 화면입니다.',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textMuted,

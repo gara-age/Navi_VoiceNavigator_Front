@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 from urllib.parse import urlparse
 
-from local_server.app.automation.core.enums import ActionKind, ExecutionMode, RiskLevel, UiState
+from local_server.app.automation.core.enums import ActionKind, ExecutionMode, RiskLevel, TaskType, UiState
 from local_server.app.automation.core.policies import AutomationPolicy, DEFAULT_POLICY
 from local_server.app.automation.core.schemas import (
     ActionStep,
@@ -217,6 +217,20 @@ class PatternExecutor:
 
         failure_snapshot = build_page_snapshot(page)
         final_bound = self.binder.bind(failure_snapshot, action, host_bias)
+        if not action.required:
+            return {
+                "observation": ExecutionObservation(
+                    step=step_no,
+                    action=action.kind.value,
+                    status="success",
+                    detail=f"Skipped optional {action.kind.value} because confidence was low",
+                    state_before=failure_snapshot.state.value,
+                    state_after=failure_snapshot.state.value,
+                    selected_candidate=final_bound.selected_candidate,
+                    top_candidates=final_bound.top_candidates,
+                    recovery_notes=recovery_notes + final_bound.notes + ["optional_low_confidence_skip"],
+                )
+            }
         return {
             "observation": ExecutionObservation(
                 step=step_no,
@@ -261,7 +275,16 @@ class PatternExecutor:
             self._wait_for_state(page, action.target_state)
             detail = f"Reached state {action.target_state.value if action.target_state else 'unknown'}"
         elif bound.mode == ExecutionMode.KEYBOARD_PRESS:
-            self._press_key(page, bound.keyboard_key or "Enter")
+            if bound.selected_candidate is not None:
+                locator = self._locator_for_candidate(page, bound)
+                try:
+                    locator.click()
+                except Exception:
+                    pass
+                locator.press(bound.keyboard_key or "Enter")
+                self._last_locator = locator
+            else:
+                self._press_key(page, bound.keyboard_key or "Enter")
             detail = f"Pressed {bound.keyboard_key or 'Enter'}"
         elif bound.mode == ExecutionMode.CANDIDATE_FILL:
             locator = self._locator_for_candidate(page, bound)
@@ -290,6 +313,8 @@ class PatternExecutor:
 
         if action.kind == ActionKind.FILL_SLOT:
             page.wait_for_timeout(self.policy.suggestion_wait_ms)
+        elif action.kind == ActionKind.SUBMIT_PRIMARY and (action.label or "").strip().lower() == "search":
+            self._wait_for_search_transition(page, snapshot_before.url)
         else:
             page.wait_for_timeout(300)
 
@@ -323,6 +348,19 @@ class PatternExecutor:
             elapsed += self.policy.wait_poll_ms
         raise RuntimeError(f"wait_for_state_timeout:{target_state.value if target_state else 'unknown'}")
 
+    def _wait_for_search_transition(self, page: Any, previous_url: str, timeout_ms: int | None = None) -> None:
+        timeout = timeout_ms or self.policy.default_timeout_ms
+        elapsed = 0
+        while elapsed <= timeout:
+            snapshot = build_page_snapshot(page)
+            current_url = getattr(page, "url", "") or ""
+            if current_url != previous_url:
+                return
+            if snapshot.state != UiState.SUGGESTION_OPEN:
+                return
+            page.wait_for_timeout(self.policy.wait_poll_ms)
+            elapsed += self.policy.wait_poll_ms
+
     def _press_key(self, page: Any, key: str) -> None:
         if self._last_locator is not None:
             try:
@@ -348,7 +386,6 @@ class PatternExecutor:
     ) -> bool:
         if snapshot.state == UiState.RESULTS_READY:
             return True
-
         current = urlparse(current_url or "")
         origin = urlparse(request.site or "")
         host_changed = bool(current.netloc and origin.netloc and current.netloc.lower() != origin.netloc.lower())
@@ -356,11 +393,45 @@ class PatternExecutor:
         has_query = bool(current.query)
 
         result_signal = bool(snapshot.result_regions)
+        if intent.task_type == TaskType.SEARCH_AND_OPEN_RESULT:
+            result_signal = result_signal or self._has_search_result_candidates(snapshot, intent)
         title_corpus = f"{snapshot.title} {current_url}".lower()
         slot_values = [str(value).strip().lower() for value in intent.slots.values() if str(value).strip()]
         query_in_title = any(value in title_corpus for value in slot_values)
 
+        if snapshot.state == UiState.SUGGESTION_OPEN:
+            return result_signal and (host_changed or path_changed or has_query or query_in_title)
+
         return (host_changed or path_changed or has_query) and (result_signal or query_in_title)
+
+    def _has_search_result_candidates(self, snapshot, intent: Intent) -> bool:
+        values = [str(value).strip().lower() for value in intent.slots.values() if str(value).strip()]
+        if not values:
+            return False
+
+        for element in snapshot.elements:
+            if not element.visible or not element.enabled or not element.interactable:
+                continue
+            role = (element.role or "").lower()
+            tag = (element.tag or "").lower()
+            if snapshot.state == UiState.SUGGESTION_OPEN and role == "option":
+                continue
+            if role not in {"link", "option"} and tag != "a":
+                continue
+            corpus = " ".join(
+                filter(
+                    None,
+                    [
+                        element.name,
+                        element.text,
+                        element.placeholder,
+                        element.parent_context,
+                    ],
+                )
+            ).lower()
+            if any(value in corpus for value in values):
+                return True
+        return False
 
     def _emit(
         self,

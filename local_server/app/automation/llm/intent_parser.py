@@ -11,7 +11,7 @@ class HeuristicIntentParser:
 
     _paired_lookup_patterns = [
         re.compile(
-            r"(?P<source>.+?)에서\s+(?P<target>.+?)(?=\s+(?:가는|가는\s+)?(?:경로|길)\b|\s+(?:알려줘|찾아줘|검색해줘)\b|$)",
+            r"(?P<source>.+?)에서\s+(?P<target>.+?)(?=\s+(?:가는?\s+)?(?:경로|길)\b|\s+(?:알려줘|찾아줘|보여줘)|$)",
             re.IGNORECASE,
         ),
         re.compile(
@@ -27,6 +27,16 @@ class HeuristicIntentParser:
         "검색",
         "찾아",
         "찾기",
+    ]
+
+    _open_keywords = [
+        "open",
+        "go to",
+        "visit",
+        "enter",
+        "접속",
+        "들어가",
+        "열어",
     ]
 
     _search_cleanup_tokens = [
@@ -65,6 +75,20 @@ class HeuristicIntentParser:
                     )
 
         normalized = text.lower()
+        if any(keyword in normalized for keyword in self._search_keywords) and any(
+            keyword in normalized for keyword in self._open_keywords
+        ):
+            query = self._extract_query_for_open(text)
+            return Intent(
+                task_type=TaskType.SEARCH_AND_OPEN_RESULT,
+                slots={
+                    "query": query,
+                    "target_hint": query,
+                },
+                risk_level=RiskLevel.LOW,
+                confidence=0.72,
+            )
+
         if any(keyword in normalized for keyword in self._search_keywords):
             query = self._extract_query(text)
             return Intent(
@@ -87,3 +111,23 @@ class HeuristicIntentParser:
             normalized = re.sub(re.escape(token), " ", normalized, flags=re.IGNORECASE)
         normalized = re.sub(r"\s+", " ", normalized).strip()
         return normalized or text
+
+    def _extract_query_for_open(self, text: str) -> str:
+        normalized = text
+        cleanup_patterns = [
+            r"^\s*(구글|google|네이버|naver|유튜브|youtube)에서\s+",
+            r"\s*검색해서\s*들어가(?:줘|주세요|주라)?",
+            r"\s*검색하고\s*들어가(?:줘|주세요|주라)?",
+            r"\s*검색 후\s*들어가(?:줘|주세요|주라)?",
+            r"\s*검색해서\s*접속(?:해줘|해주세요)?",
+            r"\s*검색하고\s*접속(?:해줘|해주세요)?",
+            r"\s*search\s+for\s+",
+            r"\s*and\s+open\b",
+            r"\s*and\s+go\s+to\b",
+            r"\s*open\b",
+            r"\s+it$",
+        ]
+        for pattern in cleanup_patterns:
+            normalized = re.sub(pattern, " ", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r"\s+", " ", normalized).strip(" ,")
+        return normalized or self._extract_query(text)
